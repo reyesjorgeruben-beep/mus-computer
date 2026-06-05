@@ -21,6 +21,18 @@ class PlayerBase(ABC):
     def throw_cards(self) -> None:
         self.cards = []
 
+    def set_round_state(
+        self,
+        team_scores: dict,
+        my_team_name: str,
+        position: int,
+        n_players: int,
+        opponent_discard_counts: list,
+        mus_rounds_completed: int,
+    ) -> None:
+        """Called by Game before mus phase and before wagering. No-op by default."""
+        pass
+
     @abstractmethod
     def vote_mus(self) -> bool:
         """Return True to request mus (exchange cards), False to decline."""

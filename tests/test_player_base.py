@@ -88,3 +88,17 @@ class TestScriptedPlayerDecisions:
         assert p.wager_action(ctx) == 2
         assert p.wager_action(ctx) == 0
         assert p.wager_action(ctx) == -1
+
+
+def test_player_base_set_round_state_is_noop():
+    from tests.conftest import ScriptedPlayer
+    from team import Team
+    player = ScriptedPlayer("p", Team("A"), mus_votes=[], discards=[], wager_actions=[])
+    player.set_round_state(
+        team_scores={"A": 0, "B": 0},
+        my_team_name="A",
+        position=0,
+        n_players=4,
+        opponent_discard_counts=[],
+        mus_rounds_completed=0,
+    )

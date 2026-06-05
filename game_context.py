@@ -10,3 +10,6 @@ class GameContext:
     current_bet: int
     previous_bet: int
     hand: List[Card]
+    position: int = 0
+    n_players: int = 1
+    opponent_discard_counts: List[int] = field(default_factory=list)
