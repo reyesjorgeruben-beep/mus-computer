@@ -152,3 +152,59 @@ class TestWagerSessionContext:
         assert received_contexts[0] == (1, 0)
         # After A1 raises by 2: bet=3, prev=1
         assert received_contexts[1] == (3, 1)
+
+
+def test_wager_session_passes_position_to_context():
+    from wager_session import WagerSession
+    from team import Team
+    from tests.conftest import ScriptedPlayer
+
+    captured_positions = []
+
+    class PositionCapturingPlayer(ScriptedPlayer):
+        def wager_action(self, context):
+            captured_positions.append(context.position)
+            return 0
+
+    team_a = Team("A")
+    team_b = Team("B")
+    p0 = PositionCapturingPlayer("p0", team_a, mus_votes=[], discards=[], wager_actions=[0, 0])
+    p1 = PositionCapturingPlayer("p1", team_b, mus_votes=[], discards=[], wager_actions=[0, 0])
+
+    WagerSession(
+        players=[p0, p1],
+        base_bet=1,
+        phase_name="Grande",
+        team_scores={"A": 0, "B": 0},
+        discard_counts={},
+    ).run()
+
+    assert 0 in captured_positions
+    assert 1 in captured_positions
+
+
+def test_wager_session_passes_n_players_to_context():
+    from wager_session import WagerSession
+    from team import Team
+    from tests.conftest import ScriptedPlayer
+
+    captured = []
+
+    class CapturingPlayer(ScriptedPlayer):
+        def wager_action(self, context):
+            captured.append(context.n_players)
+            return 0
+
+    team_a, team_b = Team("A"), Team("B")
+    p0 = CapturingPlayer("p0", team_a, mus_votes=[], discards=[], wager_actions=[0])
+    p1 = CapturingPlayer("p1", team_b, mus_votes=[], discards=[], wager_actions=[0])
+
+    WagerSession(
+        players=[p0, p1],
+        base_bet=1,
+        phase_name="Chica",
+        team_scores={"A": 0, "B": 0},
+        discard_counts={},
+    ).run()
+
+    assert all(n == 2 for n in captured)

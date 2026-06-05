@@ -11,6 +11,7 @@ class WagerSession:
         base_bet: int,
         phase_name: str,
         team_scores: Dict[str, int],
+        discard_counts: Dict[str, int] = None,
     ):
         self.players = players
         self.phase_name = phase_name
@@ -18,22 +19,25 @@ class WagerSession:
         self.current_bet = base_bet
         self.previous_bet = 0
         self.team_leading_bet: Optional[Team] = None
+        self.discard_counts: Dict[str, int] = discard_counts or {}
 
     def run(self) -> Tuple[Optional[Team], int]:
-        """
-        Returns (winner_by_resignation, bet_amount).
-        winner_by_resignation is None when the round ends in a showdown.
-        """
         last_raiser_idx: Optional[int] = None
         consecutive_passes = 0
+        n_players = len(self.players)
 
-        for i in range(40 * len(self.players)):
-            idx = i % len(self.players)
+        for i in range(40 * n_players):
+            idx = i % n_players
             player = self.players[idx]
 
-            # The team that last raised has now seen everyone else call → showdown
             if last_raiser_idx is not None and idx == last_raiser_idx:
                 return (None, self.current_bet)
+
+            opp_discards = [
+                self.discard_counts.get(p.name, 0)
+                for p in self.players
+                if p.team != player.team
+            ]
 
             context = GameContext(
                 phase_name=self.phase_name,
@@ -41,6 +45,9 @@ class WagerSession:
                 current_bet=self.current_bet,
                 previous_bet=self.previous_bet,
                 hand=list(player.cards),
+                position=idx,
+                n_players=n_players,
+                opponent_discard_counts=opp_discards,
             )
 
             action = player.wager_action(context)
@@ -57,7 +64,7 @@ class WagerSession:
                 consecutive_passes = 0
             else:
                 consecutive_passes += 1
-                if consecutive_passes >= len(self.players):
+                if consecutive_passes >= n_players:
                     return (None, self.current_bet)
 
         return (None, self.current_bet)

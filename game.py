@@ -21,10 +21,14 @@ class Game:
         ]
         self.teams = [team_a, team_b]
         self.deck = Deck()
+        self._discard_counts = {}
+        self._mus_rounds = 0
 
     def play(self):
         while all(t.points < WIN_SCORE for t in self.teams):
             self.deck = Deck()
+            self._discard_counts = {}
+            self._mus_rounds = 0
             self._deal_initial_cards()
             self._mus_phase()
             self._play_all_phases()
@@ -38,17 +42,45 @@ class Game:
             player.receive_cards(self.deck.draw(4))
 
     def _mus_phase(self):
+        discard_counts = {p.name: 0 for p in self.players_in_order}
+        mus_rounds = 0
+        self._notify_players_round_state(discard_counts, mus_rounds)
+
         while self._all_vote_mus():
+            mus_rounds += 1
             for player in self.players_in_order:
                 indices = player.choose_discards()
+                discard_counts[player.name] += len(indices)
                 for idx in sorted(indices, reverse=True):
                     player.throw_card(idx)
                 player.receive_cards(self.deck.draw(len(indices)))
+            self._notify_players_round_state(discard_counts, mus_rounds)
+
+        self._discard_counts = discard_counts
+        self._mus_rounds = mus_rounds
+
+    def _notify_players_round_state(self, discard_counts: dict, mus_rounds: int):
+        team_scores = {t.name: t.points for t in self.teams}
+        for i, player in enumerate(self.players_in_order):
+            opp_discards = [
+                discard_counts.get(p.name, 0)
+                for p in self.players_in_order
+                if p.team != player.team
+            ]
+            player.set_round_state(
+                team_scores=team_scores,
+                my_team_name=player.team.name,
+                position=i,
+                n_players=len(self.players_in_order),
+                opponent_discard_counts=opp_discards,
+                mus_rounds_completed=mus_rounds,
+            )
 
     def _all_vote_mus(self) -> bool:
         return all(p.vote_mus() for p in self.players_in_order)
 
     def _play_all_phases(self):
+        self._notify_players_round_state(self._discard_counts, self._mus_rounds)
         phases = [Grande, Chica, Pares, Juego]
         while phases:
             phase = phases.pop(0)
@@ -69,6 +101,7 @@ class Game:
                     base_bet=phase.base_bet,
                     phase_name=phase.__name__,
                     team_scores=team_scores,
+                    discard_counts=self._discard_counts,
                 ).run()
 
             if winner_team is None:
@@ -87,17 +120,9 @@ class Game:
 
     def _resolve_phase(self, phase: type) -> Team:
         p = self.players_in_order
-
-        # Find each team's best hand
         team_a_idx = 0 if phase.play(Hand(p[0].cards), Hand(p[2].cards)) >= 0 else 2
         team_b_idx = 1 if phase.play(Hand(p[1].cards), Hand(p[3].cards)) >= 0 else 3
-
         champion_a = p[team_a_idx]
         champion_b = p[team_b_idx]
-
-        winner = (
-            champion_a
-            if phase.play(Hand(champion_a.cards), Hand(champion_b.cards)) >= 0
-            else champion_b
-        )
+        winner = champion_a if phase.play(Hand(champion_a.cards), Hand(champion_b.cards)) >= 0 else champion_b
         return winner.team
