@@ -1,0 +1,17 @@
+[
+  {
+    "mus_eagerness": 0.8266984311299256,
+    "mus_risk_sensitivity": 0.5656412014311595,
+    "w_grande": 0.5708833734599267,
+    "w_chica": 0.9789853775504643,
+    "w_pares": 0.5253761649561302,
+    "w_juego": 0.15742543516328744,
+    "discard_aggressiveness": 0.05509512058380972,
+    "bluff_rate": 0.30220049695122064,
+    "risk_factor": 0.9067320182883405,
+    "fold_threshold": 0.5755366801847466,
+    "raise_threshold": 0.19705799809237312,
+    "score_urgency_sensitivity": 0.5351861082897363,
+    "position_preference": 0.08252405649600525
+  }
+]

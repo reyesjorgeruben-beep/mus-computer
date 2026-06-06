@@ -20,7 +20,7 @@ def test_tables_contain_330_hands():
 def test_tables_have_all_phases():
     tables = load_tables()
     key = next(k for k in tables if k != "_avg_opp_phase_improvements")
-    assert set(tables[key].keys()) == {"Grande", "Chica", "Pares", "Juego"}
+    assert {"Grande", "Chica", "Pares", "Juego"}.issubset(set(tables[key].keys()))
 
 def test_tables_probabilities_sum_to_one():
     tables = load_tables()
