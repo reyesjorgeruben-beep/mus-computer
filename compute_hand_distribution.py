@@ -130,7 +130,7 @@ def main():
     tables["hand_distribution_post_mus"] = dict(p_final)
 
     csv_path = args.csv or args.output.parent / "hand_distribution_post_mus.csv"
-    _write_csv(mus_hands, p_initial, p_mus_total, p_final, best_kept_map, csv_path)
+    _write_csv(all_hands, p_final, csv_path)
 
     print(f"Saving pickle to {args.output}...")
     with open(args.output, "wb") as f:
@@ -142,19 +142,14 @@ def _hand_str(hand: tuple) -> str:
     return "".join(c.value for c in hand) if hand else "(none)"
 
 
-def _write_csv(mus_hands, p_initial, p_mus_total, p_final, best_kept_map, path: Path) -> None:
+def _write_csv(all_hands, p_final, path: Path) -> None:
     rows = []
-    for hand in mus_hands:
-        kept = best_kept_map[hand]
-        p_cond = p_initial.get(hand, 0.0) / p_mus_total
+    for hand in all_hands:
+        p = p_final.get(hand, 0.0)
         rows.append({
-            "hand":         _hand_str(hand),
-            "best_kept":    _hand_str(kept),
-            "n_discarded":  4 - len(kept),
-            "p_deal":       round(p_initial.get(hand, 0.0), 8),
-            "p_given_mus":  round(p_cond, 8),
-            "p_final":      round(p_final.get(hand, 0.0), 8),
-            "p_ratio":      round(p_final.get(hand, 0.0) / p_cond if p_cond else 0, 4),
+            "hand":    _hand_str(hand),
+            "p_final": round(p, 8),
+            "p_pct":   round(p * 100, 4),
         })
     rows.sort(key=lambda r: -r["p_final"])
     with open(path, "w", newline="", encoding="utf-8") as f:
