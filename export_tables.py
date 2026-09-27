@@ -98,6 +98,44 @@ def build_summary_rows(tables: dict, multiplicities: dict) -> list[dict]:
         row["total_net_A"] = round(
             sum(ep.get(ph, {}).get("expected_net_A", 0.0) for ph in EP_PHASES), 6
         )
+        row["total_net_4phases"] = round(
+            sum(ep.get(ph, {}).get("expected_net_A", 0.0) for ph in EP_PHASES if ph != "Punto"), 6
+        )
+
+        # 4-player mano post-mus expected points
+        eppm = entry.get("ep_mano_postmus", {})
+        for phase in EP_PHASES:
+            pd = eppm.get(phase, {})
+            row[f"eppm_{phase.lower()}_prob_A_wins"]   = round(pd.get("prob_A_wins",   0.0), 6)
+            row[f"eppm_{phase.lower()}_exp_A_pts"]     = round(pd.get("expected_A_points", 0.0), 6)
+            row[f"eppm_{phase.lower()}_exp_B_pts"]     = round(pd.get("expected_B_points", 0.0), 6)
+            row[f"eppm_{phase.lower()}_net_A"]         = round(pd.get("expected_net_A", 0.0), 6)
+            row[f"eppm_{phase.lower()}_total_pts"]     = round(pd.get("expected_total_winner_points", 0.0), 6)
+            if phase in ("Pares", "Juego"):
+                row[f"eppm_{phase.lower()}_both_A"] = round(pd.get("prob_both_given_A_wins", 0.0), 6)
+                row[f"eppm_{phase.lower()}_both_B"] = round(pd.get("prob_both_given_B_wins", 0.0), 6)
+        row["total_net_A_postmus"] = round(
+            sum(eppm.get(ph, {}).get("expected_net_A", 0.0) for ph in EP_PHASES), 6
+        )
+
+        # Expected net after best discard (always discard in mus)
+        bc_corr   = entry.get("best_discards_corrected", {})
+        opts_corr = bc_corr.get("all_options_net", []) if bc_corr else []
+        if opts_corr:
+            top1_npp = opts_corr[0].get("net_per_phase", {})
+            for phase in EP_PHASES:
+                row[f"bestmus_{phase.lower()}_net"] = round(top1_npp.get(phase, 0.0), 6)
+            row["bestmus_total_net"]    = round(opts_corr[0]["total_net_A"], 6)
+            row["bestmus_4phases_net"] = round(
+                sum(top1_npp.get(ph, 0.0) for ph in EP_PHASES if ph != "Punto"), 6
+            )
+        else:
+            for phase in EP_PHASES:
+                row[f"bestmus_{phase.lower()}_net"] = row.get(f"eppm_{phase.lower()}_net_A", 0.0)
+            row["bestmus_total_net"]    = row.get("total_net_A_postmus", 0.0)
+            row["bestmus_4phases_net"] = round(
+                sum(row.get(f"eppm_{ph.lower()}_net_A", 0.0) for ph in EP_PHASES if ph != "Punto"), 6
+            )
 
         # Best discard improvement per phase (old p_win metric)
         opts = entry.get("discard_options", {})
@@ -222,6 +260,99 @@ def build_discard_insight_rows(tables: dict) -> list[dict]:
     return rows
 
 
+def build_discard_insight_rows_corrected(tables: dict) -> list[dict]:
+    """One row per hand summarising best_discards_corrected + no_discard_stats_corrected.
+
+    nd_imp_* use the overall-best discard option vs the no-discard ep_mano_postmus,
+    so Grande+Chica+Pares+Juego+Punto improvements sum exactly to nd_delta_net.
+    top1_net_* expose the absolute per-phase EP of the best discard option.
+    """
+    _ALL_PHASES = ['Grande', 'Chica', 'Pares', 'Juego', 'Punto']
+    rows = []
+    for hand, entry in tables.items():
+        if not isinstance(hand, tuple):
+            continue
+        bd = entry.get("best_discards_corrected")
+        nd = entry.get("no_discard_stats_corrected")
+        if not bd and not nd:
+            continue
+
+        row = {
+            "hand":      hand_str(hand),
+            "has_pares": int(hand_has_pares(hand)),
+            "has_juego": int(hand_has_juego(hand)),
+        }
+
+        # Top-1 discard option's per-phase net (ep_mano_postmus of best kept hand after mus)
+        all_opts = bd.get("all_options_net", []) if bd else []
+        top1_npp = all_opts[0].get("net_per_phase", {}) if all_opts else {}
+
+        # Baseline: pre-mus EP of the current hand (always discard in mus — no keep option)
+        ep_pre = entry.get("ep_mano", {})
+        nd_npp = {p: ep_pre.get(p, {}).get("expected_net_A", 0.0) for p in _ALL_PHASES}
+
+        # Per-phase improvements (best discard post-mus vs current hand pre-mus)
+        # — same top-1 kept hand for all phases, so sum = nd_delta_net
+        nd_delta = round(sum(top1_npp.get(p, 0.0) - nd_npp[p] for p in _ALL_PHASES), 6) if top1_npp else ""
+
+        if nd:
+            row["nd_rank"]       = nd.get("rank", "")
+            row["nd_act_vs_max"] = round(nd.get("action_vs_max", 0.0), 6)
+            row["nd_act_vs_min"] = round(nd.get("action_vs_min", 0.0), 6)
+        else:
+            row["nd_rank"] = ""
+            row["nd_act_vs_max"] = row["nd_act_vs_min"] = ""
+
+        row["nd_delta_net"] = nd_delta
+        for ph in _ALL_PHASES:
+            row[f"nd_imp_{ph.lower()}"] = round(top1_npp.get(ph, 0.0) - nd_npp[ph], 6) if top1_npp else ""
+
+        if bd:
+            # Absolute per-phase EP of the best discard option (verifiable from chart light bars)
+            for ph in _ALL_PHASES:
+                row[f"top1_net_{ph.lower()}"] = round(top1_npp.get(ph, 0.0), 6) if top1_npp else ""
+
+            bbp = bd.get("best_by_phase", {})
+            for ph in _BEST_PHASES:
+                entry_ph = bbp.get(ph, {})
+                kept     = entry_ph.get("kept")
+                row[f"best_{ph.lower()}_kept"]    = hand_str(kept) if kept else ""
+                row[f"best_{ph.lower()}_pattern"] = discard_pattern(hand, kept) if kept else ""
+                row[f"best_{ph.lower()}_net"]     = round(entry_ph.get("net_A", 0.0), 6)
+
+            for i in range(3):
+                if i < len(all_opts):
+                    kept_t = all_opts[i]["kept"]
+                    row[f"top{i+1}_kept"]    = hand_str(kept_t) if kept_t else "(none)"
+                    row[f"top{i+1}_pattern"] = discard_pattern(hand, kept_t) if kept_t else "- - - -"
+                    row[f"top{i+1}_net"]     = round(all_opts[i]["total_net_A"], 6)
+                else:
+                    row[f"top{i+1}_kept"] = row[f"top{i+1}_pattern"] = row[f"top{i+1}_net"] = ""
+
+            max_a = bd.get("max_action_kept", {})
+            min_a = bd.get("min_action_kept", {})
+            row["max_action_kept"]    = hand_str(max_a["kept"]) if max_a.get("kept") else ""
+            row["max_action_pattern"] = discard_pattern(hand, max_a["kept"]) if max_a.get("kept") else ""
+            row["max_action_value"]   = round(max_a.get("total_action", 0.0), 6)
+            row["min_action_kept"]    = hand_str(min_a["kept"]) if min_a.get("kept") else ""
+            row["min_action_pattern"] = discard_pattern(hand, min_a["kept"]) if min_a.get("kept") else ""
+            row["min_action_value"]   = round(min_a.get("total_action", 0.0), 6)
+        else:
+            for ph in _ALL_PHASES:
+                row[f"top1_net_{ph.lower()}"] = ""
+            for ph in _BEST_PHASES:
+                row[f"best_{ph.lower()}_kept"] = row[f"best_{ph.lower()}_pattern"] = row[f"best_{ph.lower()}_net"] = ""
+            for i in range(3):
+                row[f"top{i+1}_kept"] = row[f"top{i+1}_pattern"] = row[f"top{i+1}_net"] = ""
+            row["max_action_kept"] = row["max_action_pattern"] = row["max_action_value"] = ""
+            row["min_action_kept"] = row["min_action_pattern"] = row["min_action_value"] = ""
+
+        rows.append(row)
+
+    rows.sort(key=lambda r: r["hand"])
+    return rows
+
+
 # ---------------------------------------------------------------------------
 # CSV export
 # ---------------------------------------------------------------------------
@@ -281,15 +412,23 @@ _HTML_TEMPLATE = """\
   .tab:hover:not(.active) {{ background: #d0d5db; }}
   .page {{ display: none; }}
   .page.active {{ display: block; }}
+  .chart-grid {{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }}
+  .chart-panel {{ background: white; border: 1px solid #ddd; border-radius: 6px; padding: 16px; }}
+  .chart-panel-title {{ font-size: 12px; font-weight: 600; color: #555; margin-bottom: 10px; }}
+  #chart-hand {{ padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; font-family: monospace; }}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 </head>
 <body>
 <h1>Mus Probability Tables</h1>
 <div class="meta">Generated from probability_tables.pkl &mdash; {n_hands} canonical hands &mdash; {timestamp}</div>
 
 <div class="tabs">
-  <div class="tab active" onclick="switchPage('hands')">Hand Statistics</div>
-  <div class="tab"        onclick="switchPage('discards')">Discard Insights</div>
+  <div class="tab active" data-page="hands"             onclick="switchPage('hands')">Hand Statistics</div>
+  <div class="tab"        data-page="postmus"           onclick="switchPage('postmus')">Post-Mus EP</div>
+  <div class="tab"        data-page="discards"          onclick="switchPage('discards')">Discard Insights</div>
+  <div class="tab"        data-page="discards-corrected" onclick="switchPage('discards-corrected')">Discard Insights Corrected</div>
+  <div class="tab"        data-page="chart"              onclick="switchPage('chart')">Discard Chart</div>
 </div>
 
 <div id="page-hands" class="page active">
@@ -327,6 +466,37 @@ _HTML_TEMPLATE = """\
 <div id="table-container"></div>
 </div>
 </div><!-- end page-hands -->
+
+<div id="page-postmus" class="page">
+<div class="section">
+<h2>Post-Mus per-hand expected points</h2>
+<div class="controls">
+  <input type="text" id="pm-search" placeholder="Filter hand…" oninput="pmFilterTable()"/>
+  <label>Pares:
+    <select id="pm-pares" onchange="pmFilterTable()">
+      <option value="">all</option><option value="1">yes</option><option value="0">no</option>
+    </select>
+  </label>
+  <label>Juego:
+    <select id="pm-juego" onchange="pmFilterTable()">
+      <option value="">all</option><option value="1">yes</option><option value="0">no</option>
+    </select>
+  </label>
+  <label>Phase:
+    <select id="pm-phase" onchange="pmBuildTable()">
+      <option value="grande">Grande</option>
+      <option value="chica">Chica</option>
+      <option value="pares">Pares</option>
+      <option value="juego">Juego</option>
+      <option value="punto">Punto (ep only)</option>
+      <option value="all">All (combined net)</option>
+    </select>
+  </label>
+  <span id="pm-row-count" style="color:#888;font-size:12px"></span>
+</div>
+<div id="pm-table-container"></div>
+</div>
+</div><!-- end page-postmus -->
 
 <div id="page-discards" class="page">
 <script>
@@ -477,6 +647,7 @@ buildTable();
 
 // ---- Discard insights table ----
 const DATA2 = {discard_json};
+const DATA3 = {discard_corrected_json};
 
 let dFiltered = [...DATA2], dSortCol = null, dSortDir = 1;
 
@@ -628,17 +799,363 @@ function dSortBy(i) {{
 </div>
 </div><!-- end page-discards -->
 
+<div id="page-discards-corrected" class="page">
+<div class="section">
+<h2>Discard insights (corrected — post-mus EP)</h2>
+<div class="controls">
+  <input type="text" id="dc-search" placeholder="Filter hand…" oninput="dcFilterTable()"/>
+  <label>Pares:
+    <select id="dc-pares" onchange="dcFilterTable()">
+      <option value="">all</option><option value="1">yes</option><option value="0">no</option>
+    </select>
+  </label>
+  <label>Juego:
+    <select id="dc-juego" onchange="dcFilterTable()">
+      <option value="">all</option><option value="1">yes</option><option value="0">no</option>
+    </select>
+  </label>
+  <label>View:
+    <select id="dc-view" onchange="dcBuildDiscard()">
+      <option value="improve">Improvements</option>
+      <option value="best">Best kept options</option>
+      <option value="action">Action extremes</option>
+    </select>
+  </label>
+  <span id="dc-row-count" style="color:#888;font-size:12px"></span>
+</div>
+<div id="discard-corrected-table-container"></div>
+</div>
+</div><!-- end page-discards-corrected -->
+
 <script>
+// ---- Post-Mus EP table ----
+let pmFiltered = [...DATA], pmSortCol = null, pmSortDir = 1;
+
+function pmCols() {{
+  const p = document.getElementById('pm-phase').value;
+  const base = [
+    {{key:'hand',        label:'Hand',   fmt: v=>`<span class="hand">${{v}}</span>`}},
+    {{key:'multiplicity',label:'Ways',   fmt:null}},
+    {{key:'has_pares',   label:'Pares?', fmt: v=>v?'<span class="badge badge-yes">yes</span>':'<span class="badge badge-no">no</span>'}},
+    {{key:'has_juego',   label:'Juego?', fmt: v=>v?'<span class="badge badge-yes">yes</span>':'<span class="badge badge-no">no</span>'}},
+    {{key:'juego_sum',   label:'Sum',    fmt:null}},
+  ];
+  if (p === 'all') {{
+    const phases = ['grande','chica','pares','juego','punto'];
+    return [
+      ...base,
+      {{key:'total_net_A_postmus', label:'Total Net A (post-mus)', fmt: dec3}},
+      ...phases.map(ph => ({{key:`eppm_${{ph}}_net_A`, label:`Net ${{ph[0].toUpperCase()+ph.slice(1)}}`, fmt: dec3}})),
+      ...phases.map(ph => ({{key:`eppm_${{ph}}_prob_A_wins`, label:`A wins ${{ph[0].toUpperCase()+ph.slice(1)}}`, fmt: pct}})),
+    ];
+  }}
+  const ep = [
+    {{key:`eppm_${{p}}_prob_A_wins`, label:'4p A wins',   fmt: pct}},
+    {{key:`eppm_${{p}}_net_A`,       label:'Net A (exp)', fmt: dec3}},
+    {{key:`eppm_${{p}}_exp_A_pts`,   label:'Exp A pts',   fmt: dec3}},
+    {{key:`eppm_${{p}}_exp_B_pts`,   label:'Exp B pts',   fmt: dec3}},
+    {{key:`eppm_${{p}}_total_pts`,   label:'Total pts',   fmt: dec3}},
+  ];
+  const bonus = (p==='pares'||p==='juego') ? [
+    {{key:`eppm_${{p}}_both_A`, label:'Both (A wins)', fmt: pct}},
+    {{key:`eppm_${{p}}_both_B`, label:'Both (B wins)', fmt: pct}},
+  ] : [];
+  return [...base, ...ep, ...bonus];
+}}
+
+function pmFilterTable() {{
+  const q  = document.getElementById('pm-search').value.toUpperCase();
+  const fp = document.getElementById('pm-pares').value;
+  const fj = document.getElementById('pm-juego').value;
+  pmFiltered = DATA.filter(r => {{
+    if (q  && !r.hand.includes(q)) return false;
+    if (fp && String(r.has_pares) !== fp) return false;
+    if (fj && String(r.has_juego) !== fj) return false;
+    return true;
+  }});
+  pmRenderTable();
+}}
+
+function pmBuildTable() {{ pmFilterTable(); }}
+
+function pmRenderTable() {{
+  const c = pmCols();
+  const container = document.getElementById('pm-table-container');
+  let html = '<table><thead><tr>';
+  html += `<th style="cursor:default;color:#aaa"># / ${{pmFiltered.length}}</th>`;
+  c.forEach((col, i) => {{
+    const cls = pmSortCol===i ? (pmSortDir>0?'sorted-asc':'sorted-desc') : '';
+    html += `<th class="${{cls}}" onclick="pmSortBy(${{i}})">${{col.label}}</th>`;
+  }});
+  html += '</tr></thead><tbody>';
+  pmFiltered.forEach((row, idx) => {{
+    html += `<tr>`;
+    html += `<td style="color:#aaa;font-size:11px">${{idx+1}}</td>`;
+    c.forEach(col => {{
+      const v = row[col.key];
+      const epKey = col.key.replace(/^eppm_/, 'ep_');
+      const style = bg(epKey, v);
+      const display = col.fmt ? col.fmt(v) : (v === undefined ? '—' : v);
+      html += `<td style="${{style}}">${{display}}</td>`;
+    }});
+    html += '</tr>';
+  }});
+  html += '</tbody></table>';
+  container.innerHTML = html;
+  document.getElementById('pm-row-count').textContent = `${{pmFiltered.length}} rows`;
+}}
+
+function pmSortBy(i) {{
+  if (pmSortCol === i) pmSortDir *= -1; else {{ pmSortCol = i; pmSortDir = 1; }}
+  const key = pmCols()[i].key;
+  pmFiltered.sort((a, b) => {{
+    const va = a[key] ?? '', vb = b[key] ?? '';
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * pmSortDir;
+    return String(va).localeCompare(String(vb)) * pmSortDir;
+  }});
+  pmRenderTable();
+}}
+
+// ---- Discard insights corrected table ----
+let dcFiltered = [...DATA3], dcSortCol = null, dcSortDir = 1;
+
+function dcCols() {{
+  const v     = document.getElementById('dc-view').value;
+  const badge = val => val ? '<span class="badge badge-yes">yes</span>' : '<span class="badge badge-no">no</span>';
+  const base  = [
+    {{key:'hand',      label:'Hand',   fmt: v => `<span class="hand">${{v}}</span>`}},
+    {{key:'has_pares', label:'Pares?', fmt: badge}},
+    {{key:'has_juego', label:'Juego?', fmt: badge}},
+  ];
+  if (v === 'improve') {{
+    return [...base,
+      {{key:'nd_rank',       label:'No-disc rank',    fmt: null}},
+      {{key:'nd_delta_net',  label:'Gain vs best',    fmt: dec3}},
+      {{key:'nd_imp_grande', label:'Imp Grande', fmt: dec3}},
+      {{key:'nd_imp_chica',  label:'Imp Chica',  fmt: dec3}},
+      {{key:'nd_imp_pares',  label:'Imp Pares',  fmt: dec3}},
+      {{key:'nd_imp_juego',  label:'Imp Juego',  fmt: dec3}},
+      {{key:'nd_imp_punto',  label:'Imp Punto',  fmt: dec3}},
+      {{key:'nd_act_vs_max', label:'Max-act gain',    fmt: dec3}},
+      {{key:'nd_act_vs_min', label:'Min-act gain',    fmt: dec3}},
+    ];
+  }}
+  if (v === 'best') {{
+    return [...base,
+      {{key:'top1_pattern', label:'#1 kept',    fmt: mono}},
+      {{key:'top1_net',     label:'#1 net',     fmt: dec3}},
+      {{key:'top2_pattern', label:'#2 kept',    fmt: mono}},
+      {{key:'top2_net',     label:'#2 net',     fmt: dec3}},
+      {{key:'top3_pattern', label:'#3 kept',    fmt: mono}},
+      {{key:'top3_net',     label:'#3 net',     fmt: dec3}},
+      {{key:'best_grande_pattern',  label:'Grande kept',  fmt: mono}},
+      {{key:'top1_net_grande',      label:'Grande net',   fmt: dec3}},
+      {{key:'best_chica_pattern',   label:'Chica kept',   fmt: mono}},
+      {{key:'top1_net_chica',       label:'Chica net',    fmt: dec3}},
+      {{key:'best_pares_pattern',   label:'Pares kept',   fmt: mono}},
+      {{key:'top1_net_pares',       label:'Pares net',    fmt: dec3}},
+      {{key:'best_juego_pattern',   label:'Juego kept',   fmt: mono}},
+      {{key:'top1_net_juego',       label:'Juego net',    fmt: dec3}},
+    ];
+  }}
+  return [...base,
+    {{key:'max_action_pattern', label:'Max action kept',  fmt: mono}},
+    {{key:'max_action_value',   label:'Max action (tot)', fmt: dec3}},
+    {{key:'nd_act_vs_max',      label:'Max-act gain',     fmt: dec3}},
+    {{key:'min_action_pattern', label:'Min action kept',  fmt: mono}},
+    {{key:'min_action_value',   label:'Min action (tot)', fmt: dec3}},
+    {{key:'nd_act_vs_min',      label:'Min-act gain',     fmt: dec3}},
+  ];
+}}
+
+function dcFilterTable() {{
+  const q  = document.getElementById('dc-search').value.toUpperCase();
+  const fp = document.getElementById('dc-pares').value;
+  const fj = document.getElementById('dc-juego').value;
+  dcFiltered = DATA3.filter(r => {{
+    if (q  && !r.hand.includes(q)) return false;
+    if (fp && String(r.has_pares) !== fp) return false;
+    if (fj && String(r.has_juego) !== fj) return false;
+    return true;
+  }});
+  dcRenderDiscard();
+}}
+
+function dcBuildDiscard() {{ dcSortCol = null; dcFilterTable(); }}
+
+function dcRenderDiscard() {{
+  const c = dcCols();
+  let html = '<table><thead><tr>';
+  html += `<th style="cursor:default;color:#aaa"># / ${{dcFiltered.length}}</th>`;
+  c.forEach((col, i) => {{
+    const cls = dcSortCol===i ? (dcSortDir>0?'sorted-asc':'sorted-desc') : '';
+    html += `<th class="${{cls}}" onclick="dcSortBy(${{i}})">${{col.label}}</th>`;
+  }});
+  html += '</tr></thead><tbody>';
+  dcFiltered.forEach((row, idx) => {{
+    html += '<tr>';
+    html += `<td style="color:#aaa;font-size:11px">${{idx+1}}</td>`;
+    c.forEach(col => {{
+      const v = row[col.key];
+      const style = dBg(col.key, v);
+      const display = col.fmt ? col.fmt(v) : (v === undefined || v === '' ? '—' : v);
+      html += `<td style="${{style}}">${{display}}</td>`;
+    }});
+    html += '</tr>';
+  }});
+  html += '</tbody></table>';
+  document.getElementById('discard-corrected-table-container').innerHTML = html;
+  document.getElementById('dc-row-count').textContent = dcFiltered.length + ' rows';
+}}
+
+function dcSortBy(i) {{
+  if (dcSortCol === i) dcSortDir *= -1; else {{ dcSortCol = i; dcSortDir = 1; }}
+  const key = dcCols()[i].key;
+  dcFiltered.sort((a, b) => {{
+    const va = a[key] ?? '', vb = b[key] ?? '';
+    if (typeof va === 'number' && typeof vb === 'number') return (va - vb) * dcSortDir;
+    return String(va).localeCompare(String(vb)) * dcSortDir;
+  }});
+  dcRenderDiscard();
+}}
+
 function switchPage(name) {{
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
   document.querySelectorAll('.tab').forEach(t => {{
-    if (t.textContent.toLowerCase().includes(name === 'hands' ? 'hand' : 'discard'))
-      t.classList.add('active');
+    if (t.dataset.page === name) t.classList.add('active');
   }});
 }}
+pmBuildTable();
 buildDiscard();
+dcBuildDiscard();
+</script>
+
+<div id="page-chart" class="page">
+<div class="section">
+<h2>Discard chart — expected net A by phase</h2>
+<div class="controls" style="margin-bottom:16px">
+  <label>Hand:
+    <input id="chart-hand" list="chart-hand-list" oninput="chartUpdateSelected()"
+           placeholder="Type to search hand…" style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-family:monospace;font-size:13px;width:200px"/>
+    <datalist id="chart-hand-list"></datalist>
+  </label>
+</div>
+<div class="chart-grid">
+  <div class="chart-panel">
+    <div class="chart-panel-title" id="chart-selected-title">Selected hand</div>
+    <canvas id="chart-canvas-selected" height="220"></canvas>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-panel-title">Top 20 hands by pre-mus EP (weighted avg)</div>
+    <canvas id="chart-canvas-top20pre" height="220"></canvas>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-panel-title">Top 20 hands by post-mus EP (weighted avg)</div>
+    <canvas id="chart-canvas-top20post" height="220"></canvas>
+  </div>
+  <div class="chart-panel">
+    <div class="chart-panel-title">All 330 hands (weighted avg)</div>
+    <canvas id="chart-canvas-all" height="220"></canvas>
+  </div>
+</div>
+</div>
+</div><!-- end page-chart -->
+
+<script>
+(function() {{
+  const LABELS  = ['Grande', 'Pequeña', 'Pares', 'Juego', 'Punto', 'Total'];
+  const EP_KEYS = ['ep_grande_net_A','ep_chica_net_A','ep_pares_net_A',
+                   'ep_juego_net_A','ep_punto_net_A','total_net_A'];
+  const BM_KEYS = ['bestmus_grande_net','bestmus_chica_net','bestmus_pares_net',
+                   'bestmus_juego_net','bestmus_punto_net','bestmus_total_net'];
+
+  function weightedAvg(rows, keys) {{
+    const sums = new Array(keys.length).fill(0);
+    let totalW = 0;
+    for (const r of rows) {{
+      const w = +(r.multiplicity) || 1;
+      for (let i = 0; i < keys.length; i++) sums[i] += (+(r[keys[i]]) || 0) * w;
+      totalW += w;
+    }}
+    return totalW ? sums.map(s => +(s / totalW).toFixed(6)) : sums;
+  }}
+
+  const top20pre  = [...DATA].sort((a,b) => b.total_net_A      - a.total_net_A).slice(0,20);
+  const top20post = [...DATA].sort((a,b) => b.bestmus_total_net - a.bestmus_total_net).slice(0,20);
+
+  function makeChart(canvasId, epVals, pmVals) {{
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    return new Chart(ctx, {{
+      type: 'bar',
+      data: {{
+        labels: LABELS,
+        datasets: [
+          {{
+            label: 'Pre-mus EP',
+            data: epVals,
+            backgroundColor: 'rgba(41,128,185,0.85)',
+            borderColor: 'rgba(41,128,185,1)',
+            borderWidth: 1,
+          }},
+          {{
+            label: 'After best discard',
+            data: pmVals,
+            backgroundColor: 'rgba(41,128,185,0.35)',
+            borderColor: 'rgba(41,128,185,0.6)',
+            borderWidth: 1,
+          }},
+        ],
+      }},
+      options: {{
+        responsive: true,
+        plugins: {{
+          legend: {{ position: 'top', labels: {{ font: {{ size: 11 }} }} }},
+          tooltip: {{ callbacks: {{ label: c => c.dataset.label + ': ' + c.parsed.y.toFixed(4) }} }},
+        }},
+        scales: {{
+          y: {{ ticks: {{ font: {{ size: 10 }} }}, grid: {{ color: 'rgba(0,0,0,0.05)' }} }},
+          x: {{ ticks: {{ font: {{ size: 10 }} }} }},
+        }},
+      }},
+    }});
+  }}
+
+  // Populate datalist for searchable hand input
+  const input = document.getElementById('chart-hand');
+  const dl    = document.getElementById('chart-hand-list');
+  DATA.forEach(r => {{
+    const opt = document.createElement('option');
+    opt.value = r.hand;
+    dl.appendChild(opt);
+  }});
+  input.value = DATA[0] ? DATA[0].hand : '';
+
+  // Static charts
+  makeChart('chart-canvas-top20pre',  weightedAvg(top20pre,  EP_KEYS), weightedAvg(top20pre,  BM_KEYS));
+  makeChart('chart-canvas-top20post', weightedAvg(top20post, EP_KEYS), weightedAvg(top20post, BM_KEYS));
+  makeChart('chart-canvas-all',       weightedAvg(DATA,      EP_KEYS), weightedAvg(DATA,      BM_KEYS));
+
+  // Selected hand chart (updates on input)
+  let selectedChart = null;
+  window.chartUpdateSelected = function() {{
+    const hand = input.value.trim().toUpperCase();
+    const row  = DATA.find(r => r.hand === hand);
+    if (!row) return;
+    document.getElementById('chart-selected-title').textContent = 'Selected hand: ' + hand;
+    const epVals = EP_KEYS.map(k => +(row[k]) || 0);
+    const bmVals = BM_KEYS.map(k => +(row[k]) || 0);
+    if (selectedChart) {{
+      selectedChart.data.datasets[0].data = epVals;
+      selectedChart.data.datasets[1].data = bmVals;
+      selectedChart.update();
+    }} else {{
+      selectedChart = makeChart('chart-canvas-selected', epVals, bmVals);
+    }}
+  }};
+  chartUpdateSelected();
+}})();
 </script>
 </body>
 </html>
@@ -649,6 +1166,7 @@ def write_html(
     summary_rows: list[dict],
     agg_improvements: dict,
     discard_insight_rows: list[dict],
+    discard_insight_rows_corrected: list[dict],
     path: Path,
     n_hands: int,
 ) -> None:
@@ -661,6 +1179,7 @@ def write_html(
         data_json=json.dumps(summary_rows, ensure_ascii=False),
         agg_json=json.dumps(agg_improvements, ensure_ascii=False),
         discard_json=json.dumps(discard_insight_rows, ensure_ascii=False),
+        discard_corrected_json=json.dumps(discard_insight_rows_corrected, ensure_ascii=False),
     )
     path.write_text(html, encoding="utf-8")
     print(f"  Written: {path}")
@@ -692,6 +1211,7 @@ def main() -> None:
     summary_rows        = build_summary_rows(tables, multiplicities)
     discard_rows        = build_discard_rows(tables)
     discard_insight_rows = build_discard_insight_rows(tables)
+    discard_insight_rows_corrected = build_discard_insight_rows_corrected(tables)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -699,9 +1219,10 @@ def main() -> None:
     write_csv(summary_rows,        args.out_dir / "tables_summary.csv")
     write_csv(discard_rows,        args.out_dir / "tables_discard.csv")
     write_csv(discard_insight_rows, args.out_dir / "tables_discard_insights.csv")
+    write_csv(discard_insight_rows_corrected, args.out_dir / "tables_discard_insights_corrected.csv")
 
     print("Writing HTML report...")
-    write_html(summary_rows, agg, discard_insight_rows,
+    write_html(summary_rows, agg, discard_insight_rows, discard_insight_rows_corrected,
                args.out_dir / "tables_report.html", n_hands)
 
     print("Done.")

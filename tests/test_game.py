@@ -209,3 +209,163 @@ class TestGamePlayAllPhases:
             p.cards = [Card.A, Card._4, Card._5, Card._6]  # no juego (sum=16)
         # Should not raise; Punto replaces Juego
         game._play_all_phases()
+
+    def test_normal_phase_points_wait_until_after_punto(self, game):
+        replace_with_scripted(game, wager_actions=[[0] * 20 for _ in range(4)])
+        for player in game.players_in_order:
+            player.cards = [Card.A, Card._4, Card._5, Card._6]
+        events = []
+        game.on_action = events.append
+
+        game._play_all_phases()
+
+        punto_index = events.index("Punto begins")
+        score_indices = [i for i, event in enumerate(events) if "| Score " in event]
+        assert score_indices
+        assert all(i > punto_index for i in score_indices)
+        assert (game.teams[0].points, game.teams[1].points) == (3, 0)
+
+    def test_fully_declined_raise_scores_before_later_phases(self, game):
+        replace_with_scripted(
+            game,
+            wager_actions=[
+                [1] + [0] * 20,
+                [-1] + [0] * 20,
+                [0] * 20,
+                [-1] + [0] * 20,
+            ],
+        )
+        for player in game.players_in_order:
+            player.cards = [Card.A, Card._4, Card._5, Card._6]
+        events = []
+        game.on_action = events.append
+
+        game._play_all_phases()
+
+        immediate_score = "Team A +1 | Score A 1 - B 0"
+        assert immediate_score in events
+        assert events.index("Grande | A1: envida 1") < events.index("Grande | B1: no quiero")
+        assert events.index("Grande | B1: no quiero") < events.index("Grande | B2: no quiero")
+        assert events.index("Grande | B2: no quiero") < events.index(immediate_score)
+        next_phase_index = next(
+            i for i, event in enumerate(events)
+            if event.endswith(" begins") and event != "Grande begins"
+        )
+        assert events.index(immediate_score) < next_phase_index
+        punto_index = events.index("Punto begins")
+        later_score_indices = [
+            i for i, event in enumerate(events)
+            if "| Score " in event and event != immediate_score
+        ]
+        assert all(i > punto_index for i in later_score_indices)
+
+
+class TestQualifiedPhaseWagers:
+    def test_pares_accepted_offer_counts_stake_and_pairs_once(self, game):
+        replace_with_scripted(
+            game,
+            wager_actions=[
+                [0, 0, 2, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+            ],
+        )
+        a1, b1, a2, b2 = game.players_in_order
+        a1.cards = [Card._7, Card._7, Card._4, Card._5]
+        b1.cards = [Card._4, Card._4, Card._5, Card._6]
+        a2.cards = b2.cards = [Card.A, Card._4, Card._5, Card._6]
+        events = []
+        game.on_action = events.append
+
+        game._play_all_phases()
+
+        assert "Pares | A1: envida" in events
+        assert "Pares | B1: quiero" in events
+        assert not any(event.startswith(("Pares | A2:", "Pares | B2:")) for event in events)
+        assert events.count("Pares | Team A wins the phase") == 1
+        pares_award = next(i for i, event in enumerate(events) if event.startswith("Team A +3 |"))
+        assert pares_award > events.index("Punto begins")
+        assert len([event for event in events if "| Score " in event]) == 4
+
+    def test_pares_single_eligible_defender_declines_without_pairs_award(self, game):
+        replace_with_scripted(
+            game,
+            wager_actions=[
+                [0, 0, 3, 0],
+                [0, 0, -1, 0],
+                [0, 0, 0],
+                [0, 0, 0],
+            ],
+        )
+        a1, b1, a2, b2 = game.players_in_order
+        a1.cards = [Card._7, Card._7, Card._4, Card._5]
+        b1.cards = [Card._4, Card._4, Card._5, Card._6]
+        a2.cards = b2.cards = [Card.A, Card._4, Card._5, Card._6]
+        events = []
+        game.on_action = events.append
+
+        game._play_all_phases()
+
+        assert "Pares | B1: no quiero" in events
+        assert not any(event.startswith("Pares | B2:") for event in events)
+        assert "Pares | Team A wins the wager" in events
+        assert "Pares | Team A wins the phase" not in events
+        immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
+        assert events.index("Pares | B1: no quiero") < immediate_award < events.index("Juego begins")
+        assert len([event for event in events if "| Score " in event]) == 4
+
+    def test_juego_accepted_offer_counts_stake_and_juego_once(self, game):
+        replace_with_scripted(
+            game,
+            wager_actions=[
+                [0, 0, 2],
+                [0, 0, 0],
+                [0, 0],
+                [0, 0],
+            ],
+        )
+        a1, b1, a2, b2 = game.players_in_order
+        a1.cards = [Card.R, Card.C, Card.S, Card.A]  # 31: three intrinsic points
+        b1.cards = [Card.R, Card.C, Card.S, Card._4]
+        a2.cards = b2.cards = [Card.A, Card._4, Card._5, Card._6]
+        events = []
+        game.on_action = events.append
+
+        game._play_all_phases()
+
+        assert "Juego | A1: envida" in events
+        assert "Juego | B1: quiero" in events
+        assert not any(event.startswith(("Juego | A2:", "Juego | B2:")) for event in events)
+        assert events.count("Juego | Team A wins the phase") == 1
+        juego_award = next(i for i, event in enumerate(events) if event.startswith("Team A +5 |"))
+        assert juego_award > events.index("Juego | Team A wins the phase")
+        assert len([event for event in events if "| Score " in event]) == 3
+
+    def test_juego_two_eligible_defenders_must_both_decline(self, game):
+        replace_with_scripted(
+            game,
+            wager_actions=[
+                [0, 0, 2],
+                [0, 0, -1],
+                [0, 0],
+                [0, 0, -1],
+            ],
+        )
+        a1, b1, a2, b2 = game.players_in_order
+        a1.cards = [Card.R, Card.C, Card.S, Card.A]
+        b1.cards = [Card.R, Card.C, Card.S, Card._4]
+        a2.cards = [Card.A, Card._4, Card._5, Card._6]
+        b2.cards = [Card.R, Card.C, Card.S, Card._5]
+        events = []
+        game.on_action = events.append
+
+        game._play_all_phases()
+
+        assert events.index("Juego | B1: no quiero") < events.index("Juego | B2: no quiero")
+        assert not any(event.startswith("Juego | A2:") for event in events)
+        assert "Juego | Team A wins the wager" in events
+        assert "Juego | Team A wins the phase" not in events
+        immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
+        assert events.index("Juego | B2: no quiero") < immediate_award
+        assert len([event for event in events if "| Score " in event]) == 3

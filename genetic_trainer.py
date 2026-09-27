@@ -6,41 +6,29 @@ from typing import List
 
 from bot_genome import BotGenome, random_genome, crossover, mutate
 from bot_player import BotPlayer
-from game import Game, WIN_SCORE
+from game import Game
 from team import Team
-from deck import Deck
 
 
 def build_bot_game(genomes: List[BotGenome]) -> Game:
-    """Create a Game with 4 BotPlayers (genomes[0,1]=team A, genomes[2,3]=team B)."""
+    """Create a silent game with alternating A/B/A/B genome seats."""
+    if len(genomes) != 4:
+        raise ValueError("A bot game requires exactly four genomes.")
     team_a = Team("A")
     team_b = Team("B")
     players = [
         BotPlayer("A1", team_a, genomes[0]),
-        BotPlayer("A2", team_a, genomes[1]),
-        BotPlayer("B1", team_b, genomes[2]),
+        BotPlayer("B1", team_b, genomes[1]),
+        BotPlayer("A2", team_a, genomes[2]),
         BotPlayer("B2", team_b, genomes[3]),
     ]
-    game = Game.__new__(Game)
-    game.players_in_order = players
-    game.teams = [team_a, team_b]
-    game.deck = Deck()
-    game._discard_counts = {}
-    game._mus_rounds = 0
-    return game
+    return Game.from_players(players)
 
 
 def evaluate_game(genomes: List[BotGenome]) -> str:
     """Play one full game. Returns winning team name ('A' or 'B')."""
     game = build_bot_game(genomes)
-    while all(t.points < WIN_SCORE for t in game.teams):
-        game.deck = Deck()
-        game._discard_counts = {}
-        game._mus_rounds = 0
-        game._deal_initial_cards()
-        game._mus_phase()
-        game._play_all_phases()
-    return next(t.name for t in game.teams if t.points >= WIN_SCORE)
+    return game.play().name
 
 
 class GeneticTrainer:
@@ -75,15 +63,13 @@ class GeneticTrainer:
                 others = random.sample(
                     [g for i, g in enumerate(population) if i != genome_idx], 3
                 )
-                order = [genome] + others
+                order = [(True, genome)] + [(False, other) for other in others]
                 random.shuffle(order)
-                genomes_game = order[:4]
-                if genome not in genomes_game:
-                    genomes_game[0] = genome
+                genomes_game = [entry[1] for entry in order]
 
                 winner = evaluate_game(genomes_game)
-                pos = genomes_game.index(genome)
-                our_team = "A" if pos < 2 else "B"
+                pos = next(i for i, entry in enumerate(order) if entry[0])
+                our_team = "A" if pos % 2 == 0 else "B"
 
                 if winner == our_team:
                     wins[genome_idx] += 1
