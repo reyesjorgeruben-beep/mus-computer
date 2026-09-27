@@ -1,19 +1,7 @@
-import subprocess, sys
 import pytest
-from pathlib import Path
 from typing import List
-from player_base import PlayerBase
-from game_context import GameContext
-
-
-@pytest.fixture(scope="session", autouse=True)
-def ensure_probability_tables():
-    table_path = Path(__file__).parent.parent / "probability_tables.pkl"
-    if not table_path.exists():
-        subprocess.run(
-            [sys.executable, str(Path(__file__).parent.parent / "build_tables.py")],
-            check=True,
-        )
+from mus_computer.game.player_base import PlayerBase
+from mus_computer.game.context import GameContext
 
 
 class ScriptedPlayer(PlayerBase):
