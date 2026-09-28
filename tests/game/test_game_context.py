@@ -1,66 +1,20 @@
-import pytest
-from mus_computer.game.context import GameContext
 from mus_computer.cards.card import Card
+from mus_computer.game.context import GlobalGameContext, WagerPrompt, WagerState
 
 
-class TestGameContext:
-    def test_fields_accessible(self):
-        ctx = GameContext(
-            phase_name="Grande",
-            team_scores={"A": 5, "B": 3},
-            current_bet=2,
-            previous_bet=1,
-            hand=[Card.R, Card.A],
-        )
-        assert ctx.phase_name == "Grande"
-        assert ctx.team_scores == {"A": 5, "B": 3}
-        assert ctx.current_bet == 2
-        assert ctx.previous_bet == 1
-        assert ctx.hand == [Card.R, Card.A]
-
-    def test_zero_bets(self):
-        ctx = GameContext(
-            phase_name="Pares",
-            team_scores={},
-            current_bet=0,
-            previous_bet=0,
-            hand=[],
-        )
-        assert ctx.current_bet == 0
-        assert ctx.previous_bet == 0
-
-    def test_hand_stores_reference(self):
-        cards = [Card.R, Card.A]
-        ctx = GameContext("G", {}, 1, 0, cards)
-        assert ctx.hand is cards
-
-
-def test_game_context_has_position_field():
-    from mus_computer.game.context import GameContext
-    from mus_computer.cards.card import Card
-    ctx = GameContext(
-        phase_name="Grande",
-        team_scores={"A": 0, "B": 0},
-        current_bet=1,
-        previous_bet=0,
-        hand=[Card.A],
-        position=2,
-        n_players=4,
-        opponent_discard_counts=[1, 2],
+def test_wager_prompt_keeps_private_cards_outside_public_context():
+    cards = [Card.R, Card.A]
+    shared = GlobalGameContext(
+        team_scores={"A": 5, "B": 3}, mus_exchanges=2,
+        phase_name="Grande", wager=WagerState(2, 1, "B"),
+        public_actions=("Bot 2: envida",), discard_counts={"Bot 2": 1},
+        seat_order=(("Bot 1", "A"), ("Bot 2", "B")),
+        mano_seat=0, eligible_seats=(0, 1),
     )
-    assert ctx.position == 2
-    assert ctx.n_players == 4
-    assert ctx.opponent_discard_counts == [1, 2]
-
-def test_game_context_position_defaults_to_zero():
-    from mus_computer.game.context import GameContext
-    ctx = GameContext(
-        phase_name="Chica",
-        team_scores={"A": 0, "B": 0},
-        current_bet=1,
-        previous_bet=0,
-        hand=[],
-    )
-    assert ctx.position == 0
-    assert ctx.n_players == 1
-    assert ctx.opponent_discard_counts == []
+    prompt = WagerPrompt(shared, tuple(cards), 0)
+    cards.append(Card.C)
+    assert prompt.hand == (Card.R, Card.A)
+    assert prompt.current_bet == 2 and prompt.previous_bet == 1
+    assert prompt.position == 0 and prompt.n_players == 2
+    assert prompt.opponent_discard_counts == (1,)
+    assert not hasattr(shared, "hand") and not hasattr(shared, "cards")

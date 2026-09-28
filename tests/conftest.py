@@ -1,7 +1,19 @@
 import pytest
 from typing import List
 from mus_computer.game.player_base import PlayerBase
-from mus_computer.game.context import GameContext
+from mus_computer.game.context import GlobalGameContext, WagerPrompt, WagerState
+
+
+def make_wager_prompt(cards=(), phase_name="Grande", current_bet=1, previous_bet=0):
+    shared = GlobalGameContext(
+        team_scores={"A": 0, "B": 0}, mus_exchanges=0,
+        phase_name=phase_name,
+        wager=WagerState(current_bet, previous_bet, None),
+        public_actions=(), discard_counts={},
+        seat_order=(("P", "A"), ("Opponent", "B")),
+        mano_seat=0, eligible_seats=(0, 1),
+    )
+    return WagerPrompt(shared, tuple(cards), 0)
 
 
 class ScriptedPlayer(PlayerBase):
@@ -26,7 +38,7 @@ class ScriptedPlayer(PlayerBase):
         self._discard_idx += 1
         return d
 
-    def wager_action(self, context: GameContext) -> int:
+    def wager_action(self, context: WagerPrompt) -> int:
         a = self._wager_actions[self._wager_idx]
         self._wager_idx += 1
         return a

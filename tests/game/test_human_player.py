@@ -3,7 +3,7 @@ from unittest.mock import patch
 from mus_computer.game.team import Team
 from mus_computer.cards.card import Card
 from mus_computer.game.player import HumanPlayer
-from mus_computer.game.context import GameContext
+from tests.conftest import make_wager_prompt
 
 
 @pytest.fixture
@@ -16,7 +16,7 @@ def player():
 
 @pytest.fixture
 def ctx():
-    return GameContext("Grande", {"A": 0, "B": 0}, current_bet=2, previous_bet=1, hand=[])
+    return make_wager_prompt(current_bet=2, previous_bet=1)
 
 
 class TestHumanPlayerVoteMus:

@@ -8,7 +8,7 @@ from mus_computer.bots.bot_game_state import (
     compute_urgency, compute_position_signal,
 )
 from mus_computer.probabilities.tables import canonical, win_prob, avg_opp_improvement_per_phase
-from mus_computer.game.context import GameContext
+from mus_computer.game.context import WagerPrompt
 from mus_computer.game.team import Team
 from mus_computer.constants import cards_space
 
@@ -144,7 +144,7 @@ class BotPlayer(PlayerBase):
                     best_indices = list(discard_idx)
         return best_indices
 
-    def wager_action(self, context: GameContext) -> int:
+    def wager_action(self, context: WagerPrompt) -> int:
         g = self._genome
         phase_name = context.phase_name
         effective_phase = "Grande" if phase_name == "Punto" else phase_name

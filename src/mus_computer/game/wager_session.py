@@ -1,7 +1,7 @@
 from typing import Callable, List, Tuple, Optional, Dict
 from mus_computer.game.player_base import PlayerBase
 from mus_computer.game.team import Team
-from mus_computer.game.context import GameContext
+from mus_computer.game.context import GlobalGameContext, WagerPrompt, WagerState
 
 
 class WagerSession:
@@ -33,10 +33,13 @@ class WagerSession:
         self.discard_counts: Dict[str, int] = discard_counts or {}
         self.on_action = on_action
         self.phase_label = phase_label or phase_name
+        self.public_actions: list[str] = []
 
     def _emit(self, message: str) -> None:
+        event = f"{self.phase_label} | {message}"
+        self.public_actions.append(event)
         if self.on_action is not None:
-            self.on_action(f"{self.phase_label} | {message}")
+            self.on_action(event)
 
     def run(self) -> Tuple[Optional[Team], int]:
         """Return (None, stake) for showdown or (offering_team, accepted_stake) on fold."""
@@ -57,22 +60,21 @@ class WagerSession:
                 idx = responders.pop(0)
             player = self.players[idx]
 
-            opp_discards = [
-                self.discard_counts.get(p.name, 0)
-                for p in self.players
-                if p.team != player.team
-            ]
-
-            context = GameContext(
-                phase_name=self.phase_name,
+            shared = GlobalGameContext(
                 team_scores=self.team_scores,
-                current_bet=self.current_bet,
-                previous_bet=self.previous_bet,
-                hand=list(player.cards),
-                position=idx,
-                n_players=n_players,
-                opponent_discard_counts=opp_discards,
+                mus_exchanges=0,
+                phase_name=self.phase_name,
+                wager=WagerState(
+                    self.current_bet, self.previous_bet,
+                    self.team_leading_bet.name if self.team_leading_bet else None,
+                ),
+                public_actions=tuple(self.public_actions),
+                discard_counts=self.discard_counts,
+                seat_order=tuple((p.name, p.team.name) for p in self.players),
+                mano_seat=0,
+                eligible_seats=tuple(range(n_players)),
             )
+            context = WagerPrompt(shared, tuple(player.cards), idx)
 
             action = player.wager_action(context)
 

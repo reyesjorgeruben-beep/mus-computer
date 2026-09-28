@@ -1,7 +1,7 @@
 from typing import List
 from mus_computer.game.team import Team
 from mus_computer.game.player_base import PlayerBase
-from mus_computer.game.context import GameContext
+from mus_computer.game.context import WagerPrompt
 
 
 class HumanPlayer(PlayerBase):
@@ -26,7 +26,7 @@ class HumanPlayer(PlayerBase):
             except ValueError:
                 print("Use only numbers and commas.")
 
-    def wager_action(self, context: GameContext) -> int:
+    def wager_action(self, context: WagerPrompt) -> int:
         return int(input(
             f"{self.name} (Team {self.team.name}): bet={context.current_bet}, "
             f"prev={context.previous_bet}. Raise? (0=call, neg=fold): "

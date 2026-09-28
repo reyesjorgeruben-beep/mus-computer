@@ -1,8 +1,7 @@
 import pytest
 from mus_computer.game.team import Team
 from mus_computer.cards.card import Card
-from mus_computer.game.context import GameContext
-from tests.conftest import ScriptedPlayer
+from tests.conftest import ScriptedPlayer, make_wager_prompt
 
 
 class TestPlayerBaseCards:
@@ -83,7 +82,7 @@ class TestScriptedPlayerDecisions:
         assert p.choose_discards() == [2]
 
     def test_wager_action_sequence(self):
-        ctx = GameContext("Grande", {}, 1, 0, [])
+        ctx = make_wager_prompt()
         p = ScriptedPlayer("P", self.team_a, wager_actions=[2, 0, -1])
         assert p.wager_action(ctx) == 2
         assert p.wager_action(ctx) == 0

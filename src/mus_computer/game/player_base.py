@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import List
 from mus_computer.game.team import Team
-from mus_computer.game.context import GameContext
+from mus_computer.game.context import WagerPrompt
 
 
 class PlayerBase(ABC):
@@ -44,6 +44,6 @@ class PlayerBase(ABC):
         ...
 
     @abstractmethod
-    def wager_action(self, context: GameContext) -> int:
+    def wager_action(self, context: WagerPrompt) -> int:
         """Return raise amount: >0 raise, 0 call/pass, <0 fold."""
         ...

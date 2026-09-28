@@ -4,6 +4,7 @@ from mus_computer.cards.card import Card
 from mus_computer.game.team import Team
 from mus_computer.bots.bot_genome import BotGenome, random_genome
 from mus_computer.bots.bot_player import BotPlayer
+from tests.conftest import make_wager_prompt
 
 TEAM_A = Team("A")
 TEAM_B = Team("B")
@@ -108,13 +109,7 @@ def test_wager_action_folds_when_prob_very_low():
     bot.receive_cards([Card.A, Card.A, Card.A, Card.A])
     bot.set_round_state({"A": 0, "B": 0}, "A", 0, 4, [0, 0], 0)
 
-    from mus_computer.game.context import GameContext
-    ctx = GameContext(
-        phase_name="Grande",
-        team_scores={"A": 0, "B": 0},
-        current_bet=1, previous_bet=0,
-        hand=bot.cards, position=0, n_players=4,
-    )
+    ctx = make_wager_prompt(cards=bot.cards)
     result = bot.wager_action(ctx)
     assert result < 0
 
@@ -134,13 +129,7 @@ def test_wager_action_raises_when_prob_high():
     bot.receive_cards([Card.R, Card.R, Card.R, Card.R])
     bot.set_round_state({"A": 0, "B": 0}, "A", 0, 4, [0, 0], 0)
 
-    from mus_computer.game.context import GameContext
-    ctx = GameContext(
-        phase_name="Grande",
-        team_scores={"A": 0, "B": 0},
-        current_bet=1, previous_bet=0,
-        hand=bot.cards, position=0, n_players=4,
-    )
+    ctx = make_wager_prompt(cards=bot.cards)
     result = bot.wager_action(ctx)
     assert result > 0
 
@@ -161,12 +150,6 @@ def test_wager_action_bluffs_at_high_bluff_rate():
     bot.receive_cards([Card.A, Card.A, Card.A, Card.A])
     bot.set_round_state({"A": 0, "B": 0}, "A", 0, 4, [0, 0], 0)
 
-    from mus_computer.game.context import GameContext
-    ctx = GameContext(
-        phase_name="Grande",
-        team_scores={"A": 0, "B": 0},
-        current_bet=1, previous_bet=0,
-        hand=bot.cards, position=0, n_players=4,
-    )
+    ctx = make_wager_prompt(cards=bot.cards)
     result = bot.wager_action(ctx)
     assert result > 0
