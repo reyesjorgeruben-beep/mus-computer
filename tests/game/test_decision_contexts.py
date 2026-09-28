@@ -70,13 +70,15 @@ def test_wager_prompt_sees_prior_public_actions():
     seen = []
 
     class Recorder(ScriptedPlayer):
-        def wager_action(self, prompt):
-            seen.append(prompt.global_context.public_actions)
-            return super().wager_action(prompt)
+        def wager_action(self, prompt, private):
+            seen.append(prompt.public_actions)
+            return super().wager_action(prompt, private)
 
     players = [
         Recorder("A1", team_a, wager_actions=[2]),
         Recorder("B1", team_b, wager_actions=[0]),
     ]
+    for player in players:
+        player.cards = [Card.R, Card._7, Card._5, Card.A]
     WagerSession(players, 1, "Grande", {"A": 0, "B": 0}, (team_a, team_b)).run()
     assert seen == [(), ("Grande | A1: envida",)]

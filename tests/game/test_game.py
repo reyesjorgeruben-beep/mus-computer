@@ -63,14 +63,17 @@ class TestGameTeamIdentity:
 class TestGameMusVoting:
     def test_all_vote_yes(self, game):
         replace_with_scripted(game, mus_votes=[[True], [True], [True], [True]])
+        game._deal_initial_cards()
         assert game._all_vote_mus() is True
 
     def test_one_no_returns_false(self, game):
         replace_with_scripted(game, mus_votes=[[False], [True], [True], [True]])
+        game._deal_initial_cards()
         assert game._all_vote_mus() is False
 
     def test_first_player_no_short_circuits(self, game):
         replace_with_scripted(game, mus_votes=[[False], [], [], []])
+        game._deal_initial_cards()
         assert game._all_vote_mus() is False  # no IndexError
 
 
@@ -219,6 +222,7 @@ class TestGamePlayAllPhases:
 
         game._play_all_phases()
 
+        assert "Peque\u00f1a begins" in events
         punto_index = events.index("Punto begins")
         score_indices = [i for i, event in enumerate(events) if "| Score " in event]
         assert score_indices
@@ -229,7 +233,7 @@ class TestGamePlayAllPhases:
         replace_with_scripted(
             game,
             wager_actions=[
-                [1] + [0] * 20,
+                [2] + [0] * 20,
                 [-1] + [0] * 20,
                 [0] * 20,
                 [-1] + [0] * 20,
@@ -244,7 +248,7 @@ class TestGamePlayAllPhases:
 
         immediate_score = "Team A +1 | Score A 1 - B 0"
         assert immediate_score in events
-        assert events.index("Grande | A1: envida 1") < events.index("Grande | B1: no quiero")
+        assert events.index("Grande | A1: envida") < events.index("Grande | B1: no quiero")
         assert events.index("Grande | B1: no quiero") < events.index("Grande | B2: no quiero")
         assert events.index("Grande | B2: no quiero") < events.index(immediate_score)
         next_phase_index = next(
@@ -288,7 +292,7 @@ class TestQualifiedPhaseWagers:
         assert pares_award > events.index("Punto begins")
         assert len([event for event in events if "| Score " in event]) == 4
 
-    def test_pares_single_eligible_defender_declines_without_pairs_award(self, game):
+    def test_pares_single_eligible_defender_declines_with_deferred_pairs_award(self, game):
         replace_with_scripted(
             game,
             wager_actions=[
@@ -313,7 +317,7 @@ class TestQualifiedPhaseWagers:
         assert "Pares | Team A wins the phase" not in events
         immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
         assert events.index("Pares | B1: no quiero") < immediate_award < events.index("Juego begins")
-        assert len([event for event in events if "| Score " in event]) == 4
+        assert len([event for event in events if "| Score " in event]) == 5
 
     def test_juego_accepted_offer_counts_stake_and_juego_once(self, game):
         replace_with_scripted(
@@ -368,4 +372,4 @@ class TestQualifiedPhaseWagers:
         assert "Juego | Team A wins the phase" not in events
         immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
         assert events.index("Juego | B2: no quiero") < immediate_award
-        assert len([event for event in events if "| Score " in event]) == 3
+        assert len([event for event in events if "| Score " in event]) == 4

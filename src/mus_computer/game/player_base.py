@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List
 from mus_computer.game.team import Team
-from mus_computer.game.context import WagerPrompt
 
 
 class PlayerBase(ABC):
@@ -21,29 +19,37 @@ class PlayerBase(ABC):
     def throw_cards(self) -> None:
         self.cards = []
 
-    def set_round_state(
-        self,
-        team_scores: dict,
-        my_team_name: str,
-        position: int,
-        n_players: int,
-        opponent_discard_counts: list,
-        mus_rounds_completed: int,
-    ) -> None:
-        """Called by Game before mus phase and before wagering. No-op by default."""
-        pass
+    needs_discard_statistics = False
+
+    def decision_context(self, global_context, seat: int, include_discards=False):
+        """Build private information using only this player's current hand."""
+        from mus_computer.bots.strategies.contexts import PlayerDecisionContext
+        from mus_computer.cards.hand import Hand
+        from mus_computer.game.phases import Grande, Chica, Pares, Juego, Punto
+        from mus_computer.probabilities.estimates import estimate_hand_statistics, estimate_discard_options
+        is_mano = seat == global_context.mano_seat
+        cards = tuple(self.cards)
+        return PlayerDecisionContext(
+            self.name, self.team.name, seat, cards, global_context.phase_name,
+            seat in global_context.eligible_seats,
+            {phase.__name__: phase.calculate_points(Hand(list(cards)))
+             for phase in (Grande, Chica, Pares, Juego, Punto)},
+            estimate_hand_statistics(cards, is_mano),
+            estimate_discard_options(cards, is_mano)
+            if include_discards and self.needs_discard_statistics else {},
+        )
 
     @abstractmethod
-    def vote_mus(self) -> bool:
-        """Return True to request mus (exchange cards), False to decline."""
+    def vote_mus(self, global_context, player_context):
+        """Return MusAction.MUS or MusAction.CORTA."""
         ...
 
     @abstractmethod
-    def choose_discards(self) -> List[int]:
-        """Return 0-based indices of cards to discard."""
+    def choose_discards(self, global_context, player_context):
+        """Return original zero-based card indices to discard."""
         ...
 
     @abstractmethod
-    def wager_action(self, context: WagerPrompt) -> int:
-        """Return raise amount: >0 raise, 0 call/pass, <0 fold."""
+    def wager_action(self, global_context, player_context):
+        """Return a legal typed WagerAction."""
         ...

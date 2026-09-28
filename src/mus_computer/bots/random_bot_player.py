@@ -1,24 +1,17 @@
 import random
-from typing import List
-
-from mus_computer.game.context import WagerPrompt
 from mus_computer.game.player_base import PlayerBase
+from mus_computer.bots.strategies.actions import MusAction, legal_wager_actions
 
 
 class RandomBotPlayer(PlayerBase):
-    """A player whose Mus, discard, and wager decisions are random."""
+    """Uniform random legal actions, independent of hand strength."""
 
-    def vote_mus(self) -> bool:
-        return random.choice((True, False))
+    def vote_mus(self, global_context, player_context):
+        return random.choice(tuple(MusAction))
 
-    def choose_discards(self) -> List[int]:
+    def choose_discards(self, global_context, player_context):
         count = random.randint(0, len(self.cards))
-        return random.sample(range(len(self.cards)), count)
+        return tuple(sorted(random.sample(range(len(self.cards)), count)))
 
-    def wager_action(self, context: WagerPrompt) -> int:
-        action = random.choice(("fold", "pass", "raise"))
-        if action == "fold":
-            return -1
-        if action == "pass":
-            return 0
-        return random.randint(1, 3)
+    def wager_action(self, global_context, player_context):
+        return random.choice(tuple(sorted(legal_wager_actions(global_context.wager), key=lambda a: a.value)))

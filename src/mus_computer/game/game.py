@@ -4,7 +4,9 @@ from mus_computer.game.phases import Phase, Grande, Chica, Pares, Juego, Punto
 from mus_computer.game.player_base import PlayerBase
 from mus_computer.game.player import HumanPlayer
 from mus_computer.game.team import Team
-from mus_computer.game.wager_session import WagerSession
+from mus_computer.game.wager_session import WagerSession, WagerOutcome
+from mus_computer.game.context import GlobalGameContext
+from mus_computer.bots.strategies.actions import MusAction
 from typing import Callable
 
 WIN_SCORE = 40
@@ -52,8 +54,12 @@ class Game:
         self.deck = Deck(on_replenish=self._emit)
         self._discard_counts = {}
         self._mus_rounds = 0
+        self._public_actions = []
+        self.winner = None
 
     def _emit(self, message: str) -> None:
+        if not message.startswith("Hands |"):
+            self._public_actions.append(message)
         if self.on_action is not None:
             self.on_action(message)
 
@@ -65,17 +71,17 @@ class Game:
             self._emit(f"Hands | {player.name}: {ranks}")
 
     def play(self):
-        while all(t.points < WIN_SCORE for t in self.teams):
+        self.winner = self.winner or next((t for t in self.teams if t.points >= WIN_SCORE), None)
+        while self.winner is None:
             self.deck = Deck(on_replenish=self._emit)
             self._discard_counts = {}
             self._mus_rounds = 0
+            self._public_actions = []
             self._deal_initial_cards()
             self._mus_phase()
             self._play_all_phases()
-
-        winner = next(t for t in self.teams if t.points >= WIN_SCORE)
-        self._emit(f"Team {winner.name} wins with {winner.points} points!")
-        return winner
+        self._emit(f"Team {self.winner.name} wins with {self.winner.points} points!")
+        return self.winner
 
     def _deal_initial_cards(self):
         for player in self.players_in_order:
@@ -83,103 +89,91 @@ class Game:
             player.receive_cards(self.deck.draw(4))
         self._emit_hands()
 
-    def _mus_phase(self):
-        discard_counts = {p.name: 0 for p in self.players_in_order}
-        mus_rounds = 0
-        self._notify_players_round_state(discard_counts, mus_rounds)
+    def _global_context(self, phase_name=None, eligible_players=None):
+        eligible = self.players_in_order if eligible_players is None else eligible_players
+        return GlobalGameContext(
+            {t.name: t.points for t in self.teams}, self._mus_rounds, phase_name, None,
+            tuple(self._public_actions), self._discard_counts,
+            tuple((p.name,p.team.name) for p in self.players_in_order), 0,
+            tuple(i for i,p in enumerate(self.players_in_order) if p in eligible),
+        )
 
+    def _mus_phase(self):
+        self._discard_counts = {p.name: 0 for p in self.players_in_order}
+        self._mus_rounds = 0
         while self._all_vote_mus():
-            mus_rounds += 1
-            for player in self.players_in_order:
-                indices = player.choose_discards()
+            for seat, player in enumerate(self.players_in_order):
+                shared = self._global_context()
+                indices = tuple(player.choose_discards(shared, player.decision_context(shared, seat, include_discards=True)))
                 if len(set(indices)) != len(indices) or any(
-                    not isinstance(idx, int) or idx < 0 or idx >= len(player.cards)
+                    type(idx) is not int or idx < 0 or idx >= len(player.cards)
                     for idx in indices
                 ):
                     raise ValueError(f"{player.name} chose invalid discard indices.")
-                discard_counts[player.name] += len(indices)
-                discarded = []
-                for idx in sorted(indices, reverse=True):
-                    discarded.append(player.throw_card(idx))
+                self._discard_counts[player.name] += len(indices)
+                discarded = [player.throw_card(idx) for idx in sorted(indices, reverse=True)]
                 self.deck.discard(discarded)
                 self._emit(f"Mus | {player.name} discards {len(indices)}")
                 player.receive_cards(self.deck.draw(len(indices)))
+            self._mus_rounds += 1
             self._emit_hands()
-            self._notify_players_round_state(discard_counts, mus_rounds)
-
-        self._discard_counts = discard_counts
-        self._mus_rounds = mus_rounds
-
-    def _notify_players_round_state(self, discard_counts: dict, mus_rounds: int):
-        team_scores = {t.name: t.points for t in self.teams}
-        for i, player in enumerate(self.players_in_order):
-            opp_discards = [
-                discard_counts.get(p.name, 0)
-                for p in self.players_in_order
-                if p.team != player.team
-            ]
-            player.set_round_state(
-                team_scores=team_scores,
-                my_team_name=player.team.name,
-                position=i,
-                n_players=len(self.players_in_order),
-                opponent_discard_counts=opp_discards,
-                mus_rounds_completed=mus_rounds,
-            )
 
     def _all_vote_mus(self) -> bool:
-        for player in self.players_in_order:
-            wants_mus = player.vote_mus()
-            self._emit(f"Mus | {player.name}: {'mus' if wants_mus else 'corta'}")
-            if not wants_mus:
+        for seat, player in enumerate(self.players_in_order):
+            shared = self._global_context()
+            action = player.vote_mus(shared, player.decision_context(shared, seat, include_discards=True))
+            if not isinstance(action, MusAction):
+                raise ValueError(f"{player.name} chose an invalid Mus action.")
+            self._emit(f"Mus | {player.name}: {action.value}")
+            if action is MusAction.CORTA:
                 return False
         return True
 
     def _play_all_phases(self):
-        self._notify_players_round_state(self._discard_counts, self._mus_rounds)
         phases = [Grande, Chica, Pares, Juego]
-        pending_awards: list[tuple[Team, int]] = []
-        while phases:
+        pending_awards = []
+        while phases and self.winner is None:
             phase = phases.pop(0)
             phase_label = "Pequeña" if phase is Chica else phase.__name__
             self._emit(f"{phase_label} begins")
-            players_in_phase = self._players_that_can_play(phase)
-
-            if not players_in_phase:
+            eligible = self._players_that_can_play(phase)
+            if not eligible:
                 self._emit(f"{phase_label} | no players qualify")
                 if phase is Juego:
                     phases.insert(0, Punto)
                 continue
-
-            winner_team = None
-            bet_points = 0
-
-            if self._is_contested(players_in_phase):
-                team_scores = {t.name: t.points for t in self.teams}
-                winner_team, bet_points = WagerSession(
-                    players=players_in_phase,
-                    teams=(self.teams[0], self.teams[1]),
-                    base_bet=phase.base_bet,
-                    phase_name=phase.__name__,
-                    team_scores=team_scores,
-                    discard_counts=self._discard_counts,
-                    on_action=self.on_action,
-                    phase_label=phase_label,
+            result = None
+            if self._is_contested(eligible):
+                result = WagerSession(
+                    players=eligible, teams=tuple(self.teams), base_bet=phase.base_bet,
+                    phase_name=phase.__name__, team_scores={t.name:t.points for t in self.teams},
+                    discard_counts=self._discard_counts, on_action=self._emit, phase_label=phase_label,
+                    players_in_order=self.players_in_order, mus_exchanges=self._mus_rounds,
+                    public_actions=self._public_actions,
                 ).run()
-
-            if winner_team is None:
-                winner_team = self._resolve_phase(phase, players_in_phase)
-                for p in self.players_in_order:
-                    if p.team is winner_team:
-                        bet_points += phase.calculate_points(Hand(p.cards))
-                self._emit(f"{phase_label} | Team {winner_team.name} wins the phase")
-                pending_awards.append((winner_team, bet_points))
+            if result is not None and result.outcome is WagerOutcome.ORDAGO_ACCEPTED:
+                self.winner = self._resolve_phase(phase, eligible)
+                self._emit(f"{phase_label} | Team {self.winner.name} wins the match by ordago")
+                return
+            if result is not None and result.outcome is WagerOutcome.DECLINED:
+                winner = result.winner_team
+                self._emit(f"{phase_label} | Team {winner.name} wins the wager")
+                self._award_points(winner, result.points)
+                if self.winner is not None:
+                    return
+                if phase in (Pares, Juego):
+                    intrinsic = sum(phase.calculate_points(Hand(p.cards)) for p in eligible if p.team is winner)
+                    pending_awards.append((winner, intrinsic))
             else:
-                self._emit(f"{phase_label} | Team {winner_team.name} wins the wager")
-                self._award_points(winner_team, bet_points)
-
+                winner = self._resolve_phase(phase, eligible)
+                stake = result.points if result is not None else 0
+                intrinsic = sum(phase.calculate_points(Hand(p.cards)) for p in eligible if p.team is winner)
+                self._emit(f"{phase_label} | Team {winner.name} wins the phase")
+                pending_awards.append((winner, stake + intrinsic))
         for team, points in pending_awards:
             self._award_points(team, points)
+            if self.winner is not None:
+                return
 
     def _award_points(self, team: Team, points: int) -> None:
         team.points += points
@@ -187,6 +181,8 @@ class Game:
             f"Team {team.name} +{points} | "
             f"Score A {self.teams[0].points} - B {self.teams[1].points}"
         )
+        if team.points >= WIN_SCORE and self.winner is None:
+            self.winner = team
 
     def _players_that_can_play(self, phase: type) -> list[PlayerBase]:
         return [p for p in self.players_in_order if phase.can_play(Hand(p.cards))]

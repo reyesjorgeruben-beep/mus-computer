@@ -1,7 +1,7 @@
 import pytest
 from mus_computer.game.team import Team
 from mus_computer.cards.card import Card
-from tests.conftest import ScriptedPlayer, make_wager_prompt
+from tests.conftest import ScriptedPlayer, make_global_context
 
 
 class TestPlayerBaseCards:
@@ -82,22 +82,8 @@ class TestScriptedPlayerDecisions:
         assert p.choose_discards() == [2]
 
     def test_wager_action_sequence(self):
-        ctx = make_wager_prompt()
+        ctx = make_global_context()
         p = ScriptedPlayer("P", self.team_a, wager_actions=[2, 0, -1])
         assert p.wager_action(ctx) == 2
         assert p.wager_action(ctx) == 0
         assert p.wager_action(ctx) == -1
-
-
-def test_player_base_set_round_state_is_noop():
-    from tests.conftest import ScriptedPlayer
-    from mus_computer.game.team import Team
-    player = ScriptedPlayer("p", Team("A"), mus_votes=[], discards=[], wager_actions=[])
-    player.set_round_state(
-        team_scores={"A": 0, "B": 0},
-        my_team_name="A",
-        position=0,
-        n_players=4,
-        opponent_discard_counts=[],
-        mus_rounds_completed=0,
-    )

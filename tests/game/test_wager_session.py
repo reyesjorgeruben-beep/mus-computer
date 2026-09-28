@@ -2,7 +2,13 @@ import pytest
 from mus_computer.game.team import Team
 from mus_computer.cards.card import Card
 from mus_computer.game.wager_session import WagerSession
-from tests.conftest import ScriptedPlayer
+from tests.conftest import ScriptedPlayer as BaseScriptedPlayer
+
+
+class ScriptedPlayer(BaseScriptedPlayer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cards = [Card.R, Card._7, Card._5, Card.A]
 
 
 @pytest.fixture
@@ -69,7 +75,7 @@ class TestWagerSessionFold:
 
     def test_fold_with_base_bet_zero(self, teams):
         team_a, team_b = teams
-        players = make_players(team_a, team_b, [1], [-1])
+        players = make_players(team_a, team_b, [2], [-1])
         winner, bet = run(players, base_bet=0)
         assert winner is team_a
         assert bet == 1  # one point is already in play
@@ -160,17 +166,17 @@ class TestWagerSessionContext:
         received_contexts = []
 
         class RecordingPlayer(ScriptedPlayer):
-            def wager_action(self, context):
-                received_contexts.append((context.current_bet, context.previous_bet))
-                return super().wager_action(context)
+            def wager_action(self, context, private):
+                received_contexts.append((context.wager.current_total, context.wager.previous_accepted_total))
+                return super().wager_action(context, private)
 
         a1 = RecordingPlayer("A1", team_a, wager_actions=[2, 0])
         b1 = RecordingPlayer("B1", team_b, wager_actions=[0])
 
         WagerSession([a1, b1], 1, "Grande", {}, teams=(team_a, team_b)).run()
 
-        # First call: base bet=1, prev=0
-        assert received_contexts[0] == (1, 0)
+        # First call: the implicit point is already accepted.
+        assert received_contexts[0] == (1, 1)
         # After A1 opens at 2: current=2, previous accepted stake=1
         assert received_contexts[1] == (2, 1)
 
@@ -178,14 +184,13 @@ class TestWagerSessionContext:
 def test_wager_session_passes_position_to_context():
     from mus_computer.game.wager_session import WagerSession
     from mus_computer.game.team import Team
-    from tests.conftest import ScriptedPlayer
 
     captured_positions = []
 
     class PositionCapturingPlayer(ScriptedPlayer):
-        def wager_action(self, context):
-            captured_positions.append(context.position)
-            return 0
+        def wager_action(self, context, private):
+            captured_positions.append(private.seat)
+            return super().wager_action(context, private)
 
     team_a = Team("A")
     team_b = Team("B")
@@ -208,14 +213,13 @@ def test_wager_session_passes_position_to_context():
 def test_wager_session_passes_n_players_to_context():
     from mus_computer.game.wager_session import WagerSession
     from mus_computer.game.team import Team
-    from tests.conftest import ScriptedPlayer
 
     captured = []
 
     class CapturingPlayer(ScriptedPlayer):
-        def wager_action(self, context):
-            captured.append(context.n_players)
-            return 0
+        def wager_action(self, context, private):
+            captured.append(len(context.eligible_seats))
+            return super().wager_action(context, private)
 
     team_a, team_b = Team("A"), Team("B")
     p0 = CapturingPlayer("p0", team_a, mus_votes=[], discards=[], wager_actions=[0])
@@ -234,7 +238,7 @@ def test_wager_session_passes_n_players_to_context():
 
 
 class TestTeamWagerResolution:
-    @pytest.mark.parametrize("opening_action", [0, -1])
+    @pytest.mark.parametrize("opening_action", [0])
     def test_pass_before_an_offer_allows_next_player_to_open(self, teams, opening_action):
         team_a, team_b = teams
         events = []
@@ -259,11 +263,11 @@ class TestTeamWagerResolution:
             "Grande | A1: quiero",
         ]
 
-    def test_opening_one_point_offer_keeps_base_stake(self, teams):
+    def test_opening_two_point_offer_sets_total(self, teams):
         team_a, team_b = teams
         events = []
         players = [
-            ScriptedPlayer("A1", team_a, wager_actions=[1]),
+            ScriptedPlayer("A1", team_a, wager_actions=[2]),
             ScriptedPlayer("B1", team_b, wager_actions=[0]),
         ]
 
@@ -276,8 +280,8 @@ class TestTeamWagerResolution:
             on_action=events.append,
         ).run()
 
-        assert (winner, points) == (None, 1)
-        assert events == ["Grande | A1: envida 1", "Grande | B1: quiero"]
+        assert (winner, points) == (None, 2)
+        assert events == ["Grande | A1: envida", "Grande | B1: quiero"]
 
     def test_opening_three_point_offer_sets_total_to_three(self, teams):
         team_a, team_b = teams
@@ -373,3 +377,54 @@ class TestTeamWagerResolution:
             "Grande | A1: no quiero",
             "Grande | A2: no quiero",
         ]
+
+
+@pytest.mark.parametrize("action,total", [("RAISE_2",2),("RAISE_3",3),("RAISE_4",4),("RAISE_5",5)])
+def test_typed_opening_raise_totals(teams, action, total):
+    from mus_computer.bots.strategies.actions import WagerAction
+    a, b = teams
+    result = run(make_players(a,b,[WagerAction[action]],[WagerAction.MATCH_OR_PASS]))
+    assert result.outcome.value == "showdown"
+    assert result.points == total
+
+@pytest.mark.parametrize("accepted", [True, False])
+def test_ordago_response(teams, accepted):
+    from mus_computer.bots.strategies.actions import WagerAction as A
+    a,b = teams
+    result = run(make_players(a,b,[A.ORDAGO],[A.MATCH_OR_PASS if accepted else A.FOLD]))
+    assert result.outcome.value == ("ordago_accepted" if accepted else "declined")
+    assert result.points == (0 if accepted else 1)
+    assert result.winner_team is (None if accepted else a)
+
+
+def test_refused_counter_ordago_keeps_accepted_stake(teams):
+    from mus_computer.bots.strategies.actions import WagerAction as A
+    a,b=teams
+    result=run(make_players(a,b,[A.RAISE_2,A.FOLD],[A.ORDAGO],[A.FOLD],[A.MATCH_OR_PASS]))
+    assert result.outcome.value == "declined"
+    assert result.winner_team is b
+    assert result.points == 2
+
+
+@pytest.mark.parametrize("phase,base", [("Grande",1),("Chica",1),("Pares",0),("Juego",0),("Punto",1)])
+@pytest.mark.parametrize("responses,outcome,points", [
+    ([0],"showdown",2), ([-1,0],"showdown",2), ([-1,-1],"declined",1),
+])
+def test_each_phase_accepts_once_or_requires_all_eligible_refusals(teams,phase,base,responses,outcome,points):
+    a,b=teams
+    players=[ScriptedPlayer("A1",a,wager_actions=[2]),
+             ScriptedPlayer("B1",b,wager_actions=responses[:1]),
+             ScriptedPlayer("A2",a,wager_actions=[]),
+             ScriptedPlayer("B2",b,wager_actions=responses[1:])]
+    result=WagerSession(players,base,phase,{},teams).run()
+    assert result.outcome.value==outcome
+    assert result.points==points
+    assert players[2]._wager_idx==0
+    assert players[3]._wager_idx==len(responses)-1
+
+
+def test_illegal_fold_before_offer_is_rejected(teams):
+    from mus_computer.bots.strategies.actions import WagerAction
+    a,b=teams
+    with pytest.raises(ValueError,match="illegal wager"):
+        run(make_players(a,b,[WagerAction.FOLD],[]))
