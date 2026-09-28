@@ -1,13 +1,16 @@
 """Typed bot decisions and validated action probabilities."""
 
+from __future__ import annotations
+
 import math
 import random
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
-from typing import Collection, Generic, Hashable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Collection, Generic, Hashable, Mapping, TypeVar
 
-from mus_computer.game.context import WagerState
+if TYPE_CHECKING:
+    from mus_computer.game.context import WagerState
 
 
 class DecisionKind(str, Enum):
