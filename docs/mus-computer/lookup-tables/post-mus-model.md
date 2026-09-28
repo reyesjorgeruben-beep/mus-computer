@@ -5,7 +5,7 @@
 - hand_distribution_post_mus: a probability mass over canonical final hands after the deterministic best-discard Mus proxy.
 - ep_mano_postmus: expected phase points for a fixed mano hand against the post-mus marginal hand model.
 
-The distribution is stored at the top level of probability_tables.pkl. The expected-points table is stored per hand.
+The distribution is stored at the top level of the bundled `src/mus_computer/probabilities/data/probability_tables.pkl`. The expected-points table is stored per hand.
 
 ## Agreed model
 
@@ -15,7 +15,7 @@ Each starting hand uses the best-discard choice exposed by the discard-value tab
 
 ## Distribution construction
 
-compute_hand_distribution.py:
+`scripts/tables/compute_hand_distribution.py`:
 
 1. Computes the initial deal probability of each canonical hand from its physical multiplicity.
 2. Reads the best-discard option and compares its expected net points with keeping all four cards.
@@ -34,7 +34,7 @@ The current transition pool is full deck minus the kept subset. Under the agreed
 
 ## Expected points after Mus
 
-compute_ep_postmus.py fixes the mano hand and applies the post-mus hand mass to the partner and opponent hand types, while checking that impossible rank multiplicities are excluded. The same phase ranking and point scorer as ep_mano are used.
+`scripts/tables/compute_ep_postmus.py` fixes the mano hand and applies the post-mus hand mass to the partner and opponent hand types, while checking that impossible rank multiplicities are excluded. The same phase ranking and point scorer as ep_mano are used.
 
 The stored post-mus marginal q(h) is aggregate probability mass for canonical hand type h; it is not the probability of each individual physical realization of h. The current q was generated using the overinclusive draw pool described above. The formula below documents the current working assumption used when combining q with physical card multiplicity.
 

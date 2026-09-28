@@ -61,4 +61,4 @@ Exact enumeration does not make the assumptions exact. It means the code exhaust
 - A single Mus exchange is assumed. The current game loop can continue through multiple Mus rounds, which is outside this table model.
 - For a one-player marginal draw, remove the player's original four physical cards from the deck. Other copies of those ranks remain in the pool. Current builders restore the exact discarded copies and therefore increase the draw probability of those ranks.
 
-The small-deck reference in tests/test_ep_mano.py checks the vectorized implementation against a pure-Python calculation, but both share the same unordered-pair shortcut. Use an ordered opponent-pair reference and separate known-rule checks to establish correctness.
+The small-deck reference in `tests/probabilities/test_ep_mano.py` checks the vectorized implementation against a pure-Python calculation, but both share the same unordered-pair shortcut. Use an ordered opponent-pair reference and separate known-rule checks to establish correctness.

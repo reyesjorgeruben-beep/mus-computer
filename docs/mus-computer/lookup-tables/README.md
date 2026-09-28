@@ -14,7 +14,7 @@
 
 ## Construction flow
 
-The source files describe a staged pipeline:
+The source files in `scripts/tables/` describe a staged pipeline. Install the optional table tooling with `python -m pip install -e ".[tables]"` before running builders:
 
 1. build_tables.py enumerates canonical hands, hand probabilities, draw options, average opponent improvements, and ep_mano.
 2. compute_best_discards.py values each retained subset using ep_mano.
@@ -35,7 +35,7 @@ The best-discard and post-mus steps currently make one pass. The corrected disca
 
 ## Runtime use
 
-probability_tables.py exposes functions for the per-hand probabilities and discard options. BotPlayer currently uses win_prob and the average opponent improvement value. Its vote_mus and choose_discards paths still sample replacement hands; they do not consume discard_options, ep_mano, or ep_mano_postmus.
+`src/mus_computer/probabilities/tables.py` loads the bundled table and exposes per-hand lookup accessors. The default four-random-bot runner does not use the lookup data to choose actions. See the [contextual strategy design](../../superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) for how the strategic bot consumes estimates.
 
 Detailed table definitions:
 

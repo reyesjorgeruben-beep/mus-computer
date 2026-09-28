@@ -1,41 +1,30 @@
-# Mus computer roadmap
+# Mus Computer roadmap
 
-## Active milestone: observable four-bot game
+## Completed milestone: playable four-bot game
 
-**Goal:** Run a complete 2v2 Mus game with four random bots and show a readable, live terminal log of their actions and the score. Human-controlled seats and strategic bot decisions come later.
+The default terminal runner plays a complete 2v2 game with `RandomBotPlayer` in alternating A/B/A/B seats. Its event feed shows each hand after the initial deal and Mus exchanges, plus public actions, wagers, score changes, and the winner. The game repeats Mus votes and exchanges until someone cuts; the draw stock recycles discards when needed. See [how to run it](../../README.md).
 
-### Agreed runtime rules
+- [x] Game lifecycle with injected seats, repeated Mus, phase ordering, discard recycling, and a match target of 40.
+- [x] Random bot for Mus, discards, and wager actions.
+- [x] Four-bot terminal runner and optional action callback.
+- [x] Team wager handling: one eligible acceptance or every eligible defender declining, opening totals, and additive counterraises.
 
-- Four players sit in alternating team order: A, B, A, B. Each hand starts with four cards per player.
-- Mus voting proceeds in seat order. The first `corta` stops Mus and starts Grande with the current hands. If everyone says `mus`, each player may discard zero to four cards and draw replacements; voting then repeats.
-- The draw stock is replenished by shuffling the discard pile into it whenever the stock cannot satisfy a requested draw. Discards remain available between exchanges within a hand.
-- Play Grande, Pequeña (the code calls this Chica), Pares, then Juego. Keep the existing Punto fallback when nobody qualifies for Juego.
-- A wager is a team action: one envida speaks for the pair, one eligible `quiero` accepts, and all eligible players on the answering team must say `no quiero` to decline. The opening offer is a total: 1 keeps the base point in play and bare `envida` defaults to 2. A later envida adds its amount. A declined raise awards the earlier accepted stake.
-- Apply ordinary phase points together after Juego or Punto. Award a declined wager's accepted stake immediately.
-- Start a new hand with Mus after the phases. Stop the match as soon as either team reaches 40 points.
-- Random bots choose actions without strategy. The terminal log shows every bot's hand after the initial deal and each completed Mus exchange, as well as public actions and scores.
+## Active milestone: package and contextual bot strategies
 
-### Milestone phases
+**Goal:** Keep the game playable from an installable `src/mus_computer` package and make strategic bot decisions from shared public state, each bot's private hand statistics, and its personality parameters. The default four-bot terminal game remains the random baseline.
 
-1. **Game lifecycle and rules:** Accept an injected four-player roster in A/B/A/B order; support repeated Mus, discard-pile reshuffles, phase ordering, and ending immediately at 40. Emit an optional action stream for the terminal runner, including visible stock replenishment.
-2. **Random bot:** Implement a `PlayerBase` that randomly votes Mus, chooses any discard count from zero to four, and passes, raises, or folds during wagers.
-3. **Four-bot terminal runner:** Start four named bots automatically and print each bot's hand after the deal and completed exchanges, plus readable lines for votes, discards, phases, wagers, score changes, and winner. Use Mus terms such as `mus`, `corta`, `paso`, `envida`, and `quiero`.
-4. **Integration:** Keep the strategic bot/trainer compatible with the shared seat order and ensure the bot-only runner is silent when no action callback is supplied.
+- [ ] Organize runtime modules under `src/mus_computer/`, table programs under `scripts/tables/`, and tests by responsibility. Bundle the committed lookup table as package data and support an explicit lookup path override.
+- [ ] Define immutable `GlobalGameContext` with public scores, current-hand Mus exchanges, phase and wager state, and action history. Define `PlayerDecisionContext` with only the acting player's cards, phase eligibility, and `HandStatistics` for Grande, Chica, Pares, Juego, and Punto.
+- [ ] Add validated action distributions and injectable Mus, discard, and phase-specific wager strategies. Preserve existing `BotGenome` parameters as the initial personality representation. Use deterministic one-action tests to verify that injected strategies control decisions.
+- [ ] Integrate strategy decisions into the game and wager flow. Cover eligible responder order, additive counterraises, accepted/refused `ordago`, immediate folded-wager stakes, and deferred intrinsic Pares/Juego points after a fold.
+- [ ] Settle deferred awards in Grande, Chica, Pares, Juego/Punto order and stop at the first score event reaching 40. Add focused tests for wagers, folds, ordago, and phase-order winner selection.
+- [ ] Verify package commands and tests, then document the finished interfaces and behavior.
 
-### Parallel work packages
-
-- **Game engine:** `game.py`, `deck.py`, `wager_session.py`, and `genetic_trainer.py`. Add `Game.from_players(players_in_order, on_action=None)`, where the four seats are A/B/A/B and `on_action` receives a complete log line.
-- **Random policy:** Add `random_bot_player.py`, implementing the existing `PlayerBase` interface without changing `BotPlayer`.
-- **Terminal runner:** Update `api.py` to construct Bot 1 (A), Bot 2 (B), Bot 3 (A), and Bot 4 (B), then pass `print` as the action callback.
-
-### Later milestones
-
-- Add human-versus-bots setup and human action prompts.
-- Replace random choices with table-informed bot decisions and improve tournament evaluation.
+The [strategy design](../superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) and [implementation plan](../superpowers/plans/2026-09-28-contextual-bot-src-layout.md) define this milestone. No training run or win-rate target is part of it.
 
 ## Table-model backlog
 
-The analytical post-Mus tables remain a one-exchange approximation; that assumption does not limit runtime gameplay, which repeats Mus until someone says `corta`.
+The analytical post-Mus tables remain a one-exchange approximation. Runtime gameplay repeats Mus until someone says `corta`.
 
 - [x] Generate the 330 canonical-hand probability and expected-points artifacts.
 - [x] Generate the one-exchange post-Mus distribution and post-Mus-aware discard summaries.
@@ -45,4 +34,9 @@ The analytical post-Mus tables remain a one-exchange approximation; that assumpt
 - [ ] Extend expected-points tables to fixed hands in seats 1, 2, and 3, preserving seat order and tie priority.
 - [ ] Compare the unordered opponent-pair formula against independent ordered-seat enumeration.
 - [ ] Rebuild tables and compare them with independent small-deck and rule-level references after model fixes.
-- [ ] Declare table-generation dependencies, including NumPy, for local and CI runs.
+- [x] Declare NumPy in the optional table-tooling and development extras, including for CI tests; keep the playable runtime dependency-free.
+
+## Later work
+
+- Add human-controlled seats and terminal prompts.
+- Train or tune strategy parameters and evaluate them against suitable baselines.
