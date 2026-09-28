@@ -23,7 +23,7 @@ Each bot receives four cards. In seat order, players say `mus` or `corta`. If ev
 
 The hand proceeds through Grande, Chica (Pequeña), Pares, and Juego, or Punto when no one has Juego. Wagers are made for a team. One eligible defender's `quiero` accepts a wager; every eligible defender must say `no quiero` to reject it. An opening `envida` sets the total stake (bare `envida` means two points); a later `envida N` adds N to the current offer. A refused offer gives the offering team the previously accepted stake immediately. Other phase awards are settled after Juego or Punto, in phase order. The first team to reach 40 wins. An accepted `ordago` settles the match immediately by the phase's cards; refusing it awards only the previous stake.
 
-The terminal runner is a random-play baseline. A separate contextual bot is under development. Its design calls for public game state, the acting bot's cards and estimated hand statistics, and personality parameters to feed injectable, phase-specific decision strategies. It is not selected by the default runner. The planned estimates use lookup tables; they are not a trained policy.
+The default terminal runner uses random bots. The implemented contextual `BotPlayer` combines public game state, its own cards and lookup-backed hand estimates, and personality parameters through injectable strategies for Mus, discards, and each wagering phase. Its default strategic policy is heuristic and untrained; table calibration remains open. Use `BotPlayer` through the Python API to select these strategies.
 
 ## Repository layout
 

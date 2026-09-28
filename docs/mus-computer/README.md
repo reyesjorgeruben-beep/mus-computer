@@ -1,6 +1,6 @@
 # Mus Computer: technical reference
 
-This document describes the runtime rules and the lookup table model. The default terminal game has four random bots; contextual strategies are the active development milestone. See the [roadmap](TODO.md) for progress and the [root README](../../README.md) for installation and play commands.
+This document describes the runtime rules and the lookup table model. The default terminal game has four random bots. Contextual `BotPlayer` strategies are implemented and available through the Python API; their default policy is heuristic and untrained. See the [roadmap](TODO.md) for progress and the [root README](../../README.md) for installation and play commands.
 
 The repository separates the playable game from offline analysis:
 

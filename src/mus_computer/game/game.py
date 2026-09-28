@@ -56,6 +56,7 @@ class Game:
         self._mus_rounds = 0
         self._public_actions = []
         self.winner = None
+        self.victory_reason = None
 
     def _emit(self, message: str) -> None:
         if not message.startswith("Hands |"):
@@ -80,7 +81,10 @@ class Game:
             self._deal_initial_cards()
             self._mus_phase()
             self._play_all_phases()
-        self._emit(f"Team {self.winner.name} wins with {self.winner.points} points!")
+        if self.victory_reason == "ordago":
+            self._emit(f"Team {self.winner.name} wins by ordago!")
+        else:
+            self._emit(f"Team {self.winner.name} wins with {self.winner.points} points!")
         return self.winner
 
     def _deal_initial_cards(self):
@@ -153,12 +157,13 @@ class Game:
                 ).run()
             if result is not None and result.outcome is WagerOutcome.ORDAGO_ACCEPTED:
                 self.winner = self._resolve_phase(phase, eligible)
+                self.victory_reason = "ordago"
                 self._emit(f"{phase_label} | Team {self.winner.name} wins the match by ordago")
                 return
             if result is not None and result.outcome is WagerOutcome.DECLINED:
-                winner = result.winner_team
+                winner = result.offering_team
                 self._emit(f"{phase_label} | Team {winner.name} wins the wager")
-                self._award_points(winner, result.points)
+                self._award_points(winner, result.accepted_stake)
                 if self.winner is not None:
                     return
                 if phase in (Pares, Juego):
@@ -166,7 +171,7 @@ class Game:
                     pending_awards.append((winner, intrinsic))
             else:
                 winner = self._resolve_phase(phase, eligible)
-                stake = result.points if result is not None else 0
+                stake = result.accepted_stake if result is not None else 0
                 intrinsic = sum(phase.calculate_points(Hand(p.cards)) for p in eligible if p.team is winner)
                 self._emit(f"{phase_label} | Team {winner.name} wins the phase")
                 pending_awards.append((winner, stake + intrinsic))
@@ -183,6 +188,7 @@ class Game:
         )
         if team.points >= WIN_SCORE and self.winner is None:
             self.winner = team
+            self.victory_reason = "points"
 
     def _players_that_can_play(self, phase: type) -> list[PlayerBase]:
         return [p for p in self.players_in_order if phase.can_play(Hand(p.cards))]

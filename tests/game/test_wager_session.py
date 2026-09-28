@@ -428,3 +428,19 @@ def test_illegal_fold_before_offer_is_rejected(teams):
     a,b=teams
     with pytest.raises(ValueError,match="illegal wager"):
         run(make_players(a,b,[WagerAction.FOLD],[]))
+
+
+@pytest.mark.parametrize("accepted", [True, False])
+def test_wager_result_publishes_offering_team_and_accepted_stake(teams,accepted):
+    a,b = teams
+    result = run(make_players(a,b,[2],[0 if accepted else -1]))
+    assert result.offering_team is a
+    assert result.accepted_stake == (2 if accepted else 1)
+
+
+def test_accepted_ordago_result_has_no_numeric_stake(teams):
+    from mus_computer.bots.strategies.actions import WagerAction as A
+    a,b = teams
+    result = run(make_players(a,b,[A.ORDAGO],[A.MATCH_OR_PASS]))
+    assert result.offering_team is a
+    assert result.accepted_stake is None

@@ -70,6 +70,7 @@ def test_accepted_ordago_ends_play_for_card_winner(monkeypatch):
     monkeypatch.setattr(game,"_deal_initial_cards", lambda: None)
     monkeypatch.setattr(game,"_mus_phase", lambda: None)
     assert game.play() is game.teams[1]
+    assert events[-1] == "Team B wins by ordago!"
     assert [t.points for t in game.teams]==[0,0]
     assert len([e for e in events if e.endswith(" begins")])==1
 

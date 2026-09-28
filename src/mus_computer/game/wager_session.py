@@ -15,8 +15,18 @@ class WagerOutcome(str, Enum):
 @dataclass(frozen=True)
 class WagerResult:
     outcome: WagerOutcome
-    points: int
-    winner_team: Team | None = None
+    offering_team: Team | None
+    accepted_stake: int | None
+
+    @property
+    def points(self) -> int:
+        """Legacy numeric award; accepted ordago has no numeric stake."""
+        return self.accepted_stake if self.accepted_stake is not None else 0
+
+    @property
+    def winner_team(self) -> Team | None:
+        """Legacy fold winner; showdown winners require card resolution."""
+        return self.offering_team if self.outcome is WagerOutcome.DECLINED else None
 
     def __iter__(self):
         # Retain tuple unpacking for callers migrating from the original API.
@@ -63,7 +73,7 @@ class WagerSession:
         while True:
             if offering_team is None:
                 if next_player == len(self.players):
-                    return WagerResult(WagerOutcome.SHOWDOWN, self.base_bet)
+                    return WagerResult(WagerOutcome.SHOWDOWN, None, self.base_bet)
                 player = self.players[next_player]
                 next_player += 1
             else:
@@ -85,12 +95,12 @@ class WagerSession:
                 self._emit(f"{player.name}: {'quiero' if offering_team else 'paso'}")
                 if offering_team is not None:
                     return WagerResult(WagerOutcome.ORDAGO_ACCEPTED if ordago else WagerOutcome.SHOWDOWN,
-                                       0 if ordago else current)
+                                       offering_team, None if ordago else current)
                 continue
             if action is WagerAction.FOLD:
                 self._emit(f"{player.name}: no quiero")
                 if not responders:
-                    return WagerResult(WagerOutcome.DECLINED, accepted, offering_team)
+                    return WagerResult(WagerOutcome.DECLINED, offering_team, accepted)
                 continue
             was_offered = offering_team is not None
             if was_offered:

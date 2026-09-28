@@ -20,9 +20,9 @@ The default terminal runner plays a complete 2v2 game with `RandomBotPlayer` in 
 - [x] Settle deferred awards in Grande, Chica, Pares, Juego/Punto order and stop at the first score event reaching 40. Add focused tests for wagers, folds, ordago, and phase-order winner selection.
 - [x] Verify package commands and tests, then document the finished interfaces and behavior.
 
-The [strategy design](../superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) and [implementation plan](../superpowers/plans/2026-09-28-contextual-bot-src-layout.md) define this milestone. No training run or win-rate target is part of it.
+The [strategy design](../superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) defines this milestone. No training run or win-rate target is part of it.
 
-Validation to date: `python -m pytest tests/ -q -m "not slow"` passed 343 tests with one slow test deselected. The result does not cover the excluded slow test.
+Validation to date: `python -m pytest tests/ -q -m "not slow"` passed 347 tests with one slow test deselected. The result does not cover the excluded slow test.
 
 ## Table-model backlog
 

@@ -21,3 +21,30 @@ def test_player_context_keeps_private_cards_outside_public_context():
     assert private.seat == 0 and shared.eligible_seats == (0, 1)
     assert shared.discard_counts["Bot 2"] == 1
     assert not hasattr(shared, "hand") and not hasattr(shared, "cards")
+
+
+
+def test_juego_estimate_uses_eligible_priority_only_for_active_phase():
+    import pytest
+    from mus_computer.game.team import Team
+    from mus_computer.probabilities.estimates import estimate_hand_statistics
+    from tests.conftest import ScriptedPlayer
+
+    shared = GlobalGameContext(
+        team_scores={"A":0,"B":0}, mus_exchanges=0, phase_name="Juego",
+        wager=WagerState(0,1,None), public_actions=(), discard_counts={},
+        seat_order=(("A1","A"),("B1","B"),("A2","A"),("B2","B")),
+        mano_seat=0, eligible_seats=(2,3),
+    )
+    cards = [Card.R,Card.C,Card.S,Card.A]
+    without_priority = estimate_hand_statistics(cards, is_mano=False)
+    for seat, name, team_name in ((2,"A2","A"),(3,"B2","B")):
+        player = ScriptedPlayer(name, Team(team_name))
+        player.cards = cards
+        private = player.decision_context(shared, seat)
+        juego = private.statistics.phase_outcomes["Juego"]
+        assert juego.p_tie > 0
+        expected = 3 * (juego.p_win + (juego.p_tie if seat == 2 else 0))
+        assert private.statistics.expected_points["Juego"] == pytest.approx(expected)
+        for phase in ("Grande","Chica","Pares","Punto"):
+            assert private.statistics.expected_points[phase] == without_priority.expected_points[phase]
