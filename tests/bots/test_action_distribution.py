@@ -41,3 +41,14 @@ def test_fold_is_legal_only_when_responding_to_offer():
     assert WagerAction.FOLD not in opening
     assert WagerAction.MATCH_OR_PASS in opening
     assert WagerAction.FOLD in response
+
+
+def test_outstanding_ordago_can_only_be_accepted_or_refused():
+    actions = legal_wager_actions(WagerState(2, 1, "A", True))
+    assert actions == frozenset({WagerAction.MATCH_OR_PASS, WagerAction.FOLD})
+    for illegal in (
+        WagerAction.ORDAGO, WagerAction.RAISE_2, WagerAction.RAISE_3,
+        WagerAction.RAISE_4, WagerAction.RAISE_5,
+    ):
+        with pytest.raises(ValueError):
+            ActionDistribution({illegal: 1.0}).sample(random.Random(0), actions)

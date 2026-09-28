@@ -71,6 +71,8 @@ class ActionDistribution(Generic[A]):
 
 
 def legal_wager_actions(wager_state: WagerState | None) -> frozenset[WagerAction]:
+    if wager_state is not None and wager_state.ordago_offered:
+        return frozenset({WagerAction.MATCH_OR_PASS, WagerAction.FOLD})
     actions = set(WagerAction)
     if wager_state is None or wager_state.offering_team is None:
         actions.remove(WagerAction.FOLD)
