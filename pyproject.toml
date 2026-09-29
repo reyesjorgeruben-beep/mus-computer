@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mus-computer"
+version = "0.1.0"
+description = "Playable Mus game with bot players"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest==9.0.2", "numpy==1.26.4"]
+tables = ["numpy==1.26.4"]
+
+[project.scripts]
+mus-computer = "mus_computer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"mus_computer.probabilities" = ["data/*.pkl"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: exhaustive table validation"]
