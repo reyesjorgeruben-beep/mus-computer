@@ -6,17 +6,20 @@ from mus_computer.bots.strategies.actions import (
     ActionDistribution, WagerAction, legal_wager_actions,
 )
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
-from mus_computer.bots.strategies.portfolio import BotPersonality, PHASE_NAMES
+from mus_computer.bots.strategies.personality import BotPersonality
 from mus_computer.game.context import GlobalGameContext
+from mus_computer.game.phases import PhaseName, PHASE_ORDER
 
 
 @dataclass(frozen=True)
 class PhaseWagerStrategy:
-    phase_name: str
+    phase_name: PhaseName
 
     def __post_init__(self) -> None:
-        if self.phase_name not in PHASE_NAMES:
-            raise ValueError(f"Unknown wager phase: {self.phase_name}")
+        phase = PhaseName(self.phase_name)
+        if phase not in PHASE_ORDER:
+            raise ValueError(f"Unknown wager phase: {phase}")
+        object.__setattr__(self, "phase_name", phase)
 
     def decide(
         self,

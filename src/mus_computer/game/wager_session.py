@@ -1,7 +1,8 @@
 """Team wager negotiation shared by every phase."""
 from dataclasses import dataclass
 from enum import Enum
-from mus_computer.game.context import GlobalGameContext, WagerState
+from mus_computer.game.context import GlobalGameContext, SeatOrderEntry, WagerState
+from mus_computer.game.phases import PhaseName
 from mus_computer.game.team import Team
 from mus_computer.bots.strategies.actions import WagerAction, legal_wager_actions
 
@@ -45,11 +46,11 @@ class WagerSession:
             raise ValueError("Every wagering player must belong to a supplied team.")
         self.teams = teams
         self.base_bet = base_bet
-        self.phase_name = phase_name
+        self.phase_name = PhaseName(phase_name)
         self.team_scores = team_scores
         self.discard_counts = discard_counts or {}
         self.on_action = on_action
-        self.phase_label = phase_label or phase_name
+        self.phase_label = phase_label or self.phase_name.value
         self.public_actions = list(public_actions)
         self.players_in_order = list(players_in_order if players_in_order is not None else players)
         self.mus_exchanges = mus_exchanges
@@ -83,7 +84,7 @@ class WagerSession:
             shared = GlobalGameContext(
                 self.team_scores, self.mus_exchanges, self.phase_name, wager,
                 tuple(self.public_actions), self.discard_counts,
-                tuple((p.name, p.team.name) for p in self.players_in_order),
+                tuple(SeatOrderEntry(p.name, p.team.name) for p in self.players_in_order),
                 self.mano_seat,
                 tuple(i for i,p in enumerate(self.players_in_order) if p in self.players),
             )

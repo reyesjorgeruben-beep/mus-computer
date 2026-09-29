@@ -4,6 +4,8 @@ from dataclasses import dataclass, fields
 
 @dataclass
 class BotGenome:
+    """Serializable genetic representation implementing the strategy personality interface."""
+
     mus_eagerness: float
     mus_risk_sensitivity: float
     w_grande: float

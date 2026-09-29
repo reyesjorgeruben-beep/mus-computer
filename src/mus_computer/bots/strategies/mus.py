@@ -3,28 +3,15 @@
 from dataclasses import dataclass
 
 from mus_computer.bots.strategies.actions import ActionDistribution, MusAction
-from mus_computer.bots.strategies.portfolio import BotPersonality
 from mus_computer.bots.strategies.contexts import HandStatistics, PlayerDecisionContext
+from mus_computer.bots.strategies.personality import BotPersonality, phase_utility_weights
 from mus_computer.game.context import GlobalGameContext
 
 
-def _phase_weights(personality: BotPersonality) -> dict[str, float]:
-    weights = {
-        "Grande": max(0.0, personality.w_grande),
-        "Chica": max(0.0, personality.w_chica),
-        "Pares": max(0.0, personality.w_pares),
-        "Juego": max(0.0, personality.w_juego),
-    }
-    total = sum(weights.values())
-    if total == 0:
-        return {name: 0.25 for name in weights}
-    return {name: value / total for name, value in weights.items()}
-
-
-def _strength(statistics: HandStatistics, personality: BotPersonality) -> float:
+def _weighted_hand_strength(statistics: HandStatistics, personality: BotPersonality) -> float:
     return sum(
         weight * (statistics.phase_outcomes[name].p_win + 0.5 * statistics.phase_outcomes[name].p_tie)
-        for name, weight in _phase_weights(personality).items()
+        for name, weight in phase_utility_weights(personality).items()
     )
 
 
@@ -36,9 +23,9 @@ class EstimateMusStrategy:
         player_context: PlayerDecisionContext,
         personality: BotPersonality,
     ) -> ActionDistribution[MusAction]:
-        current = _strength(player_context.statistics, personality)
+        current = _weighted_hand_strength(player_context.statistics, personality)
         best_after_discard = max(
-            (_strength(stats, personality) for stats in player_context.discard_options.values()),
+            (_weighted_hand_strength(stats, personality) for stats in player_context.discard_options.values()),
             default=current,
         )
         improvement = max(0.0, best_after_discard - current)

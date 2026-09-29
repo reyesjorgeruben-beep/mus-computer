@@ -2,11 +2,11 @@
 
 import random
 
-from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.strategies.actions import (
     DecisionKind, MusAction, WagerAction, legal_wager_actions,
 )
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
+from mus_computer.bots.strategies.personality import BotPersonality
 from mus_computer.bots.strategies.portfolio import StrategyPortfolio
 from mus_computer.game.context import GlobalGameContext
 from mus_computer.game.player_base import PlayerBase
@@ -20,7 +20,7 @@ class BotPlayer(PlayerBase):
         self,
         name: str,
         team: Team,
-        genome: BotGenome,
+        genome: BotPersonality,
         strategies: StrategyPortfolio | None = None,
         rng: random.Random | None = None,
     ):

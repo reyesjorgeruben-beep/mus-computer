@@ -1,5 +1,31 @@
-from mus_computer.cards.hand import Hand
 from abc import ABC, abstractmethod
+from enum import Enum
+
+from mus_computer.cards.hand import Hand
+
+
+class PhaseName(str, Enum):
+    """Stable typed names for the phases shared by game and strategy APIs."""
+
+    GRANDE = "Grande"
+    CHICA = "Chica"
+    PARES = "Pares"
+    JUEGO = "Juego"
+    PUNTO = "Punto"
+
+    def __str__(self) -> str:
+        return self.value
+
+    __hash__ = str.__hash__
+
+
+PHASE_ORDER = (
+    PhaseName.GRANDE,
+    PhaseName.CHICA,
+    PhaseName.PARES,
+    PhaseName.JUEGO,
+    PhaseName.PUNTO,
+)
 
 class Phase(ABC): 
     base_bet: int = 1

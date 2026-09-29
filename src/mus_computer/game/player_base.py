@@ -22,16 +22,22 @@ class PlayerBase(ABC):
     needs_discard_statistics = False
 
     def decision_context(self, global_context, seat: int, include_discards=False):
-        """Build private information using only this player's current hand."""
+        """Build a frozen private snapshot for this decision from this player's hand.
+
+        A new view keeps cards, phase eligibility, and intrinsic points aligned
+        with the current prompt. Reusing a mutable context across prompts could
+        leave a strategy holding stale or out-of-scope state; hand estimates are
+        cached by card set and mano status.
+        """
         from mus_computer.bots.strategies.contexts import HandStatistics, PlayerDecisionContext
         from mus_computer.cards.hand import Hand
-        from mus_computer.game.phases import Grande, Chica, Pares, Juego, Punto
+        from mus_computer.game.phases import Grande, Chica, Pares, Juego, Punto, PhaseName
         from mus_computer.probabilities.estimates import estimate_hand_statistics, estimate_discard_options
         is_mano = seat == global_context.mano_seat
         cards = tuple(self.cards)
         statistics = estimate_hand_statistics(cards, is_mano)
         phase_name = global_context.phase_name
-        if phase_name in ("Pares", "Juego") and global_context.eligible_seats:
+        if phase_name in (PhaseName.PARES, PhaseName.JUEGO) and global_context.eligible_seats:
             # Phase resolution keeps the first eligible seat on equal hands.
             has_priority = seat == min(global_context.eligible_seats)
             phase_statistics = estimate_hand_statistics(cards, has_priority)
@@ -41,7 +47,7 @@ class PlayerBase(ABC):
         return PlayerDecisionContext(
             self.name, self.team.name, seat, cards, global_context.phase_name,
             seat in global_context.eligible_seats,
-            {phase.__name__: phase.calculate_points(Hand(list(cards)))
+            {PhaseName(phase.__name__): phase.calculate_points(Hand(list(cards)))
              for phase in (Grande, Chica, Pares, Juego, Punto)},
             statistics,
             estimate_discard_options(cards, is_mano)

@@ -14,11 +14,17 @@ from mus_computer.bots.strategies.contexts import HandStatistics, OutcomeProbabi
 from mus_computer.cards.card import Card
 from mus_computer.cards.hand import Hand
 from mus_computer.constants import cards_space
-from mus_computer.game.phases import Chica, Grande, Juego, Pares, Punto
+from mus_computer.game.phases import Chica, Grande, Juego, Pares, Punto, PhaseName
 from mus_computer.probabilities.tables import canonical, discard_options, lookup
 
 
-_PHASES = {"Grande": Grande, "Chica": Chica, "Pares": Pares, "Juego": Juego, "Punto": Punto}
+_PHASES = {
+    PhaseName.GRANDE: Grande,
+    PhaseName.CHICA: Chica,
+    PhaseName.PARES: Pares,
+    PhaseName.JUEGO: Juego,
+    PhaseName.PUNTO: Punto,
+}
 _RANKS = tuple(cards_space)
 
 
@@ -68,10 +74,10 @@ def _hand_statistics(cards: tuple[Card, ...], is_mano: bool) -> HandStatistics:
     outcomes = {}
     expected_points = {}
     for name, phase in _PHASES.items():
-        if name == "Punto":
+        if name is PhaseName.PUNTO:
             outcome = estimate_punto(cards)
         else:
-            entry = lookup(cards, name)
+            entry = lookup(cards, name.value)
             outcome = OutcomeProbability(entry["p_win"], entry["p_tie"], entry["p_loss"])
         outcomes[name] = outcome
         points_on_win = phase.base_bet + phase.calculate_points(hand)
@@ -119,7 +125,7 @@ def estimate_discard_options(
             table = table_options.get(canonical(kept), {})
             outcomes = {}
             for phase in _PHASES:
-                p_win = table.get(phase, win[phase] / total)
+                p_win = table.get(phase.value, win[phase] / total)
                 p_tie = min(tie[phase] / total, max(0.0, 1.0 - p_win))
                 outcomes[phase] = OutcomeProbability(p_win, p_tie, max(0.0, 1.0 - p_win - p_tie))
             result[indices] = HandStatistics(outcomes, {

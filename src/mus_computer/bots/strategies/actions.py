@@ -34,12 +34,14 @@ class WagerAction(str, Enum):
     FOLD = "fold"
 
 
-A = TypeVar("A", bound=Hashable)
+ActionT = TypeVar("ActionT", bound=Hashable)
 
 
 @dataclass(frozen=True)
-class ActionDistribution(Generic[A]):
-    probabilities: Mapping[A, float]
+class ActionDistribution(Generic[ActionT]):
+    """A normalized distribution over one strategy's action type."""
+
+    probabilities: Mapping[ActionT, float]
 
     def __post_init__(self) -> None:
         probabilities = dict(self.probabilities)
@@ -51,7 +53,7 @@ class ActionDistribution(Generic[A]):
             raise ValueError("Action probabilities must be finite, nonnegative, and sum to one.")
         object.__setattr__(self, "probabilities", MappingProxyType(probabilities))
 
-    def sample(self, rng: random.Random, legal_actions: Collection[A]) -> A:
+    def sample(self, rng: random.Random, legal_actions: Collection[ActionT]) -> ActionT:
         legal = set(legal_actions)
         if not legal or any(
             action not in legal and probability > 0

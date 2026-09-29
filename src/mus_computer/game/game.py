@@ -1,11 +1,11 @@
 from mus_computer.cards.deck import Deck
 from mus_computer.cards.hand import Hand
-from mus_computer.game.phases import Phase, Grande, Chica, Pares, Juego, Punto
+from mus_computer.game.phases import Phase, PhaseName, Grande, Chica, Pares, Juego, Punto
 from mus_computer.game.player_base import PlayerBase
 from mus_computer.game.player import HumanPlayer
 from mus_computer.game.team import Team
 from mus_computer.game.wager_session import WagerSession, WagerOutcome
-from mus_computer.game.context import GlobalGameContext
+from mus_computer.game.context import GlobalGameContext, SeatOrderEntry
 from mus_computer.bots.strategies.actions import MusAction
 from typing import Callable
 
@@ -98,7 +98,7 @@ class Game:
         return GlobalGameContext(
             {t.name: t.points for t in self.teams}, self._mus_rounds, phase_name, None,
             tuple(self._public_actions), self._discard_counts,
-            tuple((p.name,p.team.name) for p in self.players_in_order), 0,
+            tuple(SeatOrderEntry(p.name, p.team.name) for p in self.players_in_order), 0,
             tuple(i for i,p in enumerate(self.players_in_order) if p in eligible),
         )
 
@@ -150,7 +150,7 @@ class Game:
             if self._is_contested(eligible):
                 result = WagerSession(
                     players=eligible, teams=tuple(self.teams), base_bet=phase.base_bet,
-                    phase_name=phase.__name__, team_scores={t.name:t.points for t in self.teams},
+                    phase_name=PhaseName(phase.__name__), team_scores={t.name:t.points for t in self.teams},
                     discard_counts=self._discard_counts, on_action=self._emit, phase_label=phase_label,
                     players_in_order=self.players_in_order, mus_exchanges=self._mus_rounds,
                     public_actions=self._public_actions,
