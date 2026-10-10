@@ -10,7 +10,7 @@ from mus_computer.game.context import GlobalGameContext
 
 def _weighted_hand_strength(statistics: HandStatistics, personality: BotPersonality) -> float:
     return sum(
-        weight * (statistics.phase_outcomes[name].p_win + 0.5 * statistics.phase_outcomes[name].p_tie)
+        weight * (statistics.outcomes_by_phase[name].p_win + 0.5 * statistics.outcomes_by_phase[name].p_tie)
         for name, weight in phase_utility_weights(personality).items()
     )
 

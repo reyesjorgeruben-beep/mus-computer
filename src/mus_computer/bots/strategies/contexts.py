@@ -19,22 +19,22 @@ class OutcomeProbability:
 class HandStatistics:
     """Hand estimates keyed by the typed phase each estimate describes."""
 
-    phase_outcomes: Mapping[PhaseName, OutcomeProbability]
-    expected_points: Mapping[PhaseName, float]
+    outcomes_by_phase: Mapping[PhaseName, OutcomeProbability]
+    expected_points_by_phase: Mapping[PhaseName, float]
 
     def __post_init__(self) -> None:
         object.__setattr__(
             self,
-            "phase_outcomes",
+            "outcomes_by_phase",
             MappingProxyType(
-                {PhaseName(phase): outcome for phase, outcome in self.phase_outcomes.items()}
+                {PhaseName(phase): outcome for phase, outcome in self.outcomes_by_phase.items()}
             ),
         )
         object.__setattr__(
             self,
-            "expected_points",
+            "expected_points_by_phase",
             MappingProxyType(
-                {PhaseName(phase): points for phase, points in self.expected_points.items()}
+                {PhaseName(phase): points for phase, points in self.expected_points_by_phase.items()}
             ),
         )
 
@@ -55,7 +55,7 @@ class PlayerDecisionContext:
     cards: tuple[Card, ...]
     phase_name: PhaseName | None
     eligible: bool
-    intrinsic_points: Mapping[PhaseName, int]
+    intrinsic_points_by_phase: Mapping[PhaseName, int]
     statistics: HandStatistics
     discard_options: Mapping[tuple[int, ...], HandStatistics]
 
@@ -65,9 +65,9 @@ class PlayerDecisionContext:
         object.__setattr__(self, "cards", tuple(self.cards))
         object.__setattr__(
             self,
-            "intrinsic_points",
+            "intrinsic_points_by_phase",
             MappingProxyType(
-                {PhaseName(phase): points for phase, points in self.intrinsic_points.items()}
+                {PhaseName(phase): points for phase, points in self.intrinsic_points_by_phase.items()}
             ),
         )
         object.__setattr__(self, "discard_options", MappingProxyType(dict(self.discard_options)))

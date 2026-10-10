@@ -29,7 +29,7 @@ class PhaseWagerStrategy:
     ) -> ActionDistribution[WagerAction]:
         if global_context.phase_name != self.phase_name or player_context.phase_name != self.phase_name:
             raise ValueError("Wager strategy and decision phase disagree.")
-        outcome = player_context.statistics.phase_outcomes[self.phase_name]
+        outcome = player_context.statistics.outcomes_by_phase[self.phase_name]
         own_score = global_context.team_scores.get(player_context.team_name, 0)
         opponent_score = max(
             (score for team, score in global_context.team_scores.items() if team != player_context.team_name),
@@ -38,7 +38,7 @@ class PhaseWagerStrategy:
         seat_count = max(1, len(global_context.seat_order) - 1)
         position = (player_context.seat - global_context.mano_seat) % len(global_context.seat_order)
         preference = 1.0 - abs(position / seat_count - personality.position_preference) * 2.0
-        expected = player_context.statistics.expected_points[self.phase_name]
+        expected = player_context.statistics.expected_points_by_phase[self.phase_name]
         confidence = (
             outcome.p_win + 0.5 * outcome.p_tie
             + min(0.1, max(0.0, expected) * 0.02)

@@ -71,18 +71,18 @@ def estimate_punto(cards: tuple[Card, ...] | list[Card]) -> OutcomeProbability:
 @lru_cache(maxsize=512)
 def _hand_statistics(cards: tuple[Card, ...], is_mano: bool) -> HandStatistics:
     hand = Hand(list(cards))
-    outcomes = {}
-    expected_points = {}
+    outcomes_by_phase = {}
+    expected_points_by_phase = {}
     for name, phase in _PHASES.items():
         if name is PhaseName.PUNTO:
             outcome = estimate_punto(cards)
         else:
             entry = lookup(cards, name.value)
             outcome = OutcomeProbability(entry["p_win"], entry["p_tie"], entry["p_loss"])
-        outcomes[name] = outcome
+        outcomes_by_phase[name] = outcome
         points_on_win = phase.base_bet + phase.calculate_points(hand)
-        expected_points[name] = (outcome.p_win + (outcome.p_tie if is_mano else 0.0)) * points_on_win
-    return HandStatistics(outcomes, expected_points)
+        expected_points_by_phase[name] = (outcome.p_win + (outcome.p_tie if is_mano else 0.0)) * points_on_win
+    return HandStatistics(outcomes_by_phase, expected_points_by_phase)
 
 
 def estimate_hand_statistics(
@@ -112,23 +112,23 @@ def estimate_discard_options(
                 result[indices] = estimate_hand_statistics(original, is_mano)
                 continue
             total = 0
-            win = {phase: 0.0 for phase in _PHASES}
-            tie = {phase: 0.0 for phase in _PHASES}
-            expected = {phase: 0.0 for phase in _PHASES}
+            wins_by_phase = {phase: 0.0 for phase in _PHASES}
+            ties_by_phase = {phase: 0.0 for phase in _PHASES}
+            expected_points_by_phase = {phase: 0.0 for phase in _PHASES}
             for drawn, weight in _rank_draws(remaining, n_discarded):
                 stats = estimate_hand_statistics(kept + drawn, is_mano)
                 total += weight
                 for phase in _PHASES:
-                    win[phase] += weight * stats.phase_outcomes[phase].p_win
-                    tie[phase] += weight * stats.phase_outcomes[phase].p_tie
-                    expected[phase] += weight * stats.expected_points[phase]
+                    wins_by_phase[phase] += weight * stats.outcomes_by_phase[phase].p_win
+                    ties_by_phase[phase] += weight * stats.outcomes_by_phase[phase].p_tie
+                    expected_points_by_phase[phase] += weight * stats.expected_points_by_phase[phase]
             table = table_options.get(canonical(kept), {})
-            outcomes = {}
+            outcomes_by_phase = {}
             for phase in _PHASES:
-                p_win = table.get(phase.value, win[phase] / total)
-                p_tie = min(tie[phase] / total, max(0.0, 1.0 - p_win))
-                outcomes[phase] = OutcomeProbability(p_win, p_tie, max(0.0, 1.0 - p_win - p_tie))
-            result[indices] = HandStatistics(outcomes, {
-                phase: value / total for phase, value in expected.items()
+                p_win = table.get(phase.value, wins_by_phase[phase] / total)
+                p_tie = min(ties_by_phase[phase] / total, max(0.0, 1.0 - p_win))
+                outcomes_by_phase[phase] = OutcomeProbability(p_win, p_tie, max(0.0, 1.0 - p_win - p_tie))
+            result[indices] = HandStatistics(outcomes_by_phase, {
+                phase: value / total for phase, value in expected_points_by_phase.items()
             })
     return MappingProxyType(result)

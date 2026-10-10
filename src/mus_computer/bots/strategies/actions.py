@@ -60,19 +60,15 @@ class ActionDistribution(Generic[ActionT]):
             for action, probability in self.probabilities.items()
         ):
             raise ValueError("Distribution assigns probability to an illegal action.")
-        point = rng.random()
-        cumulative = 0.0
-        last_action = None
-        for action, probability in self.probabilities.items():
-            if action not in legal or probability <= 0:
-                continue
-            cumulative += probability
-            last_action = action
-            if point < cumulative:
-                return action
-        if last_action is None:
-            raise ValueError("Distribution has no legal action with positive probability.")
-        return last_action
+        actions = tuple(
+            action for action, probability in self.probabilities.items()
+            if action in legal and probability > 0
+        )
+        return rng.choices(
+            actions,
+            weights=[self.probabilities[action] for action in actions],
+            k=1,
+        )[0]
 
 
 def legal_wager_actions(wager_state: WagerState | None) -> frozenset[WagerAction]:

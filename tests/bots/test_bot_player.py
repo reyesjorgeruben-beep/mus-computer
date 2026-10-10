@@ -69,7 +69,7 @@ def test_conservative_discard_strategy_keeps_strong_hand():
     )
     private = PlayerDecisionContext(
         private.player_name, private.team_name, private.seat, private.cards,
-        private.phase_name, private.eligible, private.intrinsic_points,
+        private.phase_name, private.eligible, private.intrinsic_points_by_phase,
         private.statistics, {(): private.statistics, (0,): poor},
     )
     assert bot.choose_discards(public, private) == ()

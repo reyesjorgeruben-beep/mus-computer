@@ -42,9 +42,9 @@ def test_juego_estimate_uses_eligible_priority_only_for_active_phase():
         player = ScriptedPlayer(name, Team(team_name))
         player.cards = cards
         private = player.decision_context(shared, seat)
-        juego = private.statistics.phase_outcomes["Juego"]
+        juego = private.statistics.outcomes_by_phase["Juego"]
         assert juego.p_tie > 0
         expected = 3 * (juego.p_win + (juego.p_tie if seat == 2 else 0))
-        assert private.statistics.expected_points["Juego"] == pytest.approx(expected)
+        assert private.statistics.expected_points_by_phase["Juego"] == pytest.approx(expected)
         for phase in ("Grande","Chica","Pares","Punto"):
-            assert private.statistics.expected_points[phase] == without_priority.expected_points[phase]
+            assert private.statistics.expected_points_by_phase[phase] == without_priority.expected_points_by_phase[phase]

@@ -65,7 +65,7 @@ def player_context(phase=None, probabilities=None, options=None, seat=0):
     return PlayerDecisionContext(
         player_name="Bot 1", team_name="A", seat=seat,
         cards=(Card.R, Card.R, Card.R, Card.R),
-        phase_name=phase, eligible=True, intrinsic_points={},
+        phase_name=phase, eligible=True, intrinsic_points_by_phase={},
         statistics=stats, discard_options=options or {(): stats},
     )
 

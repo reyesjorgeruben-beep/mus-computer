@@ -14,7 +14,7 @@ def _personality_weighted_point_utility(
 ) -> float:
     """Rank a hand by personality-weighted points without changing its estimates."""
     return sum(
-        weight * statistics.expected_points[name]
+        weight * statistics.expected_points_by_phase[name]
         for name, weight in phase_utility_weights(personality).items()
     )
 

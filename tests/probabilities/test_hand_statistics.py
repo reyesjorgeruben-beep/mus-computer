@@ -39,19 +39,19 @@ def test_mano_changes_expected_punto_points_but_not_tie_probability():
     cards = (Card.A, Card._4, Card._5, Card.R)
     later = estimate_hand_statistics(cards, is_mano=False)
     mano = estimate_hand_statistics(cards, is_mano=True)
-    assert mano.phase_outcomes["Punto"] == later.phase_outcomes["Punto"]
-    assert mano.expected_points["Punto"] - later.expected_points["Punto"] == pytest.approx(
-        mano.phase_outcomes["Punto"].p_tie
+    assert mano.outcomes_by_phase["Punto"] == later.outcomes_by_phase["Punto"]
+    assert mano.expected_points_by_phase["Punto"] - later.expected_points_by_phase["Punto"] == pytest.approx(
+        mano.outcomes_by_phase["Punto"].p_tie
     )
 
 
 def test_hand_statistics_uses_bundled_phase_lookup_and_intrinsic_points():
     cards = (Card.R, Card.R, Card.A, Card.A)
     stats = estimate_hand_statistics(cards)
-    assert set(stats.phase_outcomes) == {"Grande", "Chica", "Pares", "Juego", "Punto"}
-    assert stats.phase_outcomes["Grande"].p_win == lookup(cards, "Grande")["p_win"]
-    assert stats.expected_points["Pares"] == pytest.approx(
-        stats.phase_outcomes["Pares"].p_win * 3
+    assert set(stats.outcomes_by_phase) == {"Grande", "Chica", "Pares", "Juego", "Punto"}
+    assert stats.outcomes_by_phase["Grande"].p_win == lookup(cards, "Grande")["p_win"]
+    assert stats.expected_points_by_phase["Pares"] == pytest.approx(
+        stats.outcomes_by_phase["Pares"].p_win * 3
     )
 
 
@@ -60,7 +60,7 @@ def test_discard_options_use_original_indices_for_duplicate_ranks():
     options = estimate_discard_options(cards)
     assert len(options) == 16
     assert () in options and (0,) in options and (1,) in options and (0, 1, 2, 3) in options
-    assert options[(0,)].phase_outcomes["Grande"] == options[(1,)].phase_outcomes["Grande"]
-    assert options[()].phase_outcomes["Punto"] == estimate_punto(cards)
+    assert options[(0,)].outcomes_by_phase["Grande"] == options[(1,)].outcomes_by_phase["Grande"]
+    assert options[()].outcomes_by_phase["Punto"] == estimate_punto(cards)
     with pytest.raises(TypeError):
         options[(0,)] = options[()]

@@ -34,22 +34,25 @@ def test_global_context_copies_public_mappings_and_has_no_hidden_cards():
 
 
 def test_private_context_keeps_own_cards_and_freezes_statistics():
-    outcomes = {"Grande": OutcomeProbability(0.6, 0.1, 0.3)}
-    expected = {"Grande": 0.7}
-    statistics = HandStatistics(outcomes, expected)
-    intrinsic = {"Pares": 2}
+    outcomes_by_phase = {"Grande": OutcomeProbability(0.6, 0.1, 0.3)}
+    expected_points_by_phase = {"Grande": 0.7}
+    statistics = HandStatistics(
+        outcomes_by_phase=outcomes_by_phase,
+        expected_points_by_phase=expected_points_by_phase,
+    )
+    intrinsic_points_by_phase = {"Pares": 2}
     options = {(0,): statistics}
     private = PlayerDecisionContext(
         "Bot 1", "A", 0, (Card.R,) * 4, "Grande", True,
-        intrinsic, statistics, options,
+        intrinsic_points_by_phase, statistics, options,
     )
-    outcomes["Grande"] = OutcomeProbability(0, 0, 1)
-    expected["Grande"] = 99
-    intrinsic["Pares"] = 99
+    outcomes_by_phase["Grande"] = OutcomeProbability(0, 0, 1)
+    expected_points_by_phase["Grande"] = 99
+    intrinsic_points_by_phase["Pares"] = 99
     options[(0,)] = HandStatistics({}, {})
-    assert private.statistics.phase_outcomes["Grande"].p_win == 0.6
-    assert private.statistics.expected_points["Grande"] == 0.7
-    assert private.intrinsic_points["Pares"] == 2
+    assert private.statistics.outcomes_by_phase["Grande"].p_win == 0.6
+    assert private.statistics.expected_points_by_phase["Grande"] == 0.7
+    assert private.intrinsic_points_by_phase["Pares"] == 2
     assert private.discard_options[(0,)] is statistics
     with pytest.raises(TypeError):
         private.discard_options[(0,)] = statistics

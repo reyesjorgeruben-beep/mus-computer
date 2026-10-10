@@ -41,9 +41,9 @@ class PlayerBase(ABC):
             # Phase resolution keeps the first eligible seat on equal hands.
             has_priority = seat == min(global_context.eligible_seats)
             phase_statistics = estimate_hand_statistics(cards, has_priority)
-            expected_points = dict(statistics.expected_points)
-            expected_points[phase_name] = phase_statistics.expected_points[phase_name]
-            statistics = HandStatistics(statistics.phase_outcomes, expected_points)
+            expected_points_by_phase = dict(statistics.expected_points_by_phase)
+            expected_points_by_phase[phase_name] = phase_statistics.expected_points_by_phase[phase_name]
+            statistics = HandStatistics(statistics.outcomes_by_phase, expected_points_by_phase)
         return PlayerDecisionContext(
             self.name, self.team.name, seat, cards, global_context.phase_name,
             seat in global_context.eligible_seats,
