@@ -7,10 +7,10 @@ import pytest
 from mus_computer.bots import BotPlayer
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.strategies.actions import (
-    ActionDistribution, DecisionKind, MusAction, WagerAction,
+    ActionDistribution, DecisionKind, DiscardAction, MusAction, WagerAction,
 )
 from mus_computer.bots.strategies.contexts import (
-    HandStatistics, OutcomeProbability, PlayerDecisionContext,
+    DiscardOption, HandStatistics, OutcomeProbability, PlayerDecisionContext,
 )
 from mus_computer.bots.strategies.portfolio import StrategyPortfolio
 from mus_computer.cards.card import Card
@@ -66,11 +66,12 @@ def player_context(phase=None, probabilities=None, options=None, seat=0):
         player_name="Bot 1", team_name="A", seat=seat,
         cards=(Card.R, Card.R, Card.R, Card.R),
         phase_name=phase, eligible=True, intrinsic_points_by_phase={},
-        statistics=stats, discard_options=options or {(): stats},
+        statistics=stats,
+        discard_options=options if options is not None else (DiscardOption(DiscardAction(()), stats),),
     )
 
 
-def portfolio(mus=MusAction.MUS, discard=(0, 2), wager=WagerAction.MATCH_OR_PASS):
+def portfolio(mus=MusAction.MUS, discard=DiscardAction((0, 2)), wager=WagerAction.MATCH_OR_PASS):
     return StrategyPortfolio(
         mus=FixedStrategy(mus),
         discard=FixedStrategy(discard),
@@ -91,9 +92,13 @@ def test_injected_mus_strategy_controls_typed_vote(action):
 def test_injected_discard_strategy_returns_original_card_indices():
     bot = BotPlayer("Bot 1", Team("A"), genome(), portfolio(), random.Random(0))
     public = global_context()
-    private = player_context(options={(0, 2): player_context().statistics, (): player_context().statistics})
+    statistics = player_context().statistics
+    private = player_context(options=(
+        DiscardOption(DiscardAction((0, 2)), statistics),
+        DiscardOption(DiscardAction(()), statistics),
+    ))
 
-    assert bot.take_decision(DecisionKind.DISCARD, public, private) == (0, 2)
+    assert bot.take_decision(DecisionKind.DISCARD, public, private) == DiscardAction((0, 2))
     assert bot.choose_discards(public, private) == (0, 2)
 
 
@@ -119,7 +124,7 @@ def test_injected_portfolio_selects_only_the_current_phase_strategy():
         name: FixedStrategy(WagerAction.RAISE_2 if name == "Pares" else WagerAction.MATCH_OR_PASS)
         for name in PHASES
     }
-    selected = StrategyPortfolio(FixedStrategy(MusAction.MUS), FixedStrategy(()), phases)
+    selected = StrategyPortfolio(FixedStrategy(MusAction.MUS), FixedStrategy(DiscardAction(())), phases)
     bot = BotPlayer("Bot 1", Team("A"), genome(), selected)
 
     assert bot.wager_action(global_context("Pares"), player_context("Pares")) is WagerAction.RAISE_2
@@ -127,9 +132,9 @@ def test_injected_portfolio_selects_only_the_current_phase_strategy():
 
 
 def test_discard_action_must_be_one_of_the_estimated_legal_options():
-    bot = BotPlayer("Bot 1", Team("A"), genome(), portfolio(discard=(0, 2)))
+    bot = BotPlayer("Bot 1", Team("A"), genome(), portfolio(discard=DiscardAction((0, 2))))
     with pytest.raises(ValueError, match="illegal"):
-        bot.choose_discards(global_context(), player_context(options={(): player_context().statistics}))
+        bot.choose_discards(global_context(), player_context())
 
 
 def test_default_portfolio_uses_distinct_phase_policies_and_phase_statistics():
@@ -180,7 +185,10 @@ def test_default_discard_policy_uses_aggressiveness_only_to_break_value_ties():
     selected = StrategyPortfolio.default()
     ordinary = player_context(probabilities={name: 0.5 for name in PHASES}).statistics
     improved = player_context(probabilities={name: 0.53 for name in PHASES}).statistics
-    better_discard = player_context(options={(): ordinary, (0,): improved})
+    better_discard = player_context(options=(
+        DiscardOption(DiscardAction(()), ordinary),
+        DiscardOption(DiscardAction((0,)), improved),
+    ))
     public = global_context()
     conservative = selected.discard.decide(
         public, better_discard, genome(discard_aggressiveness=0)
@@ -188,18 +196,21 @@ def test_default_discard_policy_uses_aggressiveness_only_to_break_value_ties():
     aggressive = selected.discard.decide(
         public, better_discard, genome(discard_aggressiveness=1)
     ).probabilities
-    assert conservative == {(0,): 1.0}
-    assert aggressive == {(0,): 1.0}
+    assert conservative == {DiscardAction((0,)): 1.0}
+    assert aggressive == {DiscardAction((0,)): 1.0}
 
-    tied_discards = player_context(options={(): ordinary, (0,): ordinary})
+    tied_discards = player_context(options=(
+        DiscardOption(DiscardAction(()), ordinary),
+        DiscardOption(DiscardAction((0,)), ordinary),
+    ))
     conservative_tie = selected.discard.decide(
         public, tied_discards, genome(discard_aggressiveness=0)
     ).probabilities
     aggressive_tie = selected.discard.decide(
         public, tied_discards, genome(discard_aggressiveness=1)
     ).probabilities
-    assert conservative_tie == {(): 1.0}
-    assert aggressive_tie == {(0,): 1.0}
+    assert conservative_tie == {DiscardAction(()): 1.0}
+    assert aggressive_tie == {DiscardAction((0,)): 1.0}
 
 
 def test_default_wager_policy_changes_with_thresholds_and_public_context():

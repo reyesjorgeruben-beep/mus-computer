@@ -3,7 +3,7 @@ import random
 import pytest
 
 from mus_computer.bots.strategies.actions import (
-    ActionDistribution, MusAction, WagerAction, legal_wager_actions,
+    ActionDistribution, DiscardAction, MusAction, WagerAction, legal_wager_actions,
 )
 from mus_computer.game.context import WagerState
 
@@ -15,6 +15,22 @@ def test_distribution_copies_input_and_samples_only_legal_action():
     assert distribution.sample(random.Random(0), {MusAction.MUS}) is MusAction.MUS
     with pytest.raises(TypeError):
         distribution.probabilities[MusAction.MUS] = 0.0
+
+
+def test_discard_action_is_a_typed_distribution_key():
+    keep_cards = DiscardAction(())
+    discard_first = DiscardAction((0,))
+    distribution = ActionDistribution({keep_cards: 0.25, discard_first: 0.75})
+
+    assert distribution.sample(random.Random(0), {keep_cards, discard_first}) == discard_first
+    assert DiscardAction((2, 0)) == DiscardAction((0, 2))
+    with pytest.raises(ValueError, match="duplicate"):
+        DiscardAction((0, 0))
+
+
+def test_distribution_rejects_mixed_action_types():
+    with pytest.raises(ValueError, match="one action type"):
+        ActionDistribution({MusAction.MUS: 0.5, WagerAction.FOLD: 0.5})
 
 
 @pytest.mark.parametrize("values", [

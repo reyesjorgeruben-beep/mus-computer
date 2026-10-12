@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Mapping
 
+from mus_computer.bots.strategies.actions import DiscardAction
 from mus_computer.cards.card import Card
 from mus_computer.game.phases import PhaseName
 
@@ -40,13 +41,26 @@ class HandStatistics:
 
 
 @dataclass(frozen=True)
+class DiscardOption:
+    """A legal discard action and the estimated hand after its exchange."""
+
+    action: DiscardAction
+    statistics: HandStatistics
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.action, DiscardAction):
+            raise TypeError("A discard option requires a DiscardAction.")
+        if not isinstance(self.statistics, HandStatistics):
+            raise TypeError("A discard option requires HandStatistics.")
+
+
+@dataclass(frozen=True)
 class PlayerDecisionContext:
     """Frozen private snapshot for one decision prompt.
 
     ``statistics`` describes the current hand across phases. ``discard_options``
-    contains post-exchange estimates when requested; an empty mapping means
-    those alternatives were not computed, so discard policies can safely fall
-    back to standing pat using ``statistics``.
+    is always nonempty. Without post-exchange estimates it contains only the
+    option to keep all cards, using the current-hand statistics.
     """
 
     player_name: str
@@ -57,7 +71,7 @@ class PlayerDecisionContext:
     eligible: bool
     intrinsic_points_by_phase: Mapping[PhaseName, int]
     statistics: HandStatistics
-    discard_options: Mapping[tuple[int, ...], HandStatistics]
+    discard_options: tuple[DiscardOption, ...]
 
     def __post_init__(self) -> None:
         if self.phase_name is not None:
@@ -70,4 +84,12 @@ class PlayerDecisionContext:
                 {PhaseName(phase): points for phase, points in self.intrinsic_points_by_phase.items()}
             ),
         )
-        object.__setattr__(self, "discard_options", MappingProxyType(dict(self.discard_options)))
+        options = tuple(self.discard_options)
+        if not options or any(not isinstance(option, DiscardOption) for option in options):
+            raise ValueError("Discard options must contain at least one DiscardOption.")
+        actions = [option.action for option in options]
+        if len(set(actions)) != len(actions):
+            raise ValueError("Discard options cannot repeat an action.")
+        if any(index >= len(self.cards) for action in actions for index in action.indices):
+            raise ValueError("Discard option contains an invalid card index.")
+        object.__setattr__(self, "discard_options", options)

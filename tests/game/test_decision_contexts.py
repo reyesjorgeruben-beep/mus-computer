@@ -4,8 +4,9 @@ import pytest
 
 from mus_computer.cards.card import Card
 from mus_computer.game.context import GlobalGameContext, WagerState
+from mus_computer.bots.strategies.actions import DiscardAction
 from mus_computer.bots.strategies.contexts import (
-    HandStatistics, OutcomeProbability, PlayerDecisionContext,
+    DiscardOption, HandStatistics, OutcomeProbability, PlayerDecisionContext,
 )
 from mus_computer.game.team import Team
 from mus_computer.game.wager_session import WagerSession
@@ -41,7 +42,7 @@ def test_private_context_keeps_own_cards_and_freezes_statistics():
         expected_points_by_phase=expected_points_by_phase,
     )
     intrinsic_points_by_phase = {"Pares": 2}
-    options = {(0,): statistics}
+    options = [DiscardOption(DiscardAction((0,)), statistics)]
     private = PlayerDecisionContext(
         "Bot 1", "A", 0, (Card.R,) * 4, "Grande", True,
         intrinsic_points_by_phase, statistics, options,
@@ -49,13 +50,37 @@ def test_private_context_keeps_own_cards_and_freezes_statistics():
     outcomes_by_phase["Grande"] = OutcomeProbability(0, 0, 1)
     expected_points_by_phase["Grande"] = 99
     intrinsic_points_by_phase["Pares"] = 99
-    options[(0,)] = HandStatistics({}, {})
+    options.append(DiscardOption(DiscardAction((1,)), HandStatistics({}, {})))
     assert private.statistics.outcomes_by_phase["Grande"].p_win == 0.6
     assert private.statistics.expected_points_by_phase["Grande"] == 0.7
     assert private.intrinsic_points_by_phase["Pares"] == 2
-    assert private.discard_options[(0,)] is statistics
+    assert private.discard_options[0].statistics is statistics
+    assert private.discard_options[0].action == DiscardAction((0,))
     with pytest.raises(TypeError):
-        private.discard_options[(0,)] = statistics
+        private.discard_options[0] = options[1]
+
+
+def test_private_context_requires_distinct_legal_discard_options():
+    statistics = HandStatistics({}, {})
+    keep_cards = DiscardOption(DiscardAction(()), statistics)
+    details = dict(
+        player_name="Bot 1", team_name="A", seat=0, cards=(Card.R,) * 4,
+        phase_name=None, eligible=True, intrinsic_points_by_phase={},
+        statistics=statistics,
+    )
+    with pytest.raises(ValueError, match="at least one"):
+        PlayerDecisionContext(**details, discard_options=())
+    with pytest.raises(ValueError, match="repeat"):
+        PlayerDecisionContext(**details, discard_options=(keep_cards, keep_cards))
+    with pytest.raises(ValueError, match="invalid card index"):
+        PlayerDecisionContext(
+            **details,
+            discard_options=(DiscardOption(DiscardAction((4,)), statistics),),
+        )
+    with pytest.raises(ValueError, match="DiscardOption"):
+        PlayerDecisionContext(**details, discard_options={(): statistics})
+    with pytest.raises(TypeError, match="DiscardAction"):
+        DiscardOption((0,), statistics)
 
 
 def test_public_context_rejects_terminal_hand_display_events():

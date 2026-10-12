@@ -1,9 +1,10 @@
 """Bot player whose actions come from an injectable strategy portfolio."""
 
 import random
+from typing import Literal, overload
 
 from mus_computer.bots.strategies.actions import (
-    DecisionKind, MusAction, WagerAction, legal_wager_actions,
+    DecisionKind, DiscardAction, MusAction, WagerAction, legal_wager_actions,
 )
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
 from mus_computer.bots.strategies.personality import BotPersonality
@@ -29,20 +30,42 @@ class BotPlayer(PlayerBase):
         self.strategies = strategies if strategies is not None else StrategyPortfolio.default()
         self._rng = rng if rng is not None else random.Random()
 
+    @overload
+    def take_decision(
+        self,
+        kind: Literal[DecisionKind.MUS],
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+    ) -> MusAction: ...
+
+    @overload
+    def take_decision(
+        self,
+        kind: Literal[DecisionKind.DISCARD],
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+    ) -> DiscardAction: ...
+
+    @overload
+    def take_decision(
+        self,
+        kind: Literal[DecisionKind.WAGER],
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+    ) -> WagerAction: ...
+
     def take_decision(
         self,
         kind: DecisionKind,
         global_context: GlobalGameContext,
         player_context: PlayerDecisionContext,
-    ) -> MusAction | tuple[int, ...] | WagerAction:
+    ) -> MusAction | DiscardAction | WagerAction:
         if kind is DecisionKind.MUS:
             distribution = self.strategies.mus.decide(global_context, player_context, self._genome)
             return distribution.sample(self._rng, frozenset(MusAction))
         if kind is DecisionKind.DISCARD:
             distribution = self.strategies.discard.decide(global_context, player_context, self._genome)
-            legal = set(player_context.discard_options)
-            if not legal:
-                legal = {()}
+            legal = {option.action for option in player_context.discard_options}
             return distribution.sample(self._rng, legal)
         if kind is DecisionKind.WAGER:
             phase = global_context.phase_name or player_context.phase_name
@@ -62,7 +85,7 @@ class BotPlayer(PlayerBase):
     def choose_discards(
         self, global_context: GlobalGameContext, player_context: PlayerDecisionContext,
     ) -> tuple[int, ...]:
-        return self.take_decision(DecisionKind.DISCARD, global_context, player_context)
+        return self.take_decision(DecisionKind.DISCARD, global_context, player_context).indices
 
     def wager_action(
         self, global_context: GlobalGameContext, player_context: PlayerDecisionContext,

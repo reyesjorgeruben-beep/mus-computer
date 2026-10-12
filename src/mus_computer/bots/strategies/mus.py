@@ -25,7 +25,7 @@ class EstimateMusStrategy:
     ) -> ActionDistribution[MusAction]:
         current = _weighted_hand_strength(player_context.statistics, personality)
         best_after_discard = max(
-            (_weighted_hand_strength(stats, personality) for stats in player_context.discard_options.values()),
+            (_weighted_hand_strength(option.statistics, personality) for option in player_context.discard_options),
             default=current,
         )
         improvement = max(0.0, best_after_discard - current)

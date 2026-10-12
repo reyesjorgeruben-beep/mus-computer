@@ -4,9 +4,9 @@ import random
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.bot_player import BotPlayer
-from mus_computer.bots.strategies.actions import MusAction, WagerAction
+from mus_computer.bots.strategies.actions import DiscardAction, MusAction, WagerAction
 from mus_computer.bots.strategies.contexts import (
-    HandStatistics, OutcomeProbability, PlayerDecisionContext,
+    DiscardOption, HandStatistics, OutcomeProbability, PlayerDecisionContext,
 )
 from mus_computer.cards.card import Card
 from mus_computer.game.context import GlobalGameContext, WagerState
@@ -42,13 +42,30 @@ def _contexts(win_probability=0.5, phase=None, wager=None, cards=None):
         0, (0, 1, 2, 3),
     )
     private = PlayerDecisionContext(
-        "bot", "A", 0, cards, phase, True, {}, stats, {(): stats},
+        "bot", "A", 0, cards, phase, True, {}, stats,
+        (DiscardOption(DiscardAction(()), stats),),
     )
     return public, private
 
 
 def test_bot_player_is_player_base():
     assert isinstance(BotPlayer("bot", Team("A"), _genome()), PlayerBase)
+
+
+def test_discard_options_are_explicit_with_and_without_estimates():
+    bot = BotPlayer("bot", Team("A"), _genome())
+    bot.cards = [Card.R, Card.R, Card.A, Card.A]
+    public, _ = _contexts()
+
+    without_estimates = bot.decision_context(public, 0, include_discards=False)
+    assert len(without_estimates.discard_options) == 1
+    assert without_estimates.discard_options[0].action == DiscardAction(())
+    assert without_estimates.discard_options[0].statistics is without_estimates.statistics
+
+    with_estimates = bot.decision_context(public, 0, include_discards=True)
+    assert len(with_estimates.discard_options) == 16
+    assert DiscardAction(()) in {option.action for option in with_estimates.discard_options}
+    assert DiscardAction((0, 2)) in {option.action for option in with_estimates.discard_options}
 
 
 def test_bot_uses_fresh_private_statistics_for_mus():
@@ -70,7 +87,10 @@ def test_conservative_discard_strategy_keeps_strong_hand():
     private = PlayerDecisionContext(
         private.player_name, private.team_name, private.seat, private.cards,
         private.phase_name, private.eligible, private.intrinsic_points_by_phase,
-        private.statistics, {(): private.statistics, (0,): poor},
+        private.statistics, (
+            DiscardOption(DiscardAction(()), private.statistics),
+            DiscardOption(DiscardAction((0,)), poor),
+        ),
     )
     assert bot.choose_discards(public, private) == ()
 

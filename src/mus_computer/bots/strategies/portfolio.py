@@ -2,16 +2,16 @@
 
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping, Protocol, TypeVar
+from typing import Hashable, Mapping, Protocol, TypeVar
 
-from mus_computer.bots.strategies.actions import ActionDistribution, MusAction, WagerAction
+from mus_computer.bots.strategies.actions import ActionDistribution, DiscardAction, MusAction, WagerAction
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
 from mus_computer.bots.strategies.personality import BotPersonality
 from mus_computer.game.context import GlobalGameContext
 from mus_computer.game.phases import PHASE_ORDER, PhaseName
 
 
-ActionT = TypeVar("ActionT")
+ActionT = TypeVar("ActionT", bound=Hashable)
 
 
 class DecisionStrategy(Protocol[ActionT]):
@@ -29,7 +29,7 @@ class StrategyPortfolio:
     """One Mus policy, one discard policy, and one wager policy per phase."""
 
     mus: DecisionStrategy[MusAction]
-    discard: DecisionStrategy[tuple[int, ...]]
+    discard: DecisionStrategy[DiscardAction]
     wagers_by_phase: Mapping[PhaseName, DecisionStrategy[WagerAction]]
 
     def __post_init__(self) -> None:

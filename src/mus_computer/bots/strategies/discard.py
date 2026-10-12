@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 
-from mus_computer.bots.strategies.actions import ActionDistribution
-from mus_computer.bots.strategies.contexts import HandStatistics, PlayerDecisionContext
+from mus_computer.bots.strategies.actions import ActionDistribution, DiscardAction
+from mus_computer.bots.strategies.contexts import DiscardOption, HandStatistics, PlayerDecisionContext
 from mus_computer.bots.strategies.personality import BotPersonality, phase_utility_weights
 from mus_computer.game.context import GlobalGameContext
 
@@ -19,21 +19,31 @@ def _personality_weighted_point_utility(
     )
 
 
-def _discard_aggressiveness_tiebreak(discard_count: int, personality: BotPersonality) -> float:
+def _discard_tiebreak(discard_count: int, personality: BotPersonality) -> float:
     """Apply discard preference only after two options have equal utility."""
     return (personality.discard_aggressiveness - 0.5) * discard_count
 
 
-def _discard_option_rank(
-    indices: tuple[int, ...],
-    statistics: HandStatistics,
+@dataclass(frozen=True, order=True)
+class DiscardOptionScore:
+    """Ordered criteria for choosing one discard option."""
+
+    phase_utility: float
+    discard_tiebreak: float
+    fewer_discards: int
+    indices: tuple[int, ...]
+
+
+def _discard_option_score(
+    option: DiscardOption,
     personality: BotPersonality,
-) -> tuple[float, float, int, tuple[int, ...]]:
-    return (
-        _personality_weighted_point_utility(statistics, personality),
-        _discard_aggressiveness_tiebreak(len(indices), personality),
-        -len(indices),
-        indices,
+) -> DiscardOptionScore:
+    discard_count = len(option.action.indices)
+    return DiscardOptionScore(
+        phase_utility=_personality_weighted_point_utility(option.statistics, personality),
+        discard_tiebreak=_discard_tiebreak(discard_count, personality),
+        fewer_discards=-discard_count,
+        indices=option.action.indices,
     )
 
 
@@ -43,7 +53,7 @@ class PersonalityWeightedDiscardStrategy:
 
     The underlying expected-point estimates remain objective; personality
     weights express how this bot ranks phase value. If post-discard estimates
-    were not requested, the only candidate is standing pat (``()``).
+    were not requested, the only option is to keep all cards.
     """
 
     def decide(
@@ -51,20 +61,12 @@ class PersonalityWeightedDiscardStrategy:
         global_context: GlobalGameContext,
         player_context: PlayerDecisionContext,
         personality: BotPersonality,
-    ) -> ActionDistribution[tuple[int, ...]]:
-        options = dict(player_context.discard_options) or {(): player_context.statistics}
-        candidates = {}
-        for indices, statistics in options.items():
-            if any(index < 0 or index >= len(player_context.cards) for index in indices):
-                raise ValueError("Discard option contains an invalid card index.")
-            if len(set(indices)) != len(indices):
-                raise ValueError("Discard option repeats a card index.")
-            candidates[indices] = statistics
+    ) -> ActionDistribution[DiscardAction]:
         best = max(
-            candidates,
-            key=lambda indices: _discard_option_rank(indices, candidates[indices], personality),
+            player_context.discard_options,
+            key=lambda option: _discard_option_score(option, personality),
         )
-        return ActionDistribution({best: 1.0})
+        return ActionDistribution({best.action: 1.0})
 
 
 # Retain the original import name for callers that adopted the first strategy API.

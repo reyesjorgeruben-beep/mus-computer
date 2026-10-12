@@ -34,17 +34,40 @@ class WagerAction(str, Enum):
     FOLD = "fold"
 
 
+@dataclass(frozen=True)
+class DiscardAction:
+    """Original positions of cards to discard; empty means keep every card."""
+
+    indices: tuple[int, ...]
+
+    def __post_init__(self) -> None:
+        indices = tuple(self.indices)
+        if any(type(index) is not int or index < 0 for index in indices):
+            raise ValueError("Discard indices must be nonnegative integers.")
+        if len(set(indices)) != len(indices):
+            raise ValueError("Discard indices cannot contain duplicates.")
+        object.__setattr__(self, "indices", tuple(sorted(indices)))
+
+
 ActionT = TypeVar("ActionT", bound=Hashable)
 
 
 @dataclass(frozen=True)
 class ActionDistribution(Generic[ActionT]):
-    """A normalized distribution over one strategy's action type."""
+    """Probabilities over one hashable action type per decision.
+
+    Mus and wager policies use enum actions; discard policies use
+    ``DiscardAction``. A distribution never mixes these action types.
+    """
 
     probabilities: Mapping[ActionT, float]
 
     def __post_init__(self) -> None:
         probabilities = dict(self.probabilities)
+        if probabilities:
+            action_type = type(next(iter(probabilities)))
+            if any(type(action) is not action_type for action in probabilities):
+                raise ValueError("A distribution must contain one action type.")
         if (
             not probabilities
             or any(not math.isfinite(value) or value < 0 for value in probabilities.values())
