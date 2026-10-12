@@ -23,7 +23,9 @@ Each bot receives four cards. In seat order, players say `mus` or `corta`. If ev
 
 The hand proceeds through Grande, Chica (Pequeña), Pares, and Juego, or Punto when no one has Juego. Wagers are made for a team. One eligible defender's `quiero` accepts a wager; every eligible defender must say `no quiero` to reject it. An opening `envida` sets the total stake (bare `envida` means two points); a later `envida N` adds N to the current offer. A refused offer gives the offering team the previously accepted stake immediately. Other phase awards are settled after Juego or Punto, in phase order. The first team to reach 40 wins. An accepted `ordago` settles the match immediately by the phase's cards; refusing it awards only the previous stake.
 
-The default terminal runner uses random bots. The implemented contextual `BotPlayer` combines public game state, its own cards and lookup-backed hand estimates, and personality parameters through injectable strategies for Mus, discards, and each wagering phase. Its default strategic policy is heuristic and untrained; table calibration remains open. Use `BotPlayer` through the Python API to select these strategies.
+The default terminal runner uses random bots. The contextual `BotPlayer` receives a `BotPersonality` containing trainable parameters and an optional `StrategyPortfolio` defining how to use them. `MusStrategy`, `DiscardStrategy`, and `WagerStrategy` are the replaceable decision interfaces. The built-in implementations are `EstimateMusStrategy`, `PersonalityWeightedDiscardStrategy`, and `HeuristicWagerStrategy`; `StrategyPortfolio.default()` assembles them.
+
+Supplying a portfolio to `BotPlayer(..., personality=..., strategies=...)` can replace any policy without changing the personality or game rules. The built-in policies are heuristic and untrained; table calibration remains open.
 
 ## Repository layout
 
