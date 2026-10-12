@@ -38,8 +38,8 @@ class PlayerBase(ABC):
         cards = tuple(self.cards)
         statistics = estimate_hand_statistics(cards, is_mano)
         phase_name = global_context.phase_name
-        if phase_name in (PhaseName.PARES, PhaseName.JUEGO) and global_context.eligible_seats:
-            # Phase resolution keeps the first eligible seat on equal hands.
+        if phase_name is not None and global_context.eligible_seats:
+            # Every phase resolves an equal hand in favor of its first eligible seat.
             has_priority = seat == min(global_context.eligible_seats)
             phase_statistics = estimate_hand_statistics(cards, has_priority)
             expected_points_by_phase = dict(statistics.expected_points_by_phase)

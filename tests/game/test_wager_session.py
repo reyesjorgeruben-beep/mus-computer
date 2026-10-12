@@ -2,6 +2,7 @@ import pytest
 from mus_computer.game.team import Team
 from mus_computer.cards.card import Card
 from mus_computer.game.wager_session import WagerSession
+from mus_computer.game.context import GlobalGameContext
 from tests.conftest import ScriptedPlayer as BaseScriptedPlayer
 
 
@@ -27,11 +28,76 @@ def make_players(team_a, team_b, actions_a1, actions_b1, actions_a2=(), actions_
     return players
 
 
-def run(players, base_bet=1):
+def session_from_parts(
+    players, base_bet, phase_name, team_scores, teams,
+    discard_counts=None, on_action=None, phase_label=None,
+    players_in_order=None, mus_exchanges=0, public_actions=(), mano_seat=0,
+):
+    all_players = list(players_in_order if players_in_order is not None else players)
+    public_context = GlobalGameContext(
+        team_scores=team_scores,
+        mus_exchanges=mus_exchanges,
+        phase_name=phase_name,
+        wager=None,
+        public_actions=tuple(public_actions),
+        discard_counts=discard_counts or {},
+        seat_order=tuple((player.name, player.team.name) for player in all_players),
+        mano_seat=mano_seat,
+        eligible_seats=tuple(seat for seat, player in enumerate(all_players) if player in players),
+    )
     return WagerSession(
+        players, base_bet, public_context, teams,
+        players_in_order=all_players, on_action=on_action, phase_label=phase_label,
+    )
+
+
+def run(players, base_bet=1):
+    return session_from_parts(
         players, base_bet, "Grande", {"A": 0, "B": 0},
         teams=(players[0].team, players[1].team),
     ).run()
+
+
+def test_session_uses_one_public_context_for_wager_prompts(teams):
+    team_a, team_b = teams
+    seen = []
+
+    class ContextPlayer(ScriptedPlayer):
+        def wager_action(self, shared, private):
+            seen.append(shared)
+            return super().wager_action(shared, private)
+
+    players = [
+        ContextPlayer("A1", team_a, wager_actions=[0]),
+        ContextPlayer("B1", team_b, wager_actions=[0]),
+    ]
+    public_context = GlobalGameContext(
+        team_scores={"A": 8, "B": 9}, mus_exchanges=2,
+        phase_name="Grande", wager=None,
+        public_actions=("Mus | A1: corta",), discard_counts={"A1": 1},
+        seat_order=(("A1", "A"), ("B1", "B")), mano_seat=0,
+        eligible_seats=(0, 1),
+    )
+
+    WagerSession(players, 1, public_context, teams).run()
+
+    assert [context.phase_name for context in seen] == ["Grande", "Grande"]
+    assert all(context.team_scores == {"A": 8, "B": 9} for context in seen)
+    assert all(context.mus_exchanges == 2 for context in seen)
+    assert all("Mus | A1: corta" in context.public_actions for context in seen)
+
+
+def test_session_rejects_public_eligibility_that_disagrees_with_players(teams):
+    team_a, team_b = teams
+    players = [ScriptedPlayer("A1", team_a), ScriptedPlayer("B1", team_b)]
+    context = GlobalGameContext(
+        team_scores={"A": 0, "B": 0}, mus_exchanges=0,
+        phase_name="Grande", wager=None, public_actions=(), discard_counts={},
+        seat_order=(("A1", "A"), ("B1", "B")), mano_seat=0,
+        eligible_seats=(0,),
+    )
+    with pytest.raises(ValueError, match="eligibility"):
+        WagerSession(players, 1, context, teams)
 
 
 class TestWagerSessionAllPass:
@@ -114,7 +180,7 @@ class TestWagerSessionRaiseAndCall:
         a1 = ScriptedPlayer("A1", team_a, wager_actions=[2, 0])
         b1 = ScriptedPlayer("B1", team_b, wager_actions=[3])
         events = []
-        winner, bet = WagerSession(
+        winner, bet = session_from_parts(
             players=[a1, b1],
             teams=(team_a, team_b),
             base_bet=1,
@@ -139,7 +205,7 @@ class TestWagerSessionFourPlayers:
         b1 = ScriptedPlayer("B1", team_b, wager_actions=[2])
         a2 = ScriptedPlayer("A2", team_a, wager_actions=[0])
         b2 = ScriptedPlayer("B2", team_b, wager_actions=[])
-        winner, bet = WagerSession(
+        winner, bet = session_from_parts(
             [a1, b1, a2, b2], 1, "Grande", {}, teams=(team_a, team_b)
         ).run()
         assert winner is None
@@ -152,7 +218,7 @@ class TestWagerSessionFourPlayers:
         b1 = ScriptedPlayer("B1", team_b, wager_actions=[-1])
         a2 = ScriptedPlayer("A2", team_a, wager_actions=[])
         b2 = ScriptedPlayer("B2", team_b, wager_actions=[-1])
-        winner, bet = WagerSession(
+        winner, bet = session_from_parts(
             [a1, b1, a2, b2], 1, "Grande", {}, teams=(team_a, team_b)
         ).run()
         assert winner is team_a
@@ -173,7 +239,7 @@ class TestWagerSessionContext:
         a1 = RecordingPlayer("A1", team_a, wager_actions=[2, 0])
         b1 = RecordingPlayer("B1", team_b, wager_actions=[0])
 
-        WagerSession([a1, b1], 1, "Grande", {}, teams=(team_a, team_b)).run()
+        session_from_parts([a1, b1], 1, "Grande", {}, teams=(team_a, team_b)).run()
 
         # First call: the implicit point is already accepted.
         assert received_contexts[0] == (1, 1)
@@ -197,7 +263,7 @@ def test_wager_session_passes_position_to_context():
     p0 = PositionCapturingPlayer("p0", team_a, mus_votes=[], discards=[], wager_actions=[0, 0])
     p1 = PositionCapturingPlayer("p1", team_b, mus_votes=[], discards=[], wager_actions=[0, 0])
 
-    WagerSession(
+    session_from_parts(
         players=[p0, p1],
         base_bet=1,
         phase_name="Grande",
@@ -225,7 +291,7 @@ def test_wager_session_passes_n_players_to_context():
     p0 = CapturingPlayer("p0", team_a, mus_votes=[], discards=[], wager_actions=[0])
     p1 = CapturingPlayer("p1", team_b, mus_votes=[], discards=[], wager_actions=[0])
 
-    WagerSession(
+    session_from_parts(
         players=[p0, p1],
         base_bet=1,
         phase_name="Chica",
@@ -247,7 +313,7 @@ class TestTeamWagerResolution:
             ScriptedPlayer("B1", team_b, wager_actions=[2]),
         ]
 
-        winner, points = WagerSession(
+        winner, points = session_from_parts(
             players=players,
             teams=(team_a, team_b),
             base_bet=1,
@@ -271,7 +337,7 @@ class TestTeamWagerResolution:
             ScriptedPlayer("B1", team_b, wager_actions=[0]),
         ]
 
-        winner, points = WagerSession(
+        winner, points = session_from_parts(
             players=players,
             teams=(team_a, team_b),
             base_bet=1,
@@ -291,7 +357,7 @@ class TestTeamWagerResolution:
             ScriptedPlayer("B1", team_b, wager_actions=[0]),
         ]
 
-        winner, points = WagerSession(
+        winner, points = session_from_parts(
             players=players,
             teams=(team_a, team_b),
             base_bet=1,
@@ -313,7 +379,7 @@ class TestTeamWagerResolution:
             ScriptedPlayer("B2", team_b, wager_actions=[]),
         ]
 
-        winner, points = WagerSession(
+        winner, points = session_from_parts(
             players=players,
             teams=(team_a, team_b),
             base_bet=1,
@@ -335,7 +401,7 @@ class TestTeamWagerResolution:
             ScriptedPlayer("B2", team_b, wager_actions=[0]),
         ]
 
-        winner, points = WagerSession(
+        winner, points = session_from_parts(
             players=players,
             teams=(team_a, team_b),
             base_bet=1,
@@ -361,7 +427,7 @@ class TestTeamWagerResolution:
             ScriptedPlayer("B2", team_b, wager_actions=[]),
         ]
 
-        winner, points = WagerSession(
+        winner, points = session_from_parts(
             players=players,
             teams=(team_a, team_b),
             base_bet=1,
@@ -416,7 +482,7 @@ def test_each_phase_accepts_once_or_requires_all_eligible_refusals(teams,phase,b
              ScriptedPlayer("B1",b,wager_actions=responses[:1]),
              ScriptedPlayer("A2",a,wager_actions=[]),
              ScriptedPlayer("B2",b,wager_actions=responses[1:])]
-    result=WagerSession(players,base,phase,{},teams).run()
+    result=session_from_parts(players,base,phase,{},teams).run()
     assert result.outcome.value==outcome
     assert result.points==points
     assert players[2]._wager_idx==0

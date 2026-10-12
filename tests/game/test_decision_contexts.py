@@ -108,5 +108,27 @@ def test_wager_prompt_sees_prior_public_actions():
     ]
     for player in players:
         player.cards = [Card.R, Card._7, Card._5, Card.A]
-    WagerSession(players, 1, "Grande", {"A": 0, "B": 0}, (team_a, team_b)).run()
+    shared = GlobalGameContext(
+        team_scores={"A": 0, "B": 0}, mus_exchanges=0, phase_name="Grande",
+        wager=None, public_actions=(), discard_counts={},
+        seat_order=(("A1", "A"), ("B1", "B")), mano_seat=0,
+        eligible_seats=(0, 1),
+    )
+    WagerSession(players, 1, shared, (team_a, team_b)).run()
     assert seen == [(), ("Grande | A1: envida",)]
+
+
+def test_first_eligible_seat_gets_tie_priority_in_any_phase():
+    from mus_computer.probabilities.estimates import estimate_hand_statistics
+
+    player = ScriptedPlayer("B1", Team("B"))
+    player.cards = [Card.R] * 4
+    shared = GlobalGameContext(
+        team_scores={"A": 0, "B": 0}, mus_exchanges=0, phase_name="Grande",
+        wager=None, public_actions=(), discard_counts={},
+        seat_order=(("A1", "A"), ("B1", "B"), ("A2", "A"), ("B2", "B")),
+        mano_seat=0, eligible_seats=(1, 2),
+    )
+    private = player.decision_context(shared, seat=1)
+    priority = estimate_hand_statistics(player.cards, is_mano=True)
+    assert private.statistics.expected_points_by_phase["Grande"] == priority.expected_points_by_phase["Grande"]

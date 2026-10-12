@@ -4,16 +4,25 @@ from mus_computer.game.phases import Phase, PhaseName, Grande, Chica, Pares, Jue
 from mus_computer.game.player_base import PlayerBase
 from mus_computer.game.player import HumanPlayer
 from mus_computer.game.team import Team
-from mus_computer.game.wager_session import WagerSession, WagerOutcome
+from mus_computer.game.wager_session import WagerSession, WagerOutcome, WagerResult
 from mus_computer.game.context import GlobalGameContext, SeatOrderEntry
 from mus_computer.bots.strategies.actions import MusAction
-from typing import Callable
+from typing import Callable, Sequence
 
 WIN_SCORE = 40
+ActionCallback = Callable[[str], None]
 
 
 class Game:
-    def __init__(self, player_a1: str, player_a2: str, player_b1: str, player_b2: str):
+    """Run a four-seat Mus game and publish each public action.
+
+    ``__init__`` creates human players; ``from_players`` accepts existing
+    players. Both paths pass their newly assembled seats to ``_initialize``.
+    """
+
+    on_action: ActionCallback | None
+
+    def __init__(self, player_a1: str, player_a2: str, player_b1: str, player_b2: str) -> None:
         team_a = Team("A")
         team_b = Team("B")
         players = [
@@ -28,7 +37,7 @@ class Game:
     def from_players(
         cls,
         players_in_order: list[PlayerBase],
-        on_action: Callable[[str], None] | None = None,
+        on_action: ActionCallback | None = None,
     ) -> "Game":
         players = list(players_in_order)
         if len(players) != 4 or any(not isinstance(p, PlayerBase) for p in players):
@@ -46,32 +55,36 @@ class Game:
         return game
 
     def _initialize(
-        self, players: list[PlayerBase], on_action: Callable[[str], None] | None
+        self, players: list[PlayerBase], on_action: ActionCallback | None
     ) -> None:
+        """Store the seats supplied by either constructor before game setup."""
         self.players_in_order = players
         self.teams = [players[0].team, players[1].team]
         self.on_action = on_action
         self.deck = Deck(on_replenish=self._emit)
-        self._discard_counts = {}
+        self._discard_counts: dict[str, int] = {}
         self._mus_rounds = 0
-        self._public_actions = []
-        self.winner = None
-        self.victory_reason = None
+        self._public_actions: list[str] = []
+        self.winner: Team | None = None
+        self.victory_reason: str | None = None
 
     def _emit(self, message: str) -> None:
+        """Record a public action and forward it to the optional observer."""
         if not message.startswith("Hands |"):
             self._public_actions.append(message)
         if self.on_action is not None:
             self.on_action(message)
 
     def _emit_hands(self) -> None:
+        """Show hands to the observer without adding them to public history."""
         if self.on_action is None:
             return
         for player in self.players_in_order:
             ranks = " ".join(card.value for card in player.cards)
             self._emit(f"Hands | {player.name}: {ranks}")
 
-    def play(self):
+    def play(self) -> Team:
+        """Play hands until a team reaches the score or wins an ordago."""
         self.winner = self.winner or next((t for t in self.teams if t.points >= WIN_SCORE), None)
         while self.winner is None:
             self.deck = Deck(on_replenish=self._emit)
@@ -87,13 +100,19 @@ class Game:
             self._emit(f"Team {self.winner.name} wins with {self.winner.points} points!")
         return self.winner
 
-    def _deal_initial_cards(self):
+    def _deal_initial_cards(self) -> None:
+        """Replace each player's cards with an initial four-card hand."""
         for player in self.players_in_order:
             player.throw_cards()
             player.receive_cards(self.deck.draw(4))
         self._emit_hands()
 
-    def _global_context(self, phase_name=None, eligible_players=None):
+    def _global_context(
+        self,
+        phase_name: PhaseName | None = None,
+        eligible_players: Sequence[PlayerBase] | None = None,
+    ) -> GlobalGameContext:
+        """Build the public snapshot visible to all seats at this prompt."""
         eligible = self.players_in_order if eligible_players is None else eligible_players
         return GlobalGameContext(
             {t.name: t.points for t in self.teams}, self._mus_rounds, phase_name, None,
@@ -102,7 +121,8 @@ class Game:
             tuple(i for i,p in enumerate(self.players_in_order) if p in eligible),
         )
 
-    def _mus_phase(self):
+    def _mus_phase(self) -> None:
+        """Repeat Mus votes and exchanges until a player cuts Mus."""
         self._discard_counts = {p.name: 0 for p in self.players_in_order}
         self._mus_rounds = 0
         while self._all_vote_mus():
@@ -123,6 +143,7 @@ class Game:
             self._emit_hands()
 
     def _all_vote_mus(self) -> bool:
+        """Ask seats in order; stop as soon as one player cuts Mus."""
         for seat, player in enumerate(self.players_in_order):
             shared = self._global_context()
             action = player.vote_mus(shared, player.decision_context(shared, seat, include_discards=True))
@@ -133,27 +154,32 @@ class Game:
                 return False
         return True
 
-    def _play_all_phases(self):
-        phases = [Grande, Chica, Pares, Juego]
-        pending_awards = []
+    def _play_all_phases(self) -> None:
+        """Declare eligibility, settle wagers, then award showdown points."""
+        phases: list[type[Phase]] = [Grande, Chica, Pares, Juego]
+        pending_awards: list[tuple[Team, int]] = []
         while phases and self.winner is None:
             phase = phases.pop(0)
             phase_label = "Pequeña" if phase is Chica else phase.__name__
             self._emit(f"{phase_label} begins")
             eligible = self._players_that_can_play(phase)
+            if phase in (Pares, Juego):
+                no_hand_label = "No pares" if phase is Pares else "No Juego"
+                for player in self.players_in_order:
+                    declaration = phase.__name__ if player in eligible else no_hand_label
+                    self._emit(f"{phase_label} | {player.name}: {declaration}")
             if not eligible:
                 self._emit(f"{phase_label} | no players qualify")
                 if phase is Juego:
                     phases.insert(0, Punto)
                 continue
-            result = None
+            result: WagerResult | None = None
             if self._is_contested(eligible):
                 result = WagerSession(
                     players=eligible, teams=tuple(self.teams), base_bet=phase.base_bet,
-                    phase_name=PhaseName(phase.__name__), team_scores={t.name:t.points for t in self.teams},
-                    discard_counts=self._discard_counts, on_action=self._emit, phase_label=phase_label,
-                    players_in_order=self.players_in_order, mus_exchanges=self._mus_rounds,
-                    public_actions=self._public_actions,
+                    public_context=self._global_context(PhaseName(phase.__name__), eligible),
+                    on_action=self._emit, phase_label=phase_label,
+                    players_in_order=self.players_in_order,
                 ).run()
             if result is not None and result.outcome is WagerOutcome.ORDAGO_ACCEPTED:
                 self.winner = self._resolve_phase(phase, eligible)
@@ -181,6 +207,7 @@ class Game:
                 return
 
     def _award_points(self, team: Team, points: int) -> None:
+        """Apply an award and end the match if it reaches the target."""
         team.points += points
         self._emit(
             f"Team {team.name} +{points} | "
@@ -190,17 +217,20 @@ class Game:
             self.winner = team
             self.victory_reason = "points"
 
-    def _players_that_can_play(self, phase: type) -> list[PlayerBase]:
+    def _players_that_can_play(self, phase: type[Phase]) -> list[PlayerBase]:
+        """Return seats whose current hand qualifies for this phase."""
         return [p for p in self.players_in_order if phase.can_play(Hand(p.cards))]
 
-    def _is_contested(self, players: list[PlayerBase]) -> bool:
+    def _is_contested(self, players: Sequence[PlayerBase]) -> bool:
+        """A wager needs at least one qualified seat on each team."""
         return len({p.team for p in players}) > 1
 
     def _resolve_phase(
         self,
-        phase: type,
+        phase: type[Phase],
         eligible_players: list[PlayerBase] | None = None,
     ) -> Team:
+        """Resolve tied hands by retaining the first eligible seat."""
         if eligible_players is None:
             eligible_players = self._players_that_can_play(phase)
         if not eligible_players:

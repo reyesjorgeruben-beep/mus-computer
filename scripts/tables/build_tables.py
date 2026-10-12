@@ -190,6 +190,95 @@ def _attach_discard_data(tables: dict, discard_table: dict) -> None:
         }
 
 
+def add_decision_estimates(tables: dict, deck: dict | None = None) -> None:
+    """Attach complete, physical-draw estimates used by bot decisions.
+
+    The original discard_options table is retained for existing callers. These
+    entries use the deck after removing all four original cards, and keep win,
+    tie, loss, and expected points together for each replacement choice.
+    """
+    if deck is None:
+        deck = cards_space
+    hands = [key for key in tables if isinstance(key, tuple) and len(key) == 4]
+    phases = (Grande, Chica, Pares, Juego, Punto)
+    phase_names = tuple(phase.__name__ for phase in phases)
+
+    for hand in hands:
+        remaining = Counter(deck)
+        remaining.subtract(hand)
+        own_hand = Hand(list(hand))
+        wins = ties = losses = total = 0
+        for opponent, weight in all_canonical_hands(remaining).items():
+            comparison = Punto.play(own_hand, Hand(list(opponent)))
+            total += weight
+            if comparison > 0:
+                wins += weight
+            elif comparison < 0:
+                losses += weight
+            else:
+                ties += weight
+        tables[hand]["Punto"] = (
+            {"p_win": wins / total, "p_tie": ties / total, "p_loss": losses / total}
+            if total else {"p_win": 0.0, "p_tie": 0.0, "p_loss": 1.0}
+        )
+
+    points_on_win = {
+        hand: {
+            phase.__name__: phase.base_bet + phase.calculate_points(Hand(list(hand)))
+            for phase in phases
+        }
+        for hand in hands
+    }
+    for hand in hands:
+        remaining = Counter(deck)
+        remaining.subtract(hand)
+        draw_options = {count: all_canonical_hands_for_size(remaining, count) for count in range(5)}
+        options = {}
+        for n_discarded in range(5):
+            for indices in combinations(range(4), n_discarded):
+                kept = canonical(tuple(card for index, card in enumerate(hand) if index not in indices))
+                if kept in options:
+                    continue
+                sums = {name: {"p_win": 0.0, "p_tie": 0.0, "p_loss": 0.0,
+                               "expected_points_without_priority": 0.0,
+                               "expected_points_with_priority": 0.0} for name in phase_names}
+                total = 0
+                for draw, weight in draw_options[n_discarded].items():
+                    final_hand = canonical(kept + draw)
+                    total += weight
+                    for name in phase_names:
+                        outcome = tables[final_hand][name]
+                        points = points_on_win[final_hand][name]
+                        sums[name]["p_win"] += weight * outcome["p_win"]
+                        sums[name]["p_tie"] += weight * outcome["p_tie"]
+                        sums[name]["p_loss"] += weight * outcome["p_loss"]
+                        sums[name]["expected_points_without_priority"] += weight * outcome["p_win"] * points
+                        sums[name]["expected_points_with_priority"] += weight * (outcome["p_win"] + outcome["p_tie"]) * points
+                if total:
+                    options[kept] = {
+                        name: {field: value / total for field, value in phase_sums.items()}
+                        for name, phase_sums in sums.items()
+                    }
+                else:
+                    options[kept] = {
+                        name: {"p_win": 0.0, "p_tie": 0.0, "p_loss": 1.0,
+                               "expected_points_without_priority": 0.0,
+                               "expected_points_with_priority": 0.0}
+                        for name in phase_names
+                    }
+        tables[hand]["decision_discard_options"] = options
+
+
+def all_canonical_hands_for_size(deck: dict, size: int) -> dict:
+    """Return each available rank draw and its physical multiplicity."""
+    draws = {}
+    for cards in combinations_with_replacement(deck, size):
+        weight = _multiplicity_subset(cards, deck)
+        if weight:
+            draws[canonical(cards)] = weight
+    return draws
+
+
 def _precompute_hand_props(hands_list: list) -> dict:
     props = {}
     for h in hands_list:
@@ -745,6 +834,7 @@ def build_tables(deck: dict = None, include_expected_points: bool = False) -> di
     tables = _build_win_tables(all_hands)
     discard_table = _build_discard_options_table(all_hands, tables, deck)
     _attach_discard_data(tables, discard_table)
+    add_decision_estimates(tables, deck)
     avg_improvement = _build_avg_opp_improvement(all_hands, discard_table)
     tables["_avg_opp_phase_improvements"] = avg_improvement
     if include_expected_points:
@@ -767,6 +857,8 @@ def build_and_save(deck: dict = None, output_path=None):
     print("Computing discard options tables...")
     discard_table = _build_discard_options_table(all_hands, tables, deck)
     _attach_discard_data(tables, discard_table)
+    print("Computing complete decision estimates...")
+    add_decision_estimates(tables, deck)
     print("Computing average opponent improvement per phase...")
     avg_improvement = _build_avg_opp_improvement(all_hands, discard_table)
     tables["_avg_opp_phase_improvements"] = avg_improvement

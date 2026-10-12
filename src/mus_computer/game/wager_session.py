@@ -1,8 +1,9 @@
 """Team wager negotiation shared by every phase."""
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from enum import Enum
+from typing import Callable, Sequence
 from mus_computer.game.context import GlobalGameContext, SeatOrderEntry, WagerState
-from mus_computer.game.phases import PhaseName
+from mus_computer.game.player_base import PlayerBase
 from mus_computer.game.team import Team
 from mus_computer.bots.strategies.actions import WagerAction, legal_wager_actions
 
@@ -36,9 +37,19 @@ class WagerResult:
 
 
 class WagerSession:
-    def __init__(self, players, base_bet, phase_name, team_scores, teams,
-                 discard_counts=None, on_action=None, phase_label=None,
-                 players_in_order=None, mus_exchanges=0, public_actions=(), mano_seat=0):
+    """Negotiate one phase's wager from a shared public game snapshot."""
+
+    def __init__(
+        self,
+        players: Sequence[PlayerBase],
+        base_bet: int,
+        public_context: GlobalGameContext,
+        teams: tuple[Team, Team],
+        *,
+        players_in_order: Sequence[PlayerBase] | None = None,
+        on_action: Callable[[str], None] | None = None,
+        phase_label: str | None = None,
+    ) -> None:
         self.players = list(players)
         if len(teams) != 2 or teams[0] is teams[1]:
             raise ValueError("WagerSession requires two distinct teams.")
@@ -46,23 +57,32 @@ class WagerSession:
             raise ValueError("Every wagering player must belong to a supplied team.")
         self.teams = teams
         self.base_bet = base_bet
-        self.phase_name = PhaseName(phase_name)
-        self.team_scores = team_scores
-        self.discard_counts = discard_counts or {}
+        if public_context.phase_name is None:
+            raise ValueError("WagerSession requires a phase in the public context.")
+        self.players_in_order = list(players_in_order if players_in_order is not None else players)
+        expected_seats = tuple(
+            seat for seat, player in enumerate(self.players_in_order) if player in self.players
+        )
+        if public_context.eligible_seats != expected_seats:
+            raise ValueError("Public eligibility must match the wagering players.")
+        expected_order = tuple(
+            SeatOrderEntry(player.name, player.team.name) for player in self.players_in_order
+        )
+        if public_context.seat_order != expected_order:
+            raise ValueError("Public seat order must match the wagering seats.")
+        self.public_context = public_context
+        self.phase_name = public_context.phase_name
         self.on_action = on_action
         self.phase_label = phase_label or self.phase_name.value
-        self.public_actions = list(public_actions)
-        self.players_in_order = list(players_in_order if players_in_order is not None else players)
-        self.mus_exchanges = mus_exchanges
-        self.mano_seat = mano_seat
+        self.public_actions = list(public_context.public_actions)
 
-    def _emit(self, message):
+    def _emit(self, message: str) -> None:
         event = f"{self.phase_label} | {message}"
         self.public_actions.append(event)
         if self.on_action is not None:
             self.on_action(event)
 
-    def run(self):
+    def run(self) -> WagerResult:
         if not self.players:
             raise ValueError("WagerSession requires eligible players.")
         current = self.base_bet
@@ -81,12 +101,10 @@ class WagerSession:
                 player = responders.pop(0)
             wager = WagerState(current, accepted,
                                offering_team.name if offering_team else None, ordago)
-            shared = GlobalGameContext(
-                self.team_scores, self.mus_exchanges, self.phase_name, wager,
-                tuple(self.public_actions), self.discard_counts,
-                tuple(SeatOrderEntry(p.name, p.team.name) for p in self.players_in_order),
-                self.mano_seat,
-                tuple(i for i,p in enumerate(self.players_in_order) if p in self.players),
+            shared = replace(
+                self.public_context,
+                wager=wager,
+                public_actions=tuple(self.public_actions),
             )
             seat = next(i for i, seated in enumerate(self.players_in_order) if seated is player)
             action = player.wager_action(shared, player.decision_context(shared, seat))

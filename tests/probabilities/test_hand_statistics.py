@@ -11,6 +11,7 @@ from mus_computer.probabilities.estimates import (
     estimate_discard_options, estimate_hand_statistics, estimate_punto,
 )
 from mus_computer.probabilities.tables import lookup
+from mus_computer.probabilities.tables import load_tables, canonical
 
 
 def physical_punto_outcomes(cards):
@@ -64,3 +65,21 @@ def test_discard_options_use_original_indices_for_duplicate_ranks():
     assert options[()].outcomes_by_phase["Punto"] == estimate_punto(cards)
     with pytest.raises(TypeError):
         options[(0,)] = options[()]
+
+
+def test_bundled_decision_estimates_cover_all_phases_and_discards():
+    cards = (Card.R, Card.R, Card.A, Card.A)
+    table = load_tables()[canonical(cards)]
+    assert "Punto" in table
+    assert "decision_discard_options" in table
+    assert set(table["decision_discard_options"][()]) == {"Grande", "Chica", "Pares", "Juego", "Punto"}
+    assert estimate_punto(cards).p_tie > 0
+    assert len(estimate_discard_options(cards)) == 16
+
+
+def test_decision_estimates_reject_wrong_hand_size():
+    five_cards = (Card.A,) * 5
+    with pytest.raises(ValueError, match="four cards"):
+        estimate_punto(five_cards)
+    with pytest.raises(ValueError, match="four cards"):
+        estimate_discard_options(five_cards)

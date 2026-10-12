@@ -105,9 +105,12 @@ def test_unopened_pares_prompt_shows_implicit_stake_awarded_on_refusal(player):
     opponent.cards = [Card._4, Card._4, Card._5, Card._6]
     player.cards = [Card.R, Card.R, Card._5, Card._6]
     with patch("builtins.input", return_value="2") as read:
+        shared = replace(
+            make_global_context("Pares"), wager=None,
+            seat_order=((player.name, "A"), (opponent.name, "B")),
+        )
         result = WagerSession(
-            [player, opponent], 0, "Pares", {"A": 0, "B": 0},
-            (player.team, opponent.team),
+            [player, opponent], 0, shared, (player.team, opponent.team),
         ).run()
     prompt = read.call_args.args[0]
     assert "Pares" in prompt

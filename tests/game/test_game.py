@@ -286,7 +286,8 @@ class TestQualifiedPhaseWagers:
 
         assert "Pares | A1: envida" in events
         assert "Pares | B1: quiero" in events
-        assert not any(event.startswith(("Pares | A2:", "Pares | B2:")) for event in events)
+        assert [event for event in events if event.startswith("Pares | A2:")] == ["Pares | A2: No pares"]
+        assert [event for event in events if event.startswith("Pares | B2:")] == ["Pares | B2: No pares"]
         assert events.count("Pares | Team A wins the phase") == 1
         pares_award = next(i for i, event in enumerate(events) if event.startswith("Team A +3 |"))
         assert pares_award > events.index("Punto begins")
@@ -312,7 +313,7 @@ class TestQualifiedPhaseWagers:
         game._play_all_phases()
 
         assert "Pares | B1: no quiero" in events
-        assert not any(event.startswith("Pares | B2:") for event in events)
+        assert [event for event in events if event.startswith("Pares | B2:")] == ["Pares | B2: No pares"]
         assert "Pares | Team A wins the wager" in events
         assert "Pares | Team A wins the phase" not in events
         immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
@@ -340,7 +341,8 @@ class TestQualifiedPhaseWagers:
 
         assert "Juego | A1: envida" in events
         assert "Juego | B1: quiero" in events
-        assert not any(event.startswith(("Juego | A2:", "Juego | B2:")) for event in events)
+        assert [event for event in events if event.startswith("Juego | A2:")] == ["Juego | A2: No Juego"]
+        assert [event for event in events if event.startswith("Juego | B2:")] == ["Juego | B2: No Juego"]
         assert events.count("Juego | Team A wins the phase") == 1
         juego_award = next(i for i, event in enumerate(events) if event.startswith("Team A +5 |"))
         assert juego_award > events.index("Juego | Team A wins the phase")
@@ -367,7 +369,7 @@ class TestQualifiedPhaseWagers:
         game._play_all_phases()
 
         assert events.index("Juego | B1: no quiero") < events.index("Juego | B2: no quiero")
-        assert not any(event.startswith("Juego | A2:") for event in events)
+        assert [event for event in events if event.startswith("Juego | A2:")] == ["Juego | A2: No Juego"]
         assert "Juego | Team A wins the wager" in events
         assert "Juego | Team A wins the phase" not in events
         immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))

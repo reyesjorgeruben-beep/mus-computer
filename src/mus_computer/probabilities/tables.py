@@ -69,6 +69,11 @@ def discard_options(cards) -> dict:
     return entry.get("discard_options", {})
 
 
+def decision_discard_options(cards) -> dict:
+    """Return full precomputed outcomes and expected points by retained cards."""
+    return load_tables()[canonical(cards)]["decision_discard_options"]
+
+
 def best_discard(cards, phase_weights: dict) -> tuple:
     """
     Returns the canonical kept-hand that maximises weighted expected p_win.

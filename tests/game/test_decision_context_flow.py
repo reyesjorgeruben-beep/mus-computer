@@ -69,3 +69,38 @@ def test_duplicate_teammate_names_keep_absolute_seats_and_phase_eligibility():
         assert private.seat==next(i for i,p in enumerate(players) if p is player)
         assert private.eligible
     assert [(private.seat,private.eligible) for phase,_,private in seen if phase=="Pares"]==[(2,True),(3,True)]
+
+
+def test_pares_and_juego_eligibility_is_announced_before_wager_decisions():
+    team_a, team_b = Team("A"), Team("B")
+    seen = []
+
+    class ObservingPlayer(ScriptedPlayer):
+        def wager_action(self, shared, private):
+            seen.append(shared)
+            return super().wager_action(shared, private)
+
+    players = [
+        ObservingPlayer(str(seat), team_a if seat % 2 == 0 else team_b, wager_actions=[0] * 5)
+        for seat in range(4)
+    ]
+    players[0].cards = [C._7, C._7, C._4, C._5]
+    players[1].cards = [C.A, C._4, C._5, C._6]
+    players[2].cards = [C.A, C._4, C._5, C._7]
+    players[3].cards = [C._4, C._4, C._5, C._6]
+    events = []
+    game = Game.from_players(players, events.append)
+
+    game._play_all_phases()
+
+    declarations = [
+        "Pares | 0: Pares", "Pares | 1: No pares",
+        "Pares | 2: No pares", "Pares | 3: Pares",
+    ]
+    assert [event for event in events if event in declarations] == declarations
+    assert events.index(declarations[-1]) < events.index("Pares | 0: paso")
+    pares_context = next(context for context in seen if context.phase_name == "Pares")
+    assert pares_context.eligible_seats == (0, 3)
+    assert all(declaration in pares_context.public_actions for declaration in declarations)
+    juego_declarations = [f"Juego | {seat}: No Juego" for seat in range(4)]
+    assert [event for event in events if event in juego_declarations] == juego_declarations
