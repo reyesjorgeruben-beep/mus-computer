@@ -69,7 +69,7 @@ def test_discard_options_are_explicit_with_and_without_estimates():
 
 
 def test_bot_uses_fresh_private_statistics_for_mus():
-    bot = BotPlayer("bot", Team("A"), _genome(), rng=random.Random(0))
+    bot = BotPlayer("bot", Team("A"), _genome(), random_generator=random.Random(0))
     public, weak = _contexts(0.1)
     _, strong = _contexts(0.9)
     weak_chance = bot.strategies.mus.decide(public, weak, bot._genome).probabilities[MusAction.MUS]

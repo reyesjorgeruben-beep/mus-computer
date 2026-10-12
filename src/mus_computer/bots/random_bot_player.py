@@ -10,8 +10,8 @@ class RandomBotPlayer(PlayerBase):
         return random.choice(tuple(MusAction))
 
     def choose_discards(self, global_context, player_context):
-        count = random.randint(0, len(self.cards))
-        return tuple(sorted(random.sample(range(len(self.cards)), count)))
+        discard_count = random.randint(0, len(self.cards))
+        return tuple(sorted(random.sample(range(len(self.cards)), discard_count)))
 
     def wager_action(self, global_context, player_context):
-        return random.choice(tuple(sorted(legal_wager_actions(global_context.wager), key=lambda a: a.value)))
+        return random.choice(tuple(sorted(legal_wager_actions(global_context.wager), key=lambda action: action.value)))

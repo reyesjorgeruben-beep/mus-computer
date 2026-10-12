@@ -76,7 +76,7 @@ class ActionDistribution(Generic[ActionT]):
             raise ValueError("Action probabilities must be finite, nonnegative, and sum to one.")
         object.__setattr__(self, "probabilities", MappingProxyType(probabilities))
 
-    def sample(self, rng: random.Random, legal_actions: Collection[ActionT]) -> ActionT:
+    def sample(self, random_generator: random.Random, legal_actions: Collection[ActionT]) -> ActionT:
         legal = set(legal_actions)
         if not legal or any(
             action not in legal and probability > 0
@@ -87,7 +87,7 @@ class ActionDistribution(Generic[ActionT]):
             action for action, probability in self.probabilities.items()
             if action in legal and probability > 0
         )
-        return rng.choices(
+        return random_generator.choices(
             actions,
             weights=[self.probabilities[action] for action in actions],
             k=1,

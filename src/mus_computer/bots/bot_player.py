@@ -23,12 +23,12 @@ class BotPlayer(PlayerBase):
         team: Team,
         genome: BotPersonality,
         strategies: StrategyPortfolio | None = None,
-        rng: random.Random | None = None,
+        random_generator: random.Random | None = None,
     ):
         super().__init__(name, team)
         self._genome = genome
         self.strategies = strategies if strategies is not None else StrategyPortfolio.default()
-        self._rng = rng if rng is not None else random.Random()
+        self._random_generator = random_generator if random_generator is not None else random.Random()
 
     @overload
     def take_decision(
@@ -62,11 +62,11 @@ class BotPlayer(PlayerBase):
     ) -> MusAction | DiscardAction | WagerAction:
         if kind is DecisionKind.MUS:
             distribution = self.strategies.mus.decide(global_context, player_context, self._genome)
-            return distribution.sample(self._rng, frozenset(MusAction))
+            return distribution.sample(self._random_generator, frozenset(MusAction))
         if kind is DecisionKind.DISCARD:
             distribution = self.strategies.discard.decide(global_context, player_context, self._genome)
             legal = {option.action for option in player_context.discard_options}
-            return distribution.sample(self._rng, legal)
+            return distribution.sample(self._random_generator, legal)
         if kind is DecisionKind.WAGER:
             phase = global_context.phase_name or player_context.phase_name
             if phase is None:
@@ -74,7 +74,7 @@ class BotPlayer(PlayerBase):
             distribution = self.strategies.wagers_by_phase[phase].decide(
                 global_context, player_context, self._genome,
             )
-            return distribution.sample(self._rng, legal_wager_actions(global_context.wager))
+            return distribution.sample(self._random_generator, legal_wager_actions(global_context.wager))
         raise ValueError(f"Unknown decision kind: {kind}")
 
     def vote_mus(

@@ -2,10 +2,10 @@ import pytest
 from mus_computer.bots.bot_genome import BotGenome, random_genome, crossover, mutate
 
 def test_random_genome_genes_in_range():
-    g = random_genome()
-    for field in g.__dataclass_fields__:
-        val = getattr(g, field)
-        assert 0.0 <= val <= 1.0, f"{field}={val} out of [0,1]"
+    genome = random_genome()
+    for field in genome.__dataclass_fields__:
+        gene_value = getattr(genome, field)
+        assert 0.0 <= gene_value <= 1.0, f"{field}={gene_value} out of [0,1]"
 
 def test_random_genome_returns_botgenome():
     assert isinstance(random_genome(), BotGenome)
@@ -17,28 +17,28 @@ def test_crossover_genes_from_parents():
     parent_b = BotGenome(*([1.0] * 13))
     child = crossover(parent_a, parent_b)
     for field in child.__dataclass_fields__:
-        val = getattr(child, field)
-        assert val in (0.0, 1.0), f"{field}={val} should come from a parent"
+        gene_value = getattr(child, field)
+        assert gene_value in (0.0, 1.0), f"{field}={gene_value} should come from a parent"
 
 def test_crossover_returns_botgenome():
-    a = random_genome()
-    b = random_genome()
-    assert isinstance(crossover(a, b), BotGenome)
+    first_parent = random_genome()
+    second_parent = random_genome()
+    assert isinstance(crossover(first_parent, second_parent), BotGenome)
 
 def test_mutate_stays_in_range():
     import random
     random.seed(0)
-    g = BotGenome(*([0.5] * 13))
+    genome = BotGenome(*([0.5] * 13))
     for _ in range(100):
-        m = mutate(g, mutation_rate=1.0, sigma=0.5)
-        for field in m.__dataclass_fields__:
-            val = getattr(m, field)
-            assert 0.0 <= val <= 1.0, f"{field}={val} out of [0,1]"
+        mutated_genome = mutate(genome, mutation_rate=1.0, sigma=0.5)
+        for field in mutated_genome.__dataclass_fields__:
+            gene_value = getattr(mutated_genome, field)
+            assert 0.0 <= gene_value <= 1.0, f"{field}={gene_value} out of [0,1]"
 
 def test_mutate_with_rate_zero_returns_unchanged():
-    g = BotGenome(*([0.3] * 13))
-    m = mutate(g, mutation_rate=0.0, sigma=0.5)
-    assert g == m
+    genome = BotGenome(*([0.3] * 13))
+    mutated_genome = mutate(genome, mutation_rate=0.0, sigma=0.5)
+    assert genome == mutated_genome
 
 def test_genome_has_13_fields():
     assert len(BotGenome.__dataclass_fields__) == 13

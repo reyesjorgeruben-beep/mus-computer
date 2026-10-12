@@ -25,11 +25,13 @@ def random_genome() -> BotGenome:
     return BotGenome(*[random.random() for _ in range(13)])
 
 
-def crossover(a: BotGenome, b: BotGenome) -> BotGenome:
+def crossover(first_parent: BotGenome, second_parent: BotGenome) -> BotGenome:
     """Uniform crossover: each gene taken independently from parent A or B."""
     genes = [
-        getattr(a, f.name) if random.random() < 0.5 else getattr(b, f.name)
-        for f in fields(a)
+        getattr(first_parent, gene_field.name)
+        if random.random() < 0.5
+        else getattr(second_parent, gene_field.name)
+        for gene_field in fields(first_parent)
     ]
     return BotGenome(*genes)
 
@@ -37,9 +39,9 @@ def crossover(a: BotGenome, b: BotGenome) -> BotGenome:
 def mutate(genome: BotGenome, mutation_rate: float = 0.15, sigma: float = 0.05) -> BotGenome:
     """Gaussian mutation clipped to [0, 1] applied independently per gene."""
     genes = []
-    for f in fields(genome):
-        val = getattr(genome, f.name)
+    for gene_field in fields(genome):
+        gene_value = getattr(genome, gene_field.name)
         if random.random() < mutation_rate:
-            val = max(0.0, min(1.0, val + random.gauss(0, sigma)))
-        genes.append(val)
+            gene_value = max(0.0, min(1.0, gene_value + random.gauss(0, sigma)))
+        genes.append(gene_value)
     return BotGenome(*genes)
