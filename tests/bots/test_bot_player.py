@@ -72,8 +72,8 @@ def test_bot_uses_fresh_private_statistics_for_mus():
     bot = BotPlayer("bot", Team("A"), _genome(), random_generator=random.Random(0))
     public, weak = _contexts(0.1)
     _, strong = _contexts(0.9)
-    weak_chance = bot.strategies.mus.decide(public, weak, bot._genome).probabilities[MusAction.MUS]
-    strong_chance = bot.strategies.mus.decide(public, strong, bot._genome).probabilities[MusAction.MUS]
+    weak_chance = bot.strategies.mus.decide(public, weak, bot._personality).probabilities[MusAction.MUS]
+    strong_chance = bot.strategies.mus.decide(public, strong, bot._personality).probabilities[MusAction.MUS]
     assert weak_chance > strong_chance
 
 
@@ -100,10 +100,10 @@ def test_weak_hand_can_fold_a_wager_and_strong_hand_can_raise():
     offered, weak = _contexts(0.05, "Grande", WagerState(2, 1, "B"))
     opening, strong = _contexts(0.95, "Grande", WagerState(1, 1, None))
     fold_distribution = bot.strategies.wagers_by_phase["Grande"].decide(
-        offered, weak, bot._genome,
+        offered, weak, bot._personality,
     ).probabilities
     raise_distribution = bot.strategies.wagers_by_phase["Grande"].decide(
-        opening, strong, bot._genome,
+        opening, strong, bot._personality,
     ).probabilities
     assert fold_distribution[WagerAction.FOLD] > 0
     assert raise_distribution[WagerAction.RAISE_2] > 0
@@ -114,9 +114,9 @@ def test_bluff_personality_increases_raises_with_same_weak_hand():
     cautious = BotPlayer("bot", Team("A"), _genome(bluff_rate=0.0))
     bluffer = BotPlayer("bot", Team("A"), _genome(bluff_rate=1.0))
     cautious_raise = cautious.strategies.wagers_by_phase["Grande"].decide(
-        public, private, cautious._genome,
+        public, private, cautious._personality,
     ).probabilities[WagerAction.RAISE_2]
     bluff_raise = bluffer.strategies.wagers_by_phase["Grande"].decide(
-        public, private, bluffer._genome,
+        public, private, bluffer._personality,
     ).probabilities[WagerAction.RAISE_2]
     assert bluff_raise > cautious_raise

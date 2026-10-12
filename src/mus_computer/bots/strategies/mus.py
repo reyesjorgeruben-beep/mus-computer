@@ -1,6 +1,7 @@
 """Mus or corta policy based on the acting player's estimated improvement."""
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from mus_computer.bots.strategies.actions import ActionDistribution, MusAction
 from mus_computer.bots.strategies.contexts import HandStatistics, PlayerDecisionContext
@@ -15,8 +16,21 @@ def _weighted_hand_strength(statistics: HandStatistics, personality: BotPersonal
     )
 
 
+class MusStrategy(Protocol):
+    """Choose a Mus vote from public state, private estimates, and personality."""
+
+    def decide(
+        self,
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+        personality: BotPersonality,
+    ) -> ActionDistribution[MusAction]: ...
+
+
 @dataclass(frozen=True)
-class EstimateMusStrategy:
+class EstimateMusStrategy(MusStrategy):
+    """Default Mus policy using the current weighted-estimate formula."""
+
     def decide(
         self,
         global_context: GlobalGameContext,

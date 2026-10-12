@@ -2,35 +2,25 @@
 
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Hashable, Mapping, Protocol, TypeVar
+from typing import Mapping
 
-from mus_computer.bots.strategies.actions import ActionDistribution, DiscardAction, MusAction, WagerAction
-from mus_computer.bots.strategies.contexts import PlayerDecisionContext
-from mus_computer.bots.strategies.personality import BotPersonality
-from mus_computer.game.context import GlobalGameContext
+from mus_computer.bots.strategies.discard import DiscardStrategy
+from mus_computer.bots.strategies.mus import MusStrategy
+from mus_computer.bots.strategies.wagers import WagerStrategy
 from mus_computer.game.phases import PHASE_ORDER, PhaseName
-
-
-ActionT = TypeVar("ActionT", bound=Hashable)
-
-
-class DecisionStrategy(Protocol[ActionT]):
-    def decide(
-        self,
-        global_context: GlobalGameContext,
-        player_context: PlayerDecisionContext,
-        personality: BotPersonality,
-    ) -> ActionDistribution[ActionT]:
-        ...
 
 
 @dataclass(frozen=True)
 class StrategyPortfolio:
-    """One Mus policy, one discard policy, and one wager policy per phase."""
+    """Compose one Mus, one discard, and one wager policy per phase.
 
-    mus: DecisionStrategy[MusAction]
-    discard: DecisionStrategy[DiscardAction]
-    wagers_by_phase: Mapping[PhaseName, DecisionStrategy[WagerAction]]
+    Any implementation of the three strategy interfaces can replace the
+    defaults. ``BotPlayer`` receives this portfolio at construction time.
+    """
+
+    mus: MusStrategy
+    discard: DiscardStrategy
+    wagers_by_phase: Mapping[PhaseName, WagerStrategy]
 
     def __post_init__(self) -> None:
         strategies = {
@@ -45,12 +35,13 @@ class StrategyPortfolio:
 
     @classmethod
     def default(cls) -> "StrategyPortfolio":
+        """Build the current heuristic policies as separate strategy instances."""
         from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrategy
         from mus_computer.bots.strategies.mus import EstimateMusStrategy
-        from mus_computer.bots.strategies.wagers import PhaseWagerStrategy
+        from mus_computer.bots.strategies.wagers import HeuristicWagerStrategy
 
         return cls(
             mus=EstimateMusStrategy(),
             discard=PersonalityWeightedDiscardStrategy(),
-            wagers_by_phase={phase: PhaseWagerStrategy(phase) for phase in PHASE_ORDER},
+            wagers_by_phase={phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER},
         )

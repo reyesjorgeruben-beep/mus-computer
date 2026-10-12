@@ -1,6 +1,7 @@
-"""One independent wager policy per game phase."""
+"""Wager strategy contract and the built-in heuristic implementation."""
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from mus_computer.bots.strategies.actions import (
     ActionDistribution, WagerAction, legal_wager_actions,
@@ -11,8 +12,21 @@ from mus_computer.game.context import GlobalGameContext
 from mus_computer.game.phases import PhaseName, PHASE_ORDER
 
 
+class WagerStrategy(Protocol):
+    """Choose a wager action; the game remains responsible for settling it."""
+
+    def decide(
+        self,
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+        personality: BotPersonality,
+    ) -> ActionDistribution[WagerAction]: ...
+
+
 @dataclass(frozen=True)
-class PhaseWagerStrategy:
+class HeuristicWagerStrategy(WagerStrategy):
+    """Default phase policy combining estimates, score, seat, and personality."""
+
     phase_name: PhaseName
 
     def __post_init__(self) -> None:
@@ -78,3 +92,7 @@ class PhaseWagerStrategy:
         if total <= 0:
             return ActionDistribution({WagerAction.MATCH_OR_PASS: 1.0})
         return ActionDistribution({action: value / total for action, value in weights.items()})
+
+
+# Preserve imports used by callers of the first contextual-bot API.
+PhaseWagerStrategy = HeuristicWagerStrategy

@@ -15,18 +15,24 @@ from mus_computer.game.team import Team
 
 
 class BotPlayer(PlayerBase):
+    """Apply a personality through replaceable decision strategies.
+
+    The personality holds parameters; each strategy decides how to combine
+    them. Omitting ``strategies`` selects the built-in heuristic portfolio.
+    """
+
     needs_discard_statistics = True
 
     def __init__(
         self,
         name: str,
         team: Team,
-        genome: BotPersonality,
+        personality: BotPersonality,
         strategies: StrategyPortfolio | None = None,
         random_generator: random.Random | None = None,
     ):
         super().__init__(name, team)
-        self._genome = genome
+        self._personality = personality
         self.strategies = strategies if strategies is not None else StrategyPortfolio.default()
         self._random_generator = random_generator if random_generator is not None else random.Random()
 
@@ -61,10 +67,10 @@ class BotPlayer(PlayerBase):
         player_context: PlayerDecisionContext,
     ) -> MusAction | DiscardAction | WagerAction:
         if kind is DecisionKind.MUS:
-            distribution = self.strategies.mus.decide(global_context, player_context, self._genome)
+            distribution = self.strategies.mus.decide(global_context, player_context, self._personality)
             return distribution.sample(self._random_generator, frozenset(MusAction))
         if kind is DecisionKind.DISCARD:
-            distribution = self.strategies.discard.decide(global_context, player_context, self._genome)
+            distribution = self.strategies.discard.decide(global_context, player_context, self._personality)
             legal = {option.action for option in player_context.discard_options}
             return distribution.sample(self._random_generator, legal)
         if kind is DecisionKind.WAGER:
@@ -72,7 +78,7 @@ class BotPlayer(PlayerBase):
             if phase is None:
                 raise ValueError("A wager decision requires a phase.")
             distribution = self.strategies.wagers_by_phase[phase].decide(
-                global_context, player_context, self._genome,
+                global_context, player_context, self._personality,
             )
             return distribution.sample(self._random_generator, legal_wager_actions(global_context.wager))
         raise ValueError(f"Unknown decision kind: {kind}")

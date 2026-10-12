@@ -131,6 +131,30 @@ def test_injected_portfolio_selects_only_the_current_phase_strategy():
     assert bot.wager_action(global_context("Grande"), player_context("Grande")) is WagerAction.MATCH_OR_PASS
 
 
+def test_wager_strategy_interface_allows_a_different_score_policy():
+    from mus_computer.bots.strategies.wagers import WagerStrategy
+
+    class ScoreDrivenWagerStrategy(WagerStrategy):
+        def decide(self, global_context, player_context, personality):
+            action = (
+                WagerAction.RAISE_2
+                if global_context.team_scores[player_context.team_name] < 10
+                else WagerAction.MATCH_OR_PASS
+            )
+            return ActionDistribution({action: 1.0})
+
+    selected = StrategyPortfolio.default()
+    wagers = dict(selected.wagers_by_phase)
+    wagers["Grande"] = ScoreDrivenWagerStrategy()
+    bot = BotPlayer(
+        "Bot 1", Team("A"), personality=genome(),
+        strategies=StrategyPortfolio(selected.mus, selected.discard, wagers),
+    )
+
+    assert bot.wager_action(global_context("Grande", scores={"A": 5, "B": 0}), player_context("Grande")) is WagerAction.RAISE_2
+    assert bot.wager_action(global_context("Grande", scores={"A": 10, "B": 0}), player_context("Grande")) is WagerAction.MATCH_OR_PASS
+
+
 def test_discard_action_must_be_one_of_the_estimated_legal_options():
     bot = BotPlayer("Bot 1", Team("A"), genome(), portfolio(discard=DiscardAction((0, 2))))
     with pytest.raises(ValueError, match="illegal"):

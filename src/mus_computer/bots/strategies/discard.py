@@ -1,6 +1,7 @@
 """Select discard indices from estimated post-Mus phase value."""
 
 from dataclasses import dataclass
+from typing import Protocol
 
 from mus_computer.bots.strategies.actions import ActionDistribution, DiscardAction
 from mus_computer.bots.strategies.contexts import DiscardOption, HandStatistics, PlayerDecisionContext
@@ -47,8 +48,19 @@ def _discard_option_score(
     )
 
 
+class DiscardStrategy(Protocol):
+    """Choose among the discard options supplied in the private context."""
+
+    def decide(
+        self,
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+        personality: BotPersonality,
+    ) -> ActionDistribution[DiscardAction]: ...
+
+
 @dataclass(frozen=True)
-class PersonalityWeightedDiscardStrategy:
+class PersonalityWeightedDiscardStrategy(DiscardStrategy):
     """Choose the discard with the best personality-weighted phase utility.
 
     The underlying expected-point estimates remain objective; personality
