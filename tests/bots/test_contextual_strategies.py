@@ -29,6 +29,17 @@ class FixedStrategy:
         return ActionDistribution({self.action: 1.0})
 
 
+class FixedDrawRandom(random.Random):
+    """Use the same explicit draw for every bot decision in a toy scenario."""
+
+    def __init__(self, draw):
+        super().__init__()
+        self.draw = draw
+
+    def random(self):
+        return self.draw
+
+
 def genome(**changes):
     values = dict(
         mus_eagerness=0.5, mus_risk_sensitivity=0.5,
@@ -262,3 +273,70 @@ def test_default_wager_response_contains_fold_and_ordago_response_is_restricted(
     ordago = policy.decide(global_context("Juego", WagerState(2, 1, "B", True)), private, genome()).probabilities
     assert offered[WagerAction.FOLD] > 0
     assert set(ordago) == {WagerAction.MATCH_OR_PASS, WagerAction.FOLD}
+
+
+def test_injected_weighted_mus_strategy_uses_context_and_a_fixed_draw():
+    class ToyMusStrategy:
+        def decide(self, global_context, player_context, personality):
+            win_chance = player_context.statistics.outcomes_by_phase["Grande"].p_win
+            mus_chance = 0.46 if win_chance < 0.5 else 0.06
+            return ActionDistribution({
+                MusAction.MUS: mus_chance,
+                MusAction.CORTA: 1.0 - mus_chance,
+            })
+
+    public = global_context()
+    weak = player_context(probabilities={name: 0.1 for name in PHASES})
+    strong = player_context(probabilities={name: 0.9 for name in PHASES})
+    draw = 0.3
+    defaults = StrategyPortfolio.default()
+    strategies = StrategyPortfolio(ToyMusStrategy(), defaults.discard, defaults.wagers_by_phase)
+    bot = BotPlayer("Bot 1", Team("A"), genome(), strategies, FixedDrawRandom(draw))
+
+    assert bot.vote_mus(public, weak) is MusAction.MUS
+    assert bot.vote_mus(public, strong) is MusAction.CORTA
+
+
+def test_default_bot_wager_uses_contextual_weights_when_sampling():
+    public = global_context("Grande", WagerState(2, 1, "B"))
+    weak = player_context("Grande", probabilities={name: 0.05 for name in PHASES})
+    strong = player_context("Grande", probabilities={name: 0.95 for name in PHASES})
+    personality = genome()
+    bot = BotPlayer("Bot 1", Team("A"), personality, random_generator=FixedDrawRandom(0.85))
+
+    weak_weights = bot.strategies.wagers_by_phase["Grande"].decide(
+        public, weak, personality,
+    ).probabilities
+    strong_weights = bot.strategies.wagers_by_phase["Grande"].decide(
+        public, strong, personality,
+    ).probabilities
+    assert 0 < weak_weights[WagerAction.FOLD] < 1
+    assert strong_weights[WagerAction.FOLD] == 0
+    assert strong_weights[WagerAction.RAISE_4] > weak_weights[WagerAction.RAISE_4]
+    assert bot.wager_action(public, weak) is WagerAction.FOLD
+    assert bot.wager_action(public, strong) is WagerAction.RAISE_4
+
+
+def test_default_bot_discard_choice_is_certain_but_changes_with_estimated_value():
+    public = global_context()
+    low = player_context(probabilities={name: 0.2 for name in PHASES}).statistics
+    high = player_context(probabilities={name: 0.8 for name in PHASES}).statistics
+    keep_is_better = player_context(options=(
+        DiscardOption(DiscardAction(()), high),
+        DiscardOption(DiscardAction((0,)), low),
+    ))
+    exchange_is_better = player_context(options=(
+        DiscardOption(DiscardAction(()), low),
+        DiscardOption(DiscardAction((0,)), high),
+    ))
+    personality = genome()
+    bot = BotPlayer("Bot 1", Team("A"), personality)
+
+    assert bot.strategies.discard.decide(public, keep_is_better, personality).probabilities == {
+        DiscardAction(()): 1.0,
+    }
+    assert bot.strategies.discard.decide(public, exchange_is_better, personality).probabilities == {
+        DiscardAction((0,)): 1.0,
+    }
+    assert bot.choose_discards(public, keep_is_better) == ()
+    assert bot.choose_discards(public, exchange_is_better) == (0,)
