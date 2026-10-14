@@ -107,6 +107,79 @@ Tests use real context objects with injected statistics/strategies, not mocked p
 
 Do not run training games as a measure of strategy quality in this slice.
 
+## Repository Structure and User Entry Points
+
+Move runtime code into an installable `src`-layout package named `mus_computer`, organized by responsibility:
+
+```text
+src/mus_computer/
+  __init__.py
+  __main__.py
+  cli.py
+  cards/
+    __init__.py
+    card.py
+    deck.py
+    hand.py
+  game/
+    __init__.py
+    game.py
+    phases.py
+    player.py
+    player_base.py
+    team.py
+    context.py
+    wager_session.py
+  bots/
+    __init__.py
+    bot_player.py
+    random_bot_player.py
+    bot_genome.py
+    bot_game_state.py
+    strategies/
+      __init__.py
+      actions.py
+      contexts.py
+      portfolio.py
+      mus.py
+      discard.py
+      wagers.py
+  probabilities/
+    __init__.py
+    estimates.py
+    tables.py
+    data/
+      probability_tables.pkl
+  training/
+    __init__.py
+    genetic_trainer.py
+  constants.py
+  utils.py
+scripts/
+  __init__.py
+  tables/
+    __init__.py
+    build_tables.py
+    compute_expected_points.py
+    compute_ep_postmus.py
+    compute_hand_distribution.py
+    compute_best_discards.py
+    compute_best_discards_corrected.py
+    export_tables.py
+tests/
+  cards/
+  game/
+  bots/
+  probabilities/
+  training/
+```
+
+Use package imports in application code and tests. Add `pyproject.toml` with Python 3.10+ support, setuptools package discovery from `src`, no runtime third-party dependencies, pytest as a development extra, and the `mus-computer` console entry point. CI installs the editable package and runs the test suite. Keep table-analysis/build scripts in `scripts/tables`; their output paths remain explicit or repository-relative so moving the source files does not redirect generated reports into the installed package.
+
+Bundle the existing committed lookup pickle as read-only package data and load it with `importlib.resources`. Allow an explicit path override for tests and locally regenerated tables. Table builders continue writing generated files to an explicit or repository-root output path, never into the installed package by default. Preserve any uncommitted generated table/report files already in the working tree and keep them out of this feature's commits.
+
+Add a root `README.md` with setup, run, test, package layout, current game/bot behavior, and links to the technical lookup-table reference and strategy spec. `python -m mus_computer` runs the existing four-random-bot terminal game; keep `python api.py` working as a thin compatibility entry point. This change does not add human play or promise that the offline table models are fully validated.
+
 ## Scope Boundaries
 
 - No learned policy, parameter optimization, or genetic-trainer execution.

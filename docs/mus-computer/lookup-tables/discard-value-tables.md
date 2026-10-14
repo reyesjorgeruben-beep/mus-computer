@@ -22,8 +22,8 @@ This selects a retained hand by expected net points, not by a weighted average o
 
 ## Baseline and corrected versions
 
-- compute_best_discards.py uses ep_mano, which is based on pre-mus hands.
-- compute_best_discards_corrected.py uses ep_mano_postmus and writes separate corrected keys.
+- `scripts/tables/compute_best_discards.py` uses ep_mano, which is based on pre-mus hands.
+- `scripts/tables/compute_best_discards_corrected.py` uses ep_mano_postmus and writes separate corrected keys.
 
 The corrected output is one post-mus-aware revaluation. It does not rebuild hand_distribution_post_mus or repeat the pipeline.
 

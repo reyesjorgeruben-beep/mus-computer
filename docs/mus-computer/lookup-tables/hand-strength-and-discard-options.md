@@ -8,7 +8,7 @@ For each of the 330 canonical four-card hands:
 - For each unique retained subset, expected per-phase p_win after drawing back to four cards.
 - Per-hand best attainable improvement by phase, plus an average opponent improvement by phase.
 
-The runtime accessors are in probability_tables.py. The builder is build_tables.py.
+The runtime accessors are in `src/mus_computer/probabilities/tables.py`. The builder is `scripts/tables/build_tables.py`.
 
 ## Construction
 
@@ -36,8 +36,8 @@ Let C_r be the full-deck count of rank r, h_r the count in the player's original
 
 The probability is that weight divided by choose(36, n_draw), since 36 cards remain after conditioning on the player's initial four. This automatically allows another copy of a discarded rank while excluding the exact physical copy dealt initially.
 
-The current builders first remove the original hand, then add the discarded counts back. Their pool is therefore full deck minus kept cards, and it overstates the availability of each discarded rank by restoring those exact copies. The live BotPlayer sampler removes the full current hand and does not restore discards, so it follows the one-player marginal pool more closely than the lookup builders do.
+The current builders first remove the original hand, then add the discarded counts back. Their pool is therefore full deck minus kept cards, and it overstates the availability of each discarded rank by restoring those exact copies.
 
 ## Runtime status
 
-BotPlayer uses win_prob and average opponent improvement. It does not use the precomputed discard_options table; vote_mus and choose_discards still sample replacement hands.
+The packaged accessor exposes the precomputed hand and discard estimates. The default four-random-bot runner does not consult them. The [contextual strategy design](../../superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) describes their planned role in decisions.
