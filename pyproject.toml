@@ -24,4 +24,7 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-markers = ["slow: exhaustive table validation"]
+markers = [
+    "slow: exhaustive table validation",
+    "performance: opt-in live training throughput checks",
+]
