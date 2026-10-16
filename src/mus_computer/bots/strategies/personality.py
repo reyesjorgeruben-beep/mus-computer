@@ -9,7 +9,7 @@ class BotPersonality(Protocol):
     """Preference interface retained by injectable strategies.
 
     ``BotGenome`` is the built-in implementation. The current built-in
-    strategies ignore these fields; custom strategies may still use them.
+    strategies ignore the legacy fields; composed policies may use new ones.
     """
 
     @property
@@ -50,6 +50,15 @@ class BotPersonality(Protocol):
 
     @property
     def position_preference(self) -> float: ...
+
+    @property
+    def cut_prone(self) -> float: ...
+
+    @property
+    def cut_prone_with_pares(self) -> float: ...
+
+    @property
+    def cut_prone_with_juego(self) -> float: ...
 
 
 FIXED_PHASE_WEIGHTS = {

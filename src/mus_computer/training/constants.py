@@ -2,6 +2,5 @@
 
 MAX_CONCURRENT_GAMES = 16
 
-# Built-in bot policies currently ignore personality; enable genes as each
-# decision effect is reintroduced and verified on a fixed game state.
-USED_GENES = []
+# The composed Mus policy in genome matchups consumes exactly these genes.
+USED_GENES = ["cut_prone", "cut_prone_with_pares", "cut_prone_with_juego"]

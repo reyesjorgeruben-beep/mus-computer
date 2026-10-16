@@ -60,3 +60,30 @@ class EstimateMusStrategy(MusStrategy):
         )
         p_mus = max(0.0, min(1.0, p_mus))
         return ActionDistribution({MusAction.MUS: p_mus, MusAction.CORTA: 1.0 - p_mus})
+
+
+@dataclass(frozen=True)
+class GeneCutMusStrategy(MusStrategy):
+    """Use the base cut probability or combine active Pares/Juego cut genes.
+
+    The two feature probabilities combine as independent reasons to cut:
+    Juego + (1 - Juego) * Pares when the hand has both. Hand strength,
+    teammate cards, score, and prior Mus exchanges do not enter this policy.
+    """
+
+    def decide(
+        self,
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+        personality: BotPersonality,
+    ) -> ActionDistribution[MusAction]:
+        has_pares = player_context.intrinsic_points_by_phase.get("Pares", 0) > 0
+        has_juego = player_context.intrinsic_points_by_phase.get("Juego", 0) > 0
+        if not has_pares and not has_juego:
+            p_cut = personality.cut_prone
+        else:
+            juego = float(has_juego) * personality.cut_prone_with_juego
+            pares = float(has_pares) * personality.cut_prone_with_pares
+            p_cut = juego + (1.0 - juego) * pares
+        p_cut = max(0.0, min(1.0, p_cut))
+        return ActionDistribution({MusAction.CORTA: p_cut, MusAction.MUS: 1.0 - p_cut})

@@ -67,10 +67,10 @@ class BotPlayer(PlayerBase):
         player_context: PlayerDecisionContext,
     ) -> MusAction | DiscardAction | WagerAction:
         if kind is DecisionKind.MUS:
-            distribution = self.strategies.mus.decide(global_context, player_context, self._personality)
+            distribution = self.strategies.mus_strategy.decide(global_context, player_context, self._personality)
             return distribution.sample(self._random_generator, frozenset(MusAction))
         if kind is DecisionKind.DISCARD:
-            distribution = self.strategies.discard.decide(global_context, player_context, self._personality)
+            distribution = self.strategies.discard_strategy.decide(global_context, player_context, self._personality)
             legal = {option.action for option in player_context.discard_options}
             return distribution.sample(self._random_generator, legal)
         if kind is DecisionKind.WAGER:

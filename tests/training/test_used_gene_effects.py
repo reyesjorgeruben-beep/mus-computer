@@ -5,6 +5,7 @@ from dataclasses import replace
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.strategies.actions import MusAction
+from mus_computer.bots.strategies.mus import GeneCutMusStrategy
 from mus_computer.training.constants import USED_GENES
 from mus_computer.training.game_runner import GenomeMatchup, build_bot_game
 
@@ -22,7 +23,7 @@ def test_mus_eagerness_does_not_change_real_game_mus_decision():
             player = game.players_in_order[0]
             public = game._global_context()
             private = player.decision_context(public, 0)
-            probability = player.strategies.mus.decide(
+            probability = player.strategies.mus_strategy.decide(
                 public, private, player._personality,
             ).probabilities[MusAction.MUS]
             results.append((tuple(player.cards), probability))
@@ -32,5 +33,8 @@ def test_mus_eagerness_does_not_change_real_game_mus_decision():
     assert results[0] == results[1]
 
 
-def test_no_genes_are_active_during_fixed_policy_stage():
-    assert USED_GENES == []
+def test_only_three_cut_genes_are_active_in_training_matchups():
+    assert USED_GENES == ["cut_prone", "cut_prone_with_pares", "cut_prone_with_juego"]
+    baseline = BotGenome(*([0.5] * 13))
+    game = build_bot_game(GenomeMatchup(baseline, baseline, seed=77))
+    assert all(isinstance(player.strategies.mus_strategy, GeneCutMusStrategy) for player in game.players_in_order)

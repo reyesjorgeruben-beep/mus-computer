@@ -10,8 +10,13 @@ from time import perf_counter
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.bot_player import BotPlayer
+from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrategy
+from mus_computer.bots.strategies.mus import GeneCutMusStrategy
+from mus_computer.bots.strategies.portfolio import StrategyPortfolio
+from mus_computer.bots.strategies.wagers import HeuristicWagerStrategy
 from mus_computer.cli import build_default_game
 from mus_computer.game.game import Game
+from mus_computer.game.phases import PHASE_ORDER
 from mus_computer.game.team import Team
 from mus_computer.training.config import TrainingConfig
 
@@ -36,11 +41,16 @@ class GenomeMatchup:
 def build_bot_game(matchup: GenomeMatchup) -> Game:
     """Seat two copies of each team's genome in A/B/A/B order."""
     team_a, team_b = Team("A"), Team("B")
+    strategies = StrategyPortfolio(
+        mus_strategy=GeneCutMusStrategy(),
+        discard_strategy=PersonalityWeightedDiscardStrategy(),
+        wagers_by_phase={phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER},
+    )
     players = [
-        BotPlayer("A1", team_a, matchup.team_a, random_generator=random.Random(matchup.seed + 1)),
-        BotPlayer("B1", team_b, matchup.team_b, random_generator=random.Random(matchup.seed + 2)),
-        BotPlayer("A2", team_a, matchup.team_a, random_generator=random.Random(matchup.seed + 3)),
-        BotPlayer("B2", team_b, matchup.team_b, random_generator=random.Random(matchup.seed + 4)),
+        BotPlayer("A1", team_a, matchup.team_a, strategies, random.Random(matchup.seed + 1)),
+        BotPlayer("B1", team_b, matchup.team_b, strategies, random.Random(matchup.seed + 2)),
+        BotPlayer("A2", team_a, matchup.team_a, strategies, random.Random(matchup.seed + 3)),
+        BotPlayer("B2", team_b, matchup.team_b, strategies, random.Random(matchup.seed + 4)),
     ]
     return Game.from_players(players)
 
