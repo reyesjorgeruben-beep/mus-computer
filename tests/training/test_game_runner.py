@@ -8,6 +8,8 @@ import pytest
 
 from mus_computer.training.config import TrainingConfig
 from mus_computer.training.game_runner import TrainingGameRunner, play_random_game
+from mus_computer.bots.bot_genome import random_genome
+from mus_computer.training.game_runner import GenomeMatchup, build_bot_game, play_genome_game
 
 
 def test_one_random_game_finishes_without_terminal_output(capsys):
@@ -23,11 +25,28 @@ def test_one_random_game_finishes_without_terminal_output(capsys):
 
 def test_ten_random_games_run_in_separate_workers_without_terminal_output(capsys):
     with TrainingGameRunner(TrainingConfig()) as runner:
+        runner.warm_up()
         results = runner.play_games(10, seed_start=0)
 
     assert len(results) == 10
     assert all(result.winner in {"A", "B"} for result in results)
     assert len({result.worker_pid for result in results}) > 1
+    assert capsys.readouterr() == ("", "")
+
+
+def test_single_game_can_start_a_ten_worker_pool():
+    with TrainingGameRunner(TrainingConfig()) as runner:
+        results = runner.play_games(1)
+    assert len(results) == 1
+    assert results[0].winner in {"A", "B"}
+
+
+def test_genome_matchup_uses_one_genome_per_team(capsys):
+    team_a, team_b = random_genome(), random_genome()
+    game = build_bot_game(GenomeMatchup(team_a, team_b, seed=3))
+    assert [player._personality for player in game.players_in_order] == [team_a, team_b, team_a, team_b]
+    result = play_genome_game(GenomeMatchup(team_a, team_b, seed=3))
+    assert result.winner in {"A", "B"}
     assert capsys.readouterr() == ("", "")
 
 

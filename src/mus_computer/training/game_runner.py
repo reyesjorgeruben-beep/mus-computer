@@ -1,68 +1,102 @@
-"""Run independent four-random-bot games without terminal action logs."""
+"""Run silent random baseline games or genome configured training matchups."""
 
-import os
 import multiprocessing
+import os
 import random
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from itertools import repeat
 from time import perf_counter
 
+from mus_computer.bots.bot_genome import BotGenome
+from mus_computer.bots.bot_player import BotPlayer
 from mus_computer.cli import build_default_game
+from mus_computer.game.game import Game
+from mus_computer.game.team import Team
 from mus_computer.training.config import TrainingConfig
 
 
 @dataclass(frozen=True)
 class GameResult:
+    """A game's outcome and its elapsed time measured with ``perf_counter``."""
+
     winner: str
     victory_reason: str
     elapsed_seconds: float
     worker_pid: int
 
 
-def play_random_game(seed: int | None = None) -> GameResult:
-    """Play one complete game with real public and private decision contexts."""
-    previous_random_state = random.getstate() if seed is not None else None
+@dataclass(frozen=True)
+class GenomeMatchup:
+    team_a: BotGenome
+    team_b: BotGenome
+    seed: int = 0
+
+
+def build_bot_game(matchup: GenomeMatchup) -> Game:
+    """Seat two copies of each team's genome in A/B/A/B order."""
+    team_a, team_b = Team("A"), Team("B")
+    players = [
+        BotPlayer("A1", team_a, matchup.team_a, random_generator=random.Random(matchup.seed + 1)),
+        BotPlayer("B1", team_b, matchup.team_b, random_generator=random.Random(matchup.seed + 2)),
+        BotPlayer("A2", team_a, matchup.team_a, random_generator=random.Random(matchup.seed + 3)),
+        BotPlayer("B2", team_b, matchup.team_b, random_generator=random.Random(matchup.seed + 4)),
+    ]
+    return Game.from_players(players)
+
+
+def _play_game(factory, seed: int) -> GameResult:
+    """Run one game and measure elapsed seconds with a monotonic timer.
+
+    ``perf_counter()`` readings are subtracted to measure the game duration;
+    their absolute values are not timestamps. Restore global randomness so
+    a direct call does not change the caller's random sequence.
+    """
+    previous_state = random.getstate()
     try:
-        if seed is not None:
-            random.seed(seed)
+        random.seed(seed)
         start = perf_counter()
-        game = build_default_game(on_action=None)
+        game = factory()
         winner = game.play()
         return GameResult(winner.name, game.victory_reason or "points", perf_counter() - start, os.getpid())
     finally:
-        if previous_random_state is not None:
-            random.setstate(previous_random_state)
+        random.setstate(previous_state)
 
 
-def _prepare_worker(ready_barrier) -> None:
-    # Each process owns its table cache; load it before timed batches begin.
+def play_random_game(seed: int = 0) -> GameResult:
+    """Play a fixed-seed random baseline game without terminal output."""
+    return _play_game(lambda: build_default_game(on_action=None), seed)
+
+
+def play_genome_game(matchup: GenomeMatchup) -> GameResult:
+    """Play one silent matchup with genomes supplied by the trainer."""
+    return _play_game(lambda: build_bot_game(matchup), matchup.seed)
+
+
+def _prepare_worker() -> None:
+    """Load each worker's read-only table cache before its first game."""
     from mus_computer.cards.card import Card
     from mus_computer.probabilities.estimates import estimate_hand_statistics
 
     estimate_hand_statistics((Card.R, Card.C, Card.S, Card.A))
-    ready_barrier.wait(timeout=30)
 
 
-def _worker_pid(_: int) -> int:
-    return os.getpid()
+def _wait_for_pool(barrier) -> None:
+    barrier.wait(timeout=30)
 
 
 class TrainingGameRunner:
-    """Reuse at most ten processes across batches of independent games."""
+    """Reuse a bounded process pool across batches of independent games."""
 
     def __init__(self, config: TrainingConfig | None = None) -> None:
         self.config = config or TrainingConfig()
         self._executor: ProcessPoolExecutor | None = None
 
     def __enter__(self) -> "TrainingGameRunner":
-        context = multiprocessing.get_context()
-        ready_barrier = context.Barrier(self.config.max_concurrent_games)
         self._executor = ProcessPoolExecutor(
             max_workers=self.config.max_concurrent_games,
-            mp_context=context,
+            mp_context=multiprocessing.get_context(),
             initializer=_prepare_worker,
-            initargs=(ready_barrier,),
         )
         return self
 
@@ -72,15 +106,23 @@ class TrainingGameRunner:
             self._executor = None
 
     def warm_up(self) -> None:
-        """Start workers and load their tables outside a timed game batch."""
+        """Start every worker before measuring full-pool throughput."""
         if self._executor is None:
             raise RuntimeError("TrainingGameRunner must be used as a context manager")
-        list(self._executor.map(_worker_pid, range(self.config.max_concurrent_games)))
+        with multiprocessing.Manager() as manager:
+            barrier = manager.Barrier(self.config.max_concurrent_games)
+            list(self._executor.map(
+                _wait_for_pool, repeat(barrier, self.config.max_concurrent_games),
+            ))
 
-    def play_games(self, count: int, seed_start: int | None = None) -> list[GameResult]:
+    def play_games(self, count: int, seed_start: int = 0) -> list[GameResult]:
         if self._executor is None:
             raise RuntimeError("TrainingGameRunner must be used as a context manager")
         if count < 0:
             raise ValueError("Game count must be nonnegative")
-        seeds = range(seed_start, seed_start + count) if seed_start is not None else repeat(None, count)
-        return list(self._executor.map(play_random_game, seeds))
+        return list(self._executor.map(play_random_game, range(seed_start, seed_start + count)))
+
+    def play_matchups(self, matchups: list[GenomeMatchup]) -> list[GameResult]:
+        if self._executor is None:
+            raise RuntimeError("TrainingGameRunner must be used as a context manager")
+        return list(self._executor.map(play_genome_game, matchups))

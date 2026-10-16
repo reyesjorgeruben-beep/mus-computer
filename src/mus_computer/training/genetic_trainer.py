@@ -1,169 +1,153 @@
+"""Orchestrate genome matchups and delegate variation to a generator."""
+
 import json
 import random
+import time
 from dataclasses import asdict
 from pathlib import Path
-from typing import List
 
-from mus_computer.bots.bot_genome import BotGenome, random_genome, crossover, mutate
-from mus_computer.bots.bot_player import BotPlayer
-from mus_computer.game.game import Game
-from mus_computer.game.team import Team
-
-
-def build_bot_game(genomes: List[BotGenome]) -> Game:
-    """Create a silent game with alternating A/B/A/B genome seats."""
-    if len(genomes) != 4:
-        raise ValueError("A bot game requires exactly four genomes.")
-    team_a = Team("A")
-    team_b = Team("B")
-    players = [
-        BotPlayer("A1", team_a, genomes[0]),
-        BotPlayer("B1", team_b, genomes[1]),
-        BotPlayer("A2", team_a, genomes[2]),
-        BotPlayer("B2", team_b, genomes[3]),
-    ]
-    return Game.from_players(players)
-
-
-def evaluate_game(genomes: List[BotGenome]) -> str:
-    """Play one full game. Returns winning team name ('A' or 'B')."""
-    game = build_bot_game(genomes)
-    return game.play().name
+from mus_computer.bots.bot_genome import BotGenome
+from mus_computer.training.game_runner import GenomeMatchup, TrainingGameRunner
+from mus_computer.training.genome_generator import CustomGeneticGenomeGenerator, GenomeGenerator
 
 
 class GeneticTrainer:
     def __init__(
         self,
-        population_size: int = 100,
+        population_size: int = 20,
         generations: int = 300,
-        games_per_eval: int = 10,
-        elite_fraction: float = 0.05,
-        mutation_rate: float = 0.15,
-        mutation_sigma: float = 0.05,
-        tournament_k: int = 5,
-    ):
+        games_per_eval: int = 1,
+        gen_generator: GenomeGenerator | None = None,
+        runner: TrainingGameRunner | None = None,
+        seed: int = 0,
+    ) -> None:
+        if population_size < 2 or population_size % 2 or generations < 1 or games_per_eval < 1:
+            raise ValueError("Training requires an even population of at least two, one generation, and one game")
         self.population_size = population_size
         self.generations = generations
         self.games_per_eval = games_per_eval
-        self.elite_fraction = elite_fraction
-        self.mutation_rate = mutation_rate
-        self.mutation_sigma = mutation_sigma
-        self.tournament_k = tournament_k
+        self.games_per_generation = population_size * games_per_eval // 2
+        self.seed = seed
+        self.gen_generator = gen_generator or CustomGeneticGenomeGenerator()
+        self.runner = runner or TrainingGameRunner()
+        self._runner_open = False
 
-    def initial_population(self) -> List[BotGenome]:
-        return [random_genome() for _ in range(self.population_size)]
+    def initial_population(self) -> list[BotGenome]:
+        return self.gen_generator.initial_population(self.population_size)
 
-    def evaluate_population(self, population: List[BotGenome]) -> List[float]:
-        """Each genome plays games_per_eval games against random opponents. Fitness = win rate."""
+    def evaluate_population(
+        self, population: list[BotGenome], generation: int = 0,
+    ) -> list[float]:
+        """Pair every genome once per round and score both sides of each game."""
+        if len(population) != self.population_size:
+            raise ValueError("Evaluation population size must match the trainer")
+        matchups, seated_indices = self._build_matchups(population, generation)
+        if not self._runner_open:
+            with self.runner:
+                results = self.runner.play_matchups(matchups)
+        else:
+            results = self.runner.play_matchups(matchups)
+        if len(results) != len(matchups):
+            raise ValueError("Runner returned the wrong number of results")
         wins = [0] * len(population)
-        games = [0] * len(population)
+        for result, (a_index, b_index) in zip(results, seated_indices):
+            wins[a_index if result.winner == "A" else b_index] += 1
+        return [wins / self.games_per_eval for wins in wins]
 
-        for genome_idx, genome in enumerate(population):
-            for _ in range(self.games_per_eval):
-                others = random.sample(
-                    [g for i, g in enumerate(population) if i != genome_idx], 3
-                )
-                order = [(True, genome)] + [(False, other) for other in others]
-                random.shuffle(order)
-                genomes_game = [entry[1] for entry in order]
+    def _build_matchups(
+        self, population: list[BotGenome], generation: int,
+    ) -> tuple[list[GenomeMatchup], list[tuple[int, int]]]:
+        """Seat every genome once per pairing round and assign unique game seeds."""
+        matchups: list[GenomeMatchup] = []
+        seated_indices: list[tuple[int, int]] = []
+        seed_start = self.seed + generation * self.games_per_generation
+        for round_index in range(self.games_per_eval):
+            indices = list(range(len(population)))
+            random.shuffle(indices)
+            for seat in range(0, len(indices), 2):
+                a_index, b_index = indices[seat], indices[seat + 1]
+                matchups.append(GenomeMatchup(
+                    population[a_index], population[b_index], seed=seed_start + len(matchups),
+                ))
+                seated_indices.append((a_index, b_index))
+        return matchups, seated_indices
 
-                winner = evaluate_game(genomes_game)
-                pos = next(i for i, entry in enumerate(order) if entry[0])
-                our_team = "A" if pos % 2 == 0 else "B"
+    def next_generation(
+        self, population: list[BotGenome], fitness: list[float],
+    ) -> list[BotGenome]:
+        return self.gen_generator.next_generation(population, fitness)
 
-                if winner == our_team:
-                    wins[genome_idx] += 1
-                games[genome_idx] += 1
+    def evolve(self, snapshot_every: int = 50) -> list[BotGenome]:
+        """Run evolution and return the top half of the final generation."""
+        if snapshot_every < 1:
+            raise ValueError("snapshot_every must be positive")
+        previous_state = random.getstate()
+        try:
+            random.seed(self.seed)
+            with self.runner:
+                self._runner_open = True
+                try:
+                    self.runner.warm_up()
+                    return self._evolve_with_runner(snapshot_every)
+                finally:
+                    self._runner_open = False
+        finally:
+            random.setstate(previous_state)
 
-        return [w / g if g > 0 else 0.0 for w, g in zip(wins, games)]
-
-    def _tournament_select(self, population: List[BotGenome], fitness: List[float]) -> BotGenome:
-        candidates = random.sample(list(range(len(population))), min(self.tournament_k, len(population)))
-        best = max(candidates, key=lambda i: fitness[i])
-        return population[best]
-
-    def next_generation(self, population: List[BotGenome], fitness: List[float]) -> List[BotGenome]:
-        n = len(population)
-        n_elite = max(1, round(n * self.elite_fraction))
-        sorted_idx = sorted(range(n), key=lambda i: fitness[i], reverse=True)
-        new_gen = [population[i] for i in sorted_idx[:n_elite]]
-        while len(new_gen) < n:
-            parent_a = self._tournament_select(population, fitness)
-            parent_b = self._tournament_select(population, fitness)
-            child = crossover(parent_a, parent_b)
-            child = mutate(child, self.mutation_rate, self.mutation_sigma)
-            new_gen.append(child)
-        return new_gen
-
-    def evolve(self, snapshot_every: int = 50) -> BotGenome:
-        """Run full evolution. Returns best genome found."""
-        import time
+    def _evolve_with_runner(self, snapshot_every: int) -> list[BotGenome]:
         population = self.initial_population()
-        best_genome = population[0]
-        best_fitness = 0.0
         start = time.time()
-        log_every = max(1, self.generations // 100)  # every 1% of progress
+        log_every = max(1, self.generations // 100)
 
-        for gen in range(self.generations):
-            gen_start = time.time()
-            fitness = self.evaluate_population(population)
-            gen_elapsed = time.time() - gen_start
+        for generation in range(self.generations):
+            generation_start = time.time()
+            fitness = self.evaluate_population(population, generation=generation)
+            generation_elapsed = time.time() - generation_start
+            if (generation + 1) % log_every == 0 or generation == 0:
+                self._log_generation(generation, start, generation_elapsed)
+            if (generation + 1) % snapshot_every == 0:
+                self.save_population(population, Path(f"population_gen{generation+1}.json"))
+            if generation + 1 < self.generations:
+                population = self.next_generation(population, fitness)
+        winner_indices = sorted(range(len(population)), key=lambda i: fitness[i], reverse=True)
+        return [population[i] for i in winner_indices[:len(population) // 2]]
 
-            top_fitness = max(fitness)
-            mean_fitness = sum(fitness) / len(fitness)
-            top_idx = fitness.index(top_fitness)
-            if top_fitness > best_fitness:
-                best_fitness = top_fitness
-                best_genome = population[top_idx]
+    def _log_generation(self, generation: int, start: float, generation_elapsed: float) -> None:
+        completed = generation + 1
+        elapsed = time.time() - start
+        remaining = elapsed / completed * (self.generations - completed)
+        print(
+            f"[{completed / self.generations * 100:5.1f}%] gen {completed}/{self.generations} | "
+            f"games={self.games_per_generation} | "
+            f"gen_time={generation_elapsed:.1f}s elapsed={elapsed:.0f}s eta={remaining:.0f}s"
+        )
 
-            if (gen + 1) % log_every == 0 or gen == 0:
-                elapsed = time.time() - start
-                pct = (gen + 1) / self.generations * 100
-                remaining = (elapsed / (gen + 1)) * (self.generations - gen - 1)
-                print(
-                    f"[{pct:5.1f}%] gen {gen+1}/{self.generations} | "
-                    f"best={top_fitness:.3f} mean={mean_fitness:.3f} | "
-                    f"gen_time={gen_elapsed:.1f}s elapsed={elapsed:.0f}s eta={remaining:.0f}s"
-                )
+    def save_population(self, population: list[BotGenome], path) -> None:
+        with open(path, "w") as output:
+            json.dump([asdict(genome) for genome in population], output, indent=2)
 
-            if (gen + 1) % snapshot_every == 0:
-                self.save_population(population, Path(f"population_gen{gen+1}.json"))
-
-            population = self.next_generation(population, fitness)
-
-        return best_genome
-
-    def save_population(self, population: List[BotGenome], path) -> None:
-        data = [asdict(g) for g in population]
-        with open(path, "w") as f:
-            json.dump(data, f, indent=2)
-
-    def load_population(self, path) -> List[BotGenome]:
-        with open(path) as f:
-            data = json.load(f)
-        return [BotGenome(**d) for d in data]
+    def load_population(self, path) -> list[BotGenome]:
+        with open(path) as source:
+            return [BotGenome(**data) for data in json.load(source)]
 
 
 if __name__ == "__main__":
     import argparse
-    import time
 
     parser = argparse.ArgumentParser(description="Train Mus bot population with genetic algorithm")
-    parser.add_argument("--pop", type=int, default=100, help="Population size (default: 100)")
+    parser.add_argument("--pop", type=int, default=20, help="Even population size (default: 20)")
     parser.add_argument("--gen", type=int, default=300, help="Number of generations (default: 300)")
-    parser.add_argument("--games", type=int, default=10, help="Games per genome per generation (default: 10)")
+    parser.add_argument("--games", type=int, default=1, help="Pairing rounds per generation (default: 1)")
+    parser.add_argument("--seed", type=int, default=0, help="Starting seed for a repeatable run (default: 0)")
     parser.add_argument("--snapshot", type=int, default=50, help="Save snapshot every N generations (default: 50)")
-    parser.add_argument("--out", type=str, default="best_genome.json", help="Output file for best genome (default: best_genome.json)")
+    parser.add_argument("--out", type=str, default="winning_genomes.json", help="Output file for final-generation winners (default: winning_genomes.json)")
     args = parser.parse_args()
-
     print(f"Training: pop={args.pop}, gen={args.gen}, games={args.games}")
     trainer = GeneticTrainer(
-        population_size=args.pop,
-        generations=args.gen,
-        games_per_eval=args.games,
+        population_size=args.pop, generations=args.gen, games_per_eval=args.games, seed=args.seed,
     )
     start = time.time()
-    best = trainer.evolve(snapshot_every=args.snapshot)
+    winners = trainer.evolve(snapshot_every=args.snapshot)
     elapsed = time.time() - start
-    trainer.save_population([best], Path(args.out))
-    print(f"\nDone in {elapsed:.1f}s. Best genome saved to {args.out}")
+    trainer.save_population(winners, Path(args.out))
+    print(f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {args.out}")
