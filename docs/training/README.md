@@ -7,14 +7,41 @@ This branch starts with a throughput baseline before changing bot policies or fi
 | Path | Purpose |
 |---|---|
 | `src/mus_computer/training/config.py` | Initial concurrency cap and timing targets |
-| `src/mus_computer/training/game_runner.py` | Silent single-game runner and reusable process pool |
+| `src/mus_computer/training/game_runner.py` | Silent random baseline and genome matchup games, plus reusable process pool |
+| `src/mus_computer/training/genome_generator.py` | Replaceable population creation and winner driven genome variation |
+| `src/mus_computer/training/constants.py` | Maximum concurrent game count |
 | `tests/training/test_game_runner.py` | Real game, process, silence, cap, and opt-in timing checks |
 | `docs/training/experiments/` | Templates and notes for future training runs |
-| `src/mus_computer/training/genetic_trainer.py` | Existing genetic trainer; not wired to the new runner yet |
+| `src/mus_computer/training/genetic_trainer.py` | Schedules matchups, scores wins, and asks the generator for the next population |
+| `src/mus_computer/training/reporting/` | Snapshot summaries and offline Plotly charts |
+
+## Genome training flow
+
+Pass `gen_generator=` to `GeneticTrainer` to replace the default `CustomGeneticGenomeGenerator`. The generator provides `initial_population(size)` and `next_generation(population, fitness)`. **No genes are active by default:** every bot uses the same neutral value of 0.5 for all 13 personality fields, and evolution cannot change those values. Activate a field explicitly with `CustomGeneticGenomeGenerator(active_genes=("mus_eagerness",))`, or use repeated `--gene` options in the CLI. Only active fields are randomized, averaged, and varied; all other fields stay at 0.5. This lets each experiment add one gene while keeping the earlier baseline fixed.
+
+When genes are active, the trainer pairs the population into games. `games_per_eval` adds pairing rounds before generating the next population. The top 50% by win rate are alpha. The generator shuffles them into pairs and averages each active gene to create one child per pair, then creates a varied copy of every alpha with an independent additive change from -0.10 to +0.10 per active gene. It fills the remaining slots with randomly selected beta genomes, varied from -0.15 to +0.15 per active gene. Values are clamped to [0, 1]. One game per genome gives only binary fitness and is too noisy to establish learning; compare candidates over multiple games and against a fixed baseline before interpreting trends.
+
+The trainer owns one runner object from initialization. `evolve()` opens its process pool, warms the configured workers once, then reuses them for every generation. The genomes change between generations, but the worker processes and their loaded lookup tables remain alive. An individual call to `evaluate_population()` opens and closes that same runner if it is not already open. Pass `runner=` to the constructor to supply another runner.
+
+For 100 generations of 20 genomes with one active gene, run `python -m mus_computer.training.genetic_trainer --pop 20 --gen 100 --games 8 --gene mus_eagerness --seed 0`. This plays 80 games per generation with different reproducible random streams. The same pool runs all rounds and generations. Raising the worker cap above ten cannot speed up a round with only ten games.
+
+`evolve()` returns the top half of the final population by win rate. The CLI writes them to `winning_genomes.json` (or the path supplied with `--out`). With no active genes, those genomes are identical and are only a fixed-policy baseline. A single-round average win rate is always 0.5 because each game has one winner and one loser; it is not an improvement measure across generations.
+
+Each `GenomeMatchup(team_a, team_b, seed)` seats one genome in both A seats and the other in both B seats. `build_bot_game` creates the four contextual `BotPlayer` instances, and `TrainingGameRunner.play_matchups` runs those games without printing actions. The trainer derives a distinct game seed from `--seed`, generation number, and matchup number; the default starting seed is 0. Each bot receives a separate random stream derived from its game's seed. The runner restores the caller's global random state after a local game, and `evolve()` restores it after a full seeded run.
+
+Within a game, the first seat rotates after every completed hand (after Juego or Punto), so each player becomes mano in turn. All four seats retain their original team membership. The game stops before rotating if the hand produces a winner.
+
+## Snapshots and charts
+
+Install reporting support with `python -m pip install -e ".[reporting]"`. A CLI run writes full population snapshots every `--snapshot` generations and at the final generation. Each snapshot stores the generation number, active gene names, and every bot's personality in `--run-dir/snapshots/`. The CLI then writes `--run-dir/winning_genomes.json`, an overview chart, and one mean plus p5–p95 chart per active gene under `--run-dir/charts/`. With no active genes, the index explains that the run is a fixed baseline and no gene charts are generated. Open `charts/index.html` in a browser to navigate the interactive charts. They use a local Plotly JavaScript file and work offline. Rebuild charts from saved snapshots with `generate_charts(run_dir)` from `mus_computer.training.reporting`.
+
+For a fixed baseline, use `python -m mus_computer.training.genetic_trainer --pop 64 --gen 1 --games 8 --workers 16 --run-dir training_runs/baseline`. To test one gene, add `--gene mus_eagerness`, use a fresh run directory, and then compare its winners against the baseline under repeated seat-balanced matchups. Add later genes with more `--gene` options. `training_runs/`, standalone `winning_genomes*.json`, and legacy `population_gen*.json` are Git ignored.
+
+`GameResult.victory_reason` records whether the match ended by points or ordago, which helps compare training experiments. `worker_pid` is the operating system process ID returned by `os.getpid()`; it helps verify whether a batch used multiple worker processes. `_prepare_worker` loads the lookup table once in each worker before its first game. `warm_up()` explicitly starts every configured worker before a timed full-pool benchmark. Small batches can run directly without waiting for the whole pool.
 
 ## Target and measurement
 
-The initial cap is ten concurrent games. A single random-bot game has a 0.6-second latency ceiling. A batch of ten games on an already started, warmed process pool has a 0.6-second target. At a sustained rate, ten games per 0.6 seconds corresponds to 100 games per 6 seconds or 1,000 games per minute. Pool startup and table loading are excluded from the batch measurement because a training run reuses the pool; they still matter to short one-off commands.
+The maximum concurrency cap is 16 games; the CLI defaults to ten workers. A single random-bot game has a 0.6-second latency ceiling. A batch of ten games on an already started, warmed process pool has a 0.6-second target. At a sustained rate, ten games per 0.6 seconds corresponds to 100 games per 6 seconds or 1,000 games per minute. Pool startup and table loading are excluded from the batch measurement because a training run reuses the pool; they still matter to short one-off commands.
 
 Run the functional tests:
 
@@ -34,5 +61,4 @@ In PowerShell, set `$env:RUN_TRAINING_PERF = '1'` before the pytest command. The
 
 1. Record experiment parameters and outcomes under `docs/training/experiments/`.
 2. Define fitness and opponent selection for contextual `BotPlayer` genomes.
-3. Connect the existing genetic trainer to the reusable game runner.
-4. Benchmark a representative trained-policy game mix, including games that reach 40 points.
+3. Benchmark a representative trained-policy game mix, including games that reach 40 points.

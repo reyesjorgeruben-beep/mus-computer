@@ -12,6 +12,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest==9.0.2", "numpy==1.26.4"]
 tables = ["numpy==1.26.4"]
+reporting = ["plotly>=5,<8"]
 
 [project.scripts]
 mus-computer = "mus_computer.cli:main"

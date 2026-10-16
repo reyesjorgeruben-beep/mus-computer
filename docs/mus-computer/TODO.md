@@ -24,6 +24,16 @@ The [strategy design](../superpowers/specs/2026-09-27-contextual-bot-strategies-
 
 Validation to date: `python -m pytest tests/ -q -m "not slow"` passed 347 tests with one slow test deselected. The result does not cover the excluded slow test.
 
+## Current milestone: genome training foundation
+
+**Goal:** Run silent, reusable game batches for evaluating contextual bot genomes, with genome variation supplied through an injectable generator.
+
+- [x] Add a bounded process pool and random-bot throughput baseline.
+- [x] Configure each team from one genome shared by its two bot seats.
+- [x] Let the trainer schedule matchups and pass win rates to an injected genome generator.
+- [ ] Measure representative contextual-bot throughput and record experiments.
+- [ ] Tune opponent selection and fitness beyond the initial head-to-head win rate.
+
 ## Table-model backlog
 
 The analytical post-Mus tables remain a one-exchange approximation. Runtime gameplay repeats Mus until someone says `corta`.
