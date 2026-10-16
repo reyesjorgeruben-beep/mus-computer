@@ -5,6 +5,7 @@ from dataclasses import fields
 from typing import Protocol
 
 from mus_computer.bots.bot_genome import BotGenome, crossover, mutate, random_genome
+from mus_computer.training.constants import USED_GENES
 
 
 class GenomeGenerator(Protocol):
@@ -60,25 +61,37 @@ class CustomGeneticGenomeGenerator:
     Alpha is the highest scoring half by default; ties retain population order.
     """
 
-    def __init__(self, alpha_fraction: float = 0.5) -> None:
+    def __init__(
+        self, alpha_fraction: float = 0.5, active_genes: tuple[str, ...] | None = None,
+    ) -> None:
         if not 0 < alpha_fraction <= 2 / 3:
             raise ValueError("alpha_fraction must be above zero and at most two thirds")
+        active_genes = tuple(USED_GENES) if active_genes is None else tuple(active_genes)
+        known = {field.name for field in fields(BotGenome)}
+        if any(name not in known for name in active_genes):
+            raise ValueError("Unknown gene in active_genes")
+        if len(set(active_genes)) != len(active_genes):
+            raise ValueError("active_genes cannot contain duplicates")
         self.alpha_fraction = alpha_fraction
+        self.active_genes = tuple(active_genes)
 
     def initial_population(self, size: int) -> list[BotGenome]:
-        return [random_genome() for _ in range(size)]
+        return [BotGenome(*(
+            random.random() if field.name in self.active_genes else 0.5
+            for field in fields(BotGenome)
+        )) for _ in range(size)]
 
-    @staticmethod
-    def _vary(genome: BotGenome, amount: float) -> BotGenome:
+    def _vary(self, genome: BotGenome, amount: float) -> BotGenome:
         return BotGenome(*(
             max(0.0, min(1.0, getattr(genome, field.name) + random.uniform(-amount, amount)))
+            if field.name in self.active_genes else 0.5
             for field in fields(BotGenome)
         ))
 
-    @staticmethod
-    def _average(first: BotGenome, second: BotGenome) -> BotGenome:
+    def _average(self, first: BotGenome, second: BotGenome) -> BotGenome:
         return BotGenome(*(
             (getattr(first, field.name) + getattr(second, field.name)) / 2
+            if field.name in self.active_genes else 0.5
             for field in fields(BotGenome)
         ))
 

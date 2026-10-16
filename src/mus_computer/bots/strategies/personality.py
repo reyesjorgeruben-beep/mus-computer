@@ -1,4 +1,4 @@
-"""Strategy-facing personality interface and phase preference weights."""
+"""Strategy-facing personality interface retained for future bot policies."""
 
 from typing import Protocol
 
@@ -6,12 +6,10 @@ from mus_computer.game.phases import PhaseName
 
 
 class BotPersonality(Protocol):
-    """Preference interface consumed by injectable strategies.
+    """Preference interface retained by injectable strategies.
 
-    ``BotGenome`` is the built-in implementation. Strategies depend on these
-    preference fields rather than on the genetic representation or its
-    serialization and can therefore accept other compatible personality types.
-    Values are expected to use the genome's normalized 0-to-1 scale.
+    ``BotGenome`` is the built-in implementation. The current built-in
+    strategies ignore these fields; custom strategies may still use them.
     """
 
     @property
@@ -54,19 +52,9 @@ class BotPersonality(Protocol):
     def position_preference(self) -> float: ...
 
 
-def phase_utility_weights(personality: BotPersonality) -> dict[PhaseName, float]:
-    """Normalize the personality's four phase-preference genes.
-
-    These weights express policy utility; they do not change the underlying
-    probabilities or expected-point estimates in ``HandStatistics``.
-    """
-    weights = {
-        PhaseName.GRANDE: max(0.0, personality.w_grande),
-        PhaseName.CHICA: max(0.0, personality.w_chica),
-        PhaseName.PARES: max(0.0, personality.w_pares),
-        PhaseName.JUEGO: max(0.0, personality.w_juego),
-    }
-    total = sum(weights.values())
-    if total == 0:
-        return {phase: 0.25 for phase in weights}
-    return {phase: weight / total for phase, weight in weights.items()}
+FIXED_PHASE_WEIGHTS = {
+    PhaseName.GRANDE: 0.25,
+    PhaseName.CHICA: 0.25,
+    PhaseName.PARES: 0.25,
+    PhaseName.JUEGO: 0.25,
+}

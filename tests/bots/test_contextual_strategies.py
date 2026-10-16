@@ -192,7 +192,7 @@ def test_default_portfolio_uses_distinct_phase_policies_and_phase_statistics():
     )
 
 
-def test_default_mus_policy_changes_with_private_estimates_and_personality():
+def test_default_mus_policy_changes_with_private_estimates_but_ignores_personality():
     selected = StrategyPortfolio.default()
     weak = player_context(probabilities={name: 0.1 for name in PHASES})
     strong = player_context(probabilities={name: 0.9 for name in PHASES})
@@ -201,7 +201,43 @@ def test_default_mus_policy_changes_with_private_estimates_and_personality():
     strong_mus = selected.mus.decide(public, strong, genome()).probabilities[MusAction.MUS]
     eager_mus = selected.mus.decide(public, strong, genome(mus_eagerness=1.0)).probabilities[MusAction.MUS]
     assert weak_mus > strong_mus
-    assert eager_mus > strong_mus
+    assert eager_mus == strong_mus
+
+
+def test_builtin_decisions_ignore_personality_values():
+    selected = StrategyPortfolio.default()
+    low = BotGenome(*([0.0] * 13))
+    high = BotGenome(*([1.0] * 13))
+    mixed = genome(w_grande=1.0, w_chica=0.0, w_pares=0.0, w_juego=0.0)
+    personalities = (low, high, mixed)
+    mus_public = global_context()
+    mus_private = player_context(probabilities={name: 0.4 for name in PHASES})
+    mus_distributions = [
+        selected.mus.decide(mus_public, mus_private, personality).probabilities
+        for personality in personalities
+    ]
+    assert mus_distributions[0] == mus_distributions[1] == mus_distributions[2]
+
+    grande = player_context(probabilities={name: (0.9 if name == "Grande" else 0.1) for name in PHASES}).statistics
+    chica = player_context(probabilities={name: (0.9 if name == "Chica" else 0.1) for name in PHASES}).statistics
+    discard_private = player_context(options=(
+        DiscardOption(DiscardAction(()), grande),
+        DiscardOption(DiscardAction((0,)), chica),
+    ))
+    discard_distributions = [
+        selected.discard.decide(mus_public, discard_private, personality).probabilities
+        for personality in personalities
+    ]
+    assert discard_distributions[0] == discard_distributions[1] == discard_distributions[2]
+
+    wager_private = player_context("Grande", probabilities={name: 0.4 for name in PHASES})
+    for wager_state in (WagerState(1, 1, None), WagerState(2, 1, "B", True)):
+        wager_public = global_context("Grande", wager_state)
+        wager_distributions = [
+            selected.wagers_by_phase["Grande"].decide(wager_public, wager_private, personality).probabilities
+            for personality in personalities
+        ]
+        assert wager_distributions[0] == wager_distributions[1] == wager_distributions[2]
 
 
 def test_default_mus_policy_responds_to_public_score_mus_count_and_position():
@@ -216,7 +252,7 @@ def test_default_mus_policy_responds_to_public_score_mus_count_and_position():
     assert no_mano > first
 
 
-def test_default_discard_policy_uses_aggressiveness_only_to_break_value_ties():
+def test_default_discard_policy_prefers_fewer_cards_on_value_ties():
     selected = StrategyPortfolio.default()
     ordinary = player_context(probabilities={name: 0.5 for name in PHASES}).statistics
     improved = player_context(probabilities={name: 0.53 for name in PHASES}).statistics
@@ -245,10 +281,10 @@ def test_default_discard_policy_uses_aggressiveness_only_to_break_value_ties():
         public, tied_discards, genome(discard_aggressiveness=1)
     ).probabilities
     assert conservative_tie == {DiscardAction(()): 1.0}
-    assert aggressive_tie == {DiscardAction((0,)): 1.0}
+    assert aggressive_tie == conservative_tie
 
 
-def test_default_wager_policy_changes_with_thresholds_and_public_context():
+def test_default_wager_policy_ignores_threshold_gene_but_uses_public_context():
     selected = StrategyPortfolio.default()
     policy = selected.wagers_by_phase["Grande"]
     private = player_context("Grande", probabilities={name: 0.7 for name in PHASES})
@@ -259,7 +295,7 @@ def test_default_wager_policy_changes_with_thresholds_and_public_context():
     later = policy.decide(global_context("Grande", WagerState(1, 1, None), mus_exchanges=3), private, genome(raise_threshold=0.1)).probabilities
     other_position = policy.decide(global_context("Grande", WagerState(1, 1, None), mano_seat=2), private, genome(raise_threshold=0.1)).probabilities
     assert WagerAction.FOLD not in cautious
-    assert bold[WagerAction.RAISE_2] > cautious[WagerAction.RAISE_2]
+    assert bold == cautious
     assert trailing[WagerAction.RAISE_2] > bold[WagerAction.RAISE_2]
     assert later[WagerAction.RAISE_2] > bold[WagerAction.RAISE_2]
     assert other_position[WagerAction.RAISE_2] != bold[WagerAction.RAISE_2]
@@ -314,7 +350,9 @@ def test_default_bot_wager_uses_contextual_weights_when_sampling():
     assert strong_weights[WagerAction.FOLD] == 0
     assert strong_weights[WagerAction.RAISE_4] > weak_weights[WagerAction.RAISE_4]
     assert bot.wager_action(public, weak) is WagerAction.FOLD
-    assert bot.wager_action(public, strong) is WagerAction.RAISE_4
+    assert bot.wager_action(public, strong) in {
+        WagerAction.RAISE_2, WagerAction.RAISE_3, WagerAction.RAISE_4, WagerAction.RAISE_5,
+    }
 
 
 def test_default_bot_discard_choice_is_certain_but_changes_with_estimated_value():

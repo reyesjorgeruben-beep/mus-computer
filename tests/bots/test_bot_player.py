@@ -109,7 +109,7 @@ def test_weak_hand_can_fold_a_wager_and_strong_hand_can_raise():
     assert raise_distribution[WagerAction.RAISE_2] > 0
 
 
-def test_bluff_personality_increases_raises_with_same_weak_hand():
+def test_bluff_personality_does_not_change_builtin_raise_probability():
     public, private = _contexts(0.2, "Grande", WagerState(1, 1, None))
     cautious = BotPlayer("bot", Team("A"), _genome(bluff_rate=0.0))
     bluffer = BotPlayer("bot", Team("A"), _genome(bluff_rate=1.0))
@@ -119,4 +119,4 @@ def test_bluff_personality_increases_raises_with_same_weak_hand():
     bluff_raise = bluffer.strategies.wagers_by_phase["Grande"].decide(
         public, private, bluffer._personality,
     ).probabilities[WagerAction.RAISE_2]
-    assert bluff_raise > cautious_raise
+    assert bluff_raise == cautious_raise

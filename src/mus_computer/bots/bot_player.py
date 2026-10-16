@@ -15,10 +15,10 @@ from mus_computer.game.team import Team
 
 
 class BotPlayer(PlayerBase):
-    """Apply a personality through replaceable decision strategies.
+    """Choose actions through replaceable decision strategies.
 
-    The personality holds parameters; each strategy decides how to combine
-    them. Omitting ``strategies`` selects the built-in heuristic portfolio.
+    The personality remains available to injected strategies. The built-in
+    heuristic portfolio currently ignores it.
     """
 
     needs_discard_statistics = True

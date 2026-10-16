@@ -50,10 +50,14 @@ def test_genome_matchup_uses_one_genome_per_team(capsys):
     assert capsys.readouterr() == ("", "")
 
 
-@pytest.mark.parametrize("workers", [0, 11])
-def test_concurrent_game_cap_is_between_one_and_ten(workers):
+@pytest.mark.parametrize("workers", [0, 17])
+def test_concurrent_game_cap_is_between_one_and_sixteen(workers):
     with pytest.raises(ValueError, match="max_concurrent_games"):
         TrainingConfig(max_concurrent_games=workers)
+
+
+def test_sixteen_concurrent_games_are_configurable():
+    assert TrainingConfig(max_concurrent_games=16).max_concurrent_games == 16
 
 
 @pytest.mark.performance

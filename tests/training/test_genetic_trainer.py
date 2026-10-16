@@ -171,6 +171,34 @@ def test_generations_share_one_warmed_runner(monkeypatch):
     assert calls == ["open", "warm", 10, 10, "close"]
 
 
+def test_periodic_snapshots_contain_final_evaluated_populations(tmp_path):
+    import json
+
+    class FixedRunner:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def warm_up(self):
+            pass
+
+        def play_matchups(self, matchups):
+            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+
+    trainer = GeneticTrainer(
+        population_size=4, generations=5, runner=FixedRunner(), run_dir=tmp_path,
+    )
+    trainer.evolve(snapshot_every=2)
+    snapshots = sorted((tmp_path / "snapshots").glob("*.json"))
+    assert [json.loads(path.read_text())["generation"] for path in snapshots] == [2, 4, 5]
+    assert all(len(json.loads(path.read_text())["population"]) == 4 for path in snapshots)
+    from mus_computer.training.constants import USED_GENES
+
+    assert all(json.loads(path.read_text())["active_genes"] == USED_GENES for path in snapshots)
+
+
 def test_evolve_returns_winners_from_final_generation(monkeypatch):
     first_generation = [random_genome() for _ in range(20)]
     final_generation = [random_genome() for _ in range(20)]

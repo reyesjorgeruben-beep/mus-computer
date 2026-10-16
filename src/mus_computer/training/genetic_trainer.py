@@ -7,6 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from mus_computer.bots.bot_genome import BotGenome
+from mus_computer.training.config import TrainingConfig
 from mus_computer.training.game_runner import GenomeMatchup, TrainingGameRunner
 from mus_computer.training.genome_generator import CustomGeneticGenomeGenerator, GenomeGenerator
 
@@ -20,6 +21,7 @@ class GeneticTrainer:
         gen_generator: GenomeGenerator | None = None,
         runner: TrainingGameRunner | None = None,
         seed: int = 0,
+        run_dir: Path | None = None,
     ) -> None:
         if population_size < 2 or population_size % 2 or generations < 1 or games_per_eval < 1:
             raise ValueError("Training requires an even population of at least two, one generation, and one game")
@@ -31,6 +33,9 @@ class GeneticTrainer:
         self.gen_generator = gen_generator or CustomGeneticGenomeGenerator()
         self.runner = runner or TrainingGameRunner()
         self._runner_open = False
+        self.run_dir = Path(run_dir) if run_dir is not None else Path("training_runs") / (
+            f"seed{seed}_pop{population_size}_gen{generations}"
+        )
 
     def initial_population(self) -> list[BotGenome]:
         return self.gen_generator.initial_population(self.population_size)
@@ -105,8 +110,8 @@ class GeneticTrainer:
             generation_elapsed = time.time() - generation_start
             if (generation + 1) % log_every == 0 or generation == 0:
                 self._log_generation(generation, start, generation_elapsed)
-            if (generation + 1) % snapshot_every == 0:
-                self.save_population(population, Path(f"population_gen{generation+1}.json"))
+            if (generation + 1) % snapshot_every == 0 or generation + 1 == self.generations:
+                self._save_snapshot(population, generation + 1)
             if generation + 1 < self.generations:
                 population = self.next_generation(population, fitness)
         winner_indices = sorted(range(len(population)), key=lambda i: fitness[i], reverse=True)
@@ -121,6 +126,16 @@ class GeneticTrainer:
             f"games={self.games_per_generation} | "
             f"gen_time={generation_elapsed:.1f}s elapsed={elapsed:.0f}s eta={remaining:.0f}s"
         )
+
+    def _save_snapshot(self, population: list[BotGenome], generation: int) -> None:
+        snapshot_dir = self.run_dir / "snapshots"
+        snapshot_dir.mkdir(parents=True, exist_ok=True)
+        path = snapshot_dir / f"generation_{generation:04d}.json"
+        path.write_text(json.dumps({
+            "generation": generation,
+            "active_genes": list(getattr(self.gen_generator, "active_genes", ())),
+            "population": [asdict(genome) for genome in population],
+        }, indent=2), encoding="utf-8")
 
     def save_population(self, population: list[BotGenome], path) -> None:
         with open(path, "w") as output:
@@ -140,14 +155,33 @@ if __name__ == "__main__":
     parser.add_argument("--games", type=int, default=1, help="Pairing rounds per generation (default: 1)")
     parser.add_argument("--seed", type=int, default=0, help="Starting seed for a repeatable run (default: 0)")
     parser.add_argument("--snapshot", type=int, default=50, help="Save snapshot every N generations (default: 50)")
-    parser.add_argument("--out", type=str, default="winning_genomes.json", help="Output file for final-generation winners (default: winning_genomes.json)")
+    parser.add_argument("--gene", action="append", default=None, help="Override used genes (repeat to add more)")
+    parser.add_argument("--no-genes", action="store_true", help="Run a fixed neutral baseline")
+    parser.add_argument("--workers", type=int, default=10, help="Concurrent game processes (maximum: 16)")
+    parser.add_argument("--run-dir", type=Path, default=None, help="Directory for snapshots, charts, and winners")
+    parser.add_argument("--out", type=Path, default=None, help="Override final winners JSON path")
     args = parser.parse_args()
-    print(f"Training: pop={args.pop}, gen={args.gen}, games={args.games}")
+    if args.no_genes and args.gene is not None:
+        parser.error("--no-genes cannot be combined with --gene")
+    print(f"Training: pop={args.pop}, gen={args.gen}, games={args.games}, workers={args.workers}")
+    generator = CustomGeneticGenomeGenerator(
+        active_genes=() if args.no_genes else tuple(args.gene) if args.gene is not None else None,
+    )
+    print(f"Active genes: {', '.join(generator.active_genes) if generator.active_genes else 'none (fixed baseline)'}")
     trainer = GeneticTrainer(
         population_size=args.pop, generations=args.gen, games_per_eval=args.games, seed=args.seed,
+        gen_generator=generator,
+        runner=TrainingGameRunner(TrainingConfig(max_concurrent_games=args.workers)), run_dir=args.run_dir,
     )
     start = time.time()
     winners = trainer.evolve(snapshot_every=args.snapshot)
     elapsed = time.time() - start
-    trainer.save_population(winners, Path(args.out))
-    print(f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {args.out}")
+    output_path = args.out or trainer.run_dir / "winning_genomes.json"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    trainer.save_population(winners, output_path)
+    from mus_computer.training.reporting import generate_charts
+
+    charts = generate_charts(trainer.run_dir)
+    print(f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {output_path}")
+    print(f"Snapshots: {trainer.run_dir / 'snapshots'}")
+    print(f"Charts: {trainer.run_dir / 'charts' / 'index.html'} ({len(charts)} Plotly charts)")
