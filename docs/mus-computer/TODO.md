@@ -50,5 +50,6 @@ The analytical post-Mus tables remain a one-exchange approximation. Runtime game
 
 ## Later work
 
+- [ ] Measure a Team A/Team B luck distribution for each match from the expected gain of every player's dealt hand. Aggregate the hand estimates by team across the match and report the relative share alongside the match score and winner. Define precisely which phase estimates and seat or eligibility adjustments count before using this measure in training fitness.
 - Add human-controlled seats and terminal prompts.
 - Train or tune strategy parameters and evaluate them against suitable baselines.

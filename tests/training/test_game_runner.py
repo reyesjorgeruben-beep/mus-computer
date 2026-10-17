@@ -50,6 +50,19 @@ def test_genome_matchup_uses_one_genome_per_team(capsys):
     assert capsys.readouterr() == ("", "")
 
 
+def test_genome_match_plays_to_requested_number_of_wins():
+    team_a, team_b = random_genome(), random_genome()
+    state_before = random.getstate()
+
+    result = play_genome_game(GenomeMatchup(team_a, team_b, seed=9, wins_to_match=2))
+
+    assert result.winner in {"A", "B"}
+    assert max(result.wins_a, result.wins_b) == 2
+    assert not hasattr(result, "victory_reason")
+    assert 2 <= result.wins_a + result.wins_b <= 3
+    assert random.getstate() == state_before
+
+
 @pytest.mark.parametrize("workers", [0, 17])
 def test_concurrent_game_cap_is_between_one_and_sixteen(workers):
     with pytest.raises(ValueError, match="max_concurrent_games"):

@@ -1,7 +1,7 @@
 import pytest
 from mus_computer.bots.bot_genome import BotGenome, random_genome
 from mus_computer.training.genetic_trainer import GeneticTrainer
-from mus_computer.training.game_runner import GameResult, GenomeMatchup, play_genome_game
+from mus_computer.training.game_runner import MatchRunResult, GenomeMatchup, play_genome_game
 from mus_computer.training.genome_generator import GenomeGenerator
 
 
@@ -10,6 +10,34 @@ def test_trainer_init_creates_population():
     population = trainer.initial_population()
     assert len(population) == 10
     assert all(isinstance(g, BotGenome) for g in population)
+
+
+def test_match_win_target_is_passed_to_every_training_matchup():
+    population = [random_genome() for _ in range(4)]
+
+    class RecordingRunner:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def play_matchups(self, matchups):
+            assert len(matchups) == 2
+            assert all(matchup.wins_to_match == 3 for matchup in matchups)
+            return [MatchRunResult("A", 3, 2, 0.0, 1) for _ in matchups]
+
+    trainer = GeneticTrainer(
+        population_size=4, generations=1, wins_to_match=3, runner=RecordingRunner(),
+    )
+    fitness = trainer.evaluate_population(population)
+    assert sorted(fitness) == [0.0, 0.0, 1.0, 1.0]
+
+
+@pytest.mark.parametrize("wins_to_match", [0, -1, 1.5, True])
+def test_trainer_rejects_invalid_match_win_target(wins_to_match):
+    with pytest.raises(ValueError, match="wins_to_match"):
+        GeneticTrainer(wins_to_match=wins_to_match)
 
 
 def test_evaluate_game_returns_winning_team():
@@ -97,7 +125,7 @@ def test_fitness_uses_winners_from_a_supplied_runner():
         def play_matchups(self, matchups):
             assert len(matchups) == 1
             winner = "A" if matchups[0].team_a is population[0] else "B"
-            return [GameResult(winner, "points", 0.0, 1)]
+            return [MatchRunResult(winner, int(winner == "A"), int(winner == "B"), 0.0, 1)]
 
     trainer = GeneticTrainer(population_size=2, generations=1, games_per_eval=1, runner=FixedResultRunner())
     assert trainer.evaluate_population(population) == [1.0, 0.0]
@@ -117,7 +145,7 @@ def test_twenty_genomes_are_paired_into_ten_games_once_each():
             assert len(matchups) == 10
             seated = [genome for matchup in matchups for genome in (matchup.team_a, matchup.team_b)]
             assert {id(genome) for genome in seated} == {id(genome) for genome in population}
-            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+            return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     trainer = GeneticTrainer(population_size=20, generations=1, games_per_eval=1, runner=RecordingRunner())
     fitness = trainer.evaluate_population(population)
@@ -137,7 +165,7 @@ def test_matchup_seeds_vary_with_game_and_generation():
 
         def play_matchups(self, matchups):
             batches.append(matchups)
-            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+            return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     runner = RecordingRunner()
     trainer = GeneticTrainer(population_size=20, games_per_eval=1, seed=42, runner=runner)
@@ -163,7 +191,7 @@ def test_generations_share_one_warmed_runner(monkeypatch):
 
         def play_matchups(self, matchups):
             calls.append(len(matchups))
-            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+            return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     monkeypatch.setattr("mus_computer.training.genetic_trainer.TrainingGameRunner", RecordingRunner)
     trainer = GeneticTrainer(population_size=20, generations=2, games_per_eval=1)
@@ -185,7 +213,7 @@ def test_periodic_snapshots_contain_final_evaluated_populations(tmp_path):
             pass
 
         def play_matchups(self, matchups):
-            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+            return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     trainer = GeneticTrainer(
         population_size=4, generations=5, runner=FixedRunner(), run_dir=tmp_path,
@@ -225,7 +253,7 @@ def test_evolve_returns_winners_from_final_generation(monkeypatch):
 
         def play_matchups(self, matchups):
             batches.append(matchups)
-            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+            return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     monkeypatch.setattr("mus_computer.training.genetic_trainer.TrainingGameRunner", RecordingRunner)
     winners = GeneticTrainer(generations=2, gen_generator=FixedGenerator()).evolve()
@@ -249,7 +277,7 @@ def test_seeded_training_is_repeatable_without_changing_callers_random_state(mon
             pass
 
         def play_matchups(self, matchups):
-            return [GameResult("A", "points", 0.0, 1) for _ in matchups]
+            return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     monkeypatch.setattr("mus_computer.training.genetic_trainer.TrainingGameRunner", FixedRunner)
     state_before = random.getstate()

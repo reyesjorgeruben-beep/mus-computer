@@ -22,20 +22,25 @@ class GeneticTrainer:
         runner: TrainingGameRunner | None = None,
         seed: int = 0,
         run_dir: Path | None = None,
+        wins_to_match: int = 1,
     ) -> None:
         if population_size < 2 or population_size % 2 or generations < 1 or games_per_eval < 1:
             raise ValueError("Training requires an even population of at least two, one generation, and one game")
+        if type(wins_to_match) is not int or wins_to_match < 1:
+            raise ValueError("wins_to_match must be a positive integer")
         self.population_size = population_size
         self.generations = generations
         self.games_per_eval = games_per_eval
+        self.wins_to_match = wins_to_match
         self.games_per_generation = population_size * games_per_eval // 2
         self.seed = seed
         self.gen_generator = gen_generator or CustomGeneticGenomeGenerator()
         self.runner = runner or TrainingGameRunner()
         self._runner_open = False
-        self.run_dir = Path(run_dir) if run_dir is not None else Path("training_runs") / (
-            f"seed{seed}_pop{population_size}_gen{generations}"
-        )
+        run_name = f"seed{seed}_pop{population_size}_gen{generations}"
+        if wins_to_match > 1:
+            run_name += f"_wins{wins_to_match}"
+        self.run_dir = Path(run_dir) if run_dir is not None else Path("training_runs") / run_name
 
     def initial_population(self) -> list[BotGenome]:
         return self.gen_generator.initial_population(self.population_size)
@@ -43,7 +48,7 @@ class GeneticTrainer:
     def evaluate_population(
         self, population: list[BotGenome], generation: int = 0,
     ) -> list[float]:
-        """Pair every genome once per round and score both sides of each game."""
+        """Pair every genome once per round and score match winners."""
         if len(population) != self.population_size:
             raise ValueError("Evaluation population size must match the trainer")
         matchups, seated_indices = self._build_matchups(population, generation)
@@ -62,7 +67,7 @@ class GeneticTrainer:
     def _build_matchups(
         self, population: list[BotGenome], generation: int,
     ) -> tuple[list[GenomeMatchup], list[tuple[int, int]]]:
-        """Seat every genome once per pairing round and assign unique game seeds."""
+        """Seat every genome once per pairing round and assign unique match seeds."""
         matchups: list[GenomeMatchup] = []
         seated_indices: list[tuple[int, int]] = []
         seed_start = self.seed + generation * self.games_per_generation
@@ -73,6 +78,7 @@ class GeneticTrainer:
                 a_index, b_index = indices[seat], indices[seat + 1]
                 matchups.append(GenomeMatchup(
                     population[a_index], population[b_index], seed=seed_start + len(matchups),
+                    wins_to_match=self.wins_to_match,
                 ))
                 seated_indices.append((a_index, b_index))
         return matchups, seated_indices
@@ -123,7 +129,7 @@ class GeneticTrainer:
         remaining = elapsed / completed * (self.generations - completed)
         print(
             f"[{completed / self.generations * 100:5.1f}%] gen {completed}/{self.generations} | "
-            f"games={self.games_per_generation} | "
+            f"matches={self.games_per_generation} wins_to_match={self.wins_to_match} | "
             f"gen_time={generation_elapsed:.1f}s elapsed={elapsed:.0f}s eta={remaining:.0f}s"
         )
 
@@ -153,6 +159,7 @@ if __name__ == "__main__":
     parser.add_argument("--pop", type=int, default=20, help="Even population size (default: 20)")
     parser.add_argument("--gen", type=int, default=300, help="Number of generations (default: 300)")
     parser.add_argument("--games", type=int, default=1, help="Pairing rounds per generation (default: 1)")
+    parser.add_argument("--wins-to-match", type=int, default=1, help="Game wins needed to win a match (default: 1)")
     parser.add_argument("--seed", type=int, default=0, help="Starting seed for a repeatable run (default: 0)")
     parser.add_argument("--snapshot", type=int, default=50, help="Save snapshot every N generations (default: 50)")
     parser.add_argument("--gene", action="append", default=None, help="Override used genes (repeat to add more)")
@@ -163,13 +170,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.no_genes and args.gene is not None:
         parser.error("--no-genes cannot be combined with --gene")
-    print(f"Training: pop={args.pop}, gen={args.gen}, games={args.games}, workers={args.workers}")
+    print(
+        f"Training: pop={args.pop}, gen={args.gen}, pairing_rounds={args.games}, "
+        f"wins_to_match={args.wins_to_match}, workers={args.workers}"
+    )
     generator = CustomGeneticGenomeGenerator(
         active_genes=() if args.no_genes else tuple(args.gene) if args.gene is not None else None,
     )
     print(f"Active genes: {', '.join(generator.active_genes) if generator.active_genes else 'none (fixed baseline)'}")
     trainer = GeneticTrainer(
         population_size=args.pop, generations=args.gen, games_per_eval=args.games, seed=args.seed,
+        wins_to_match=args.wins_to_match,
         gen_generator=generator,
         runner=TrainingGameRunner(TrainingConfig(max_concurrent_games=args.workers)), run_dir=args.run_dir,
     )
@@ -180,8 +191,16 @@ if __name__ == "__main__":
     output_path.parent.mkdir(parents=True, exist_ok=True)
     trainer.save_population(winners, output_path)
     from mus_computer.training.reporting import generate_charts
+    from mus_computer.training.validation import validate_winners
 
     charts = generate_charts(trainer.run_dir)
+    validation = validate_winners(
+        winners, trainer.run_dir, seed=args.seed, workers=args.workers,
+        active_genes=generator.active_genes,
+    )
     print(f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {output_path}")
     print(f"Snapshots: {trainer.run_dir / 'snapshots'}")
     print(f"Charts: {trainer.run_dir / 'charts' / 'index.html'} ({len(charts)} Plotly charts)")
+    for record in validation["winners"]:
+        print(f"Winner {record['index'] + 1}: {record['win_percentage']:.1f}% against random genomes")
+    print(f"Validation: {trainer.run_dir / 'validation' / 'results.json'}")
