@@ -202,5 +202,9 @@ if __name__ == "__main__":
     print(f"Snapshots: {trainer.run_dir / 'snapshots'}")
     print(f"Charts: {trainer.run_dir / 'charts' / 'index.html'} ({len(charts)} Plotly charts)")
     for record in validation["winners"]:
-        print(f"Winner {record['index'] + 1}: {record['win_percentage']:.1f}% against random genomes")
+        scores = ", ".join(
+            f"{kind} {benchmark['win_percentage']:.0f}%"
+            for kind, benchmark in record["benchmarks"].items()
+        )
+        print(f"Winner {record['index'] + 1}: {scores}")
     print(f"Validation: {trainer.run_dir / 'validation' / 'results.json'}")

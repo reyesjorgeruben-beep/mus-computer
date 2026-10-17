@@ -7,7 +7,7 @@ from mus_computer.training.validation import load_winners, validate_winners
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Validate winning genomes against random-gene opponents")
+    parser = argparse.ArgumentParser(description="Validate winning genomes against three opponent policies")
     parser.add_argument("--winners", type=Path, required=True, help="Saved winning_genomes.json")
     parser.add_argument("--seed", type=int, default=0, help="Deterministic opponent and game seed")
     parser.add_argument("--workers", type=int, default=10, help="Concurrent games (maximum: 16)")
@@ -23,7 +23,11 @@ def main() -> None:
         active_genes=tuple(args.gene) if args.gene is not None else None,
     )
     for record in report["winners"]:
-        print(f"Winner {record['index'] + 1}: {record['wins']}/10 ({record['win_percentage']:.0f}%)")
+        scores = ", ".join(
+            f"{kind} {benchmark['wins']}/{benchmark['games']} ({benchmark['win_percentage']:.0f}%)"
+            for kind, benchmark in record["benchmarks"].items()
+        )
+        print(f"Winner {record['index'] + 1}: {scores}")
     print(f"Validation saved to {output_path}")
 
 

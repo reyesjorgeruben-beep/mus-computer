@@ -7,6 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from itertools import repeat
 from time import perf_counter
+from typing import Callable, Iterable, TypeVar
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.bot_player import BotPlayer
@@ -20,6 +21,9 @@ from mus_computer.game.match import Match
 from mus_computer.game.phases import PHASE_ORDER
 from mus_computer.game.team import Team
 from mus_computer.training.config import TrainingConfig
+
+TaskT = TypeVar("TaskT")
+ResultT = TypeVar("ResultT")
 
 
 @dataclass(frozen=True)
@@ -51,15 +55,20 @@ class GenomeMatchup:
     wins_to_match: int = 1
 
 
-def build_bot_game(matchup: GenomeMatchup, seed: int | None = None) -> Game:
-    """Seat two copies of each team's genome in A/B/A/B order."""
-    game_seed = matchup.seed if seed is None else seed
-    team_a, team_b = Team("A"), Team("B")
-    strategies = StrategyPortfolio(
+def build_genome_strategies() -> StrategyPortfolio:
+    """Compose the policies used by genome-controlled training and validation bots."""
+    return StrategyPortfolio(
         mus_strategy=GeneCutMusStrategy(),
         discard_strategy=PersonalityWeightedDiscardStrategy(),
         wagers_by_phase={phase: HandStrengthWagerStrategy(phase) for phase in PHASE_ORDER},
     )
+
+
+def build_bot_game(matchup: GenomeMatchup, seed: int | None = None) -> Game:
+    """Seat two copies of each team's genome in A/B/A/B order."""
+    game_seed = matchup.seed if seed is None else seed
+    team_a, team_b = Team("A"), Team("B")
+    strategies = build_genome_strategies()
     players = [
         BotPlayer("A1", team_a, matchup.team_a, strategies, random.Random(game_seed + 1)),
         BotPlayer("B1", team_b, matchup.team_b, strategies, random.Random(game_seed + 2)),
@@ -162,13 +171,15 @@ class TrainingGameRunner:
             ))
 
     def play_games(self, count: int, seed_start: int = 0) -> list[GameResult]:
-        if self._executor is None:
-            raise RuntimeError("TrainingGameRunner must be used as a context manager")
         if count < 0:
             raise ValueError("Game count must be nonnegative")
-        return list(self._executor.map(play_random_game, range(seed_start, seed_start + count)))
+        return self.map_tasks(play_random_game, range(seed_start, seed_start + count))
 
     def play_matchups(self, matchups: list[GenomeMatchup]) -> list[MatchRunResult]:
+        return self.map_tasks(play_genome_match, matchups)
+
+    def map_tasks(self, worker: Callable[[TaskT], ResultT], tasks: Iterable[TaskT]) -> list[ResultT]:
+        """Run independent validation or training tasks in the existing pool."""
         if self._executor is None:
             raise RuntimeError("TrainingGameRunner must be used as a context manager")
-        return list(self._executor.map(play_genome_match, matchups))
+        return list(self._executor.map(worker, tasks))
