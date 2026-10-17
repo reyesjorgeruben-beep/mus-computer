@@ -25,7 +25,7 @@ class WagerStrategy(Protocol):
 
 @dataclass(frozen=True)
 class HeuristicWagerStrategy(WagerStrategy):
-    """Default phase policy combining estimates, score, seat, and personality."""
+    """Default phase policy combining estimates, score, and seat."""
 
     phase_name: PhaseName
 
@@ -51,19 +51,19 @@ class HeuristicWagerStrategy(WagerStrategy):
         )
         seat_count = max(1, len(global_context.seat_order) - 1)
         position = (player_context.seat - global_context.mano_seat) % len(global_context.seat_order)
-        preference = 1.0 - abs(position / seat_count - personality.position_preference) * 2.0
+        preference = 1.0 - abs(position / seat_count - 0.5) * 2.0
         expected = player_context.statistics.expected_points_by_phase[self.phase_name]
         confidence = (
             outcome.p_win + 0.5 * outcome.p_tie
             + min(0.1, max(0.0, expected) * 0.02)
-            + personality.score_urgency_sensitivity * (opponent_score - own_score) / 40.0 * 0.2
+            + 0.1 * (opponent_score - own_score) / 40.0
             + preference * 0.08
             + min(0.12, global_context.mus_exchanges * 0.02)
         )
         confidence = max(0.0, min(1.0, confidence))
         legal = legal_wager_actions(global_context.wager)
         if global_context.wager is not None and global_context.wager.ordago_offered:
-            match = max(0.01, confidence + personality.bluff_rate * 0.1)
+            match = max(0.01, confidence + 0.05)
             fold = max(0.01, 1.0 - confidence)
             total = match + fold
             return ActionDistribution({
@@ -71,8 +71,8 @@ class HeuristicWagerStrategy(WagerStrategy):
                 WagerAction.FOLD: fold / total,
             })
 
-        fold = max(0.0, personality.fold_threshold - confidence) * 2.0 if WagerAction.FOLD in legal else 0.0
-        raise_drive = max(0.0, confidence - personality.raise_threshold) + 0.3 * personality.bluff_rate
+        fold = max(0.0, 0.5 - confidence) * 2.0 if WagerAction.FOLD in legal else 0.0
+        raise_drive = max(0.0, confidence - 0.5) + 0.15
         match = max(0.05, 1.0 - fold - raise_drive)
         weights = {WagerAction.MATCH_OR_PASS: match}
         if WagerAction.FOLD in legal:
@@ -82,11 +82,11 @@ class HeuristicWagerStrategy(WagerStrategy):
             (4, WagerAction.RAISE_4), (5, WagerAction.RAISE_5),
         ):
             weights[action] = raise_drive * (
-                (1.0 - personality.risk_factor) / 4.0
-                + personality.risk_factor * (increment - 1) / 14.0
+                0.5 / 4.0
+                + 0.5 * (increment - 1) / 14.0
             )
         weights[WagerAction.ORDAGO] = (
-            raise_drive * personality.risk_factor * max(0.0, confidence - 0.8)
+            raise_drive * 0.5 * max(0.0, confidence - 0.8)
         )
         total = sum(weights.values())
         if total <= 0:

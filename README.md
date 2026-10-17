@@ -44,3 +44,5 @@ The bundled probability table is read-only package data. Table generation and re
 Offline table builders use NumPy. Install their optional dependencies with `python -m pip install -e ".[tables]"` if you are running them outside the development setup above.
 
 See the [roadmap](docs/mus-computer/TODO.md) for milestone status and the [contextual strategy design](docs/superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) for decision interfaces and scoring rules.
+
+The [training workspace](docs/training/README.md) documents the silent random-bot game runner, ten-game concurrency cap, and opt-in throughput checks.
