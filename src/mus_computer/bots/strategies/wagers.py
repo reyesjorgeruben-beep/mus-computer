@@ -24,6 +24,43 @@ class WagerStrategy(Protocol):
 
 
 @dataclass(frozen=True)
+class HandStrengthWagerStrategy(WagerStrategy):
+    """Base wager layer using this hand's phase loss probability.
+
+    An opening turn passes on a loss or offers two otherwise. In response
+    to an opponent's offer, the same probabilities fold or match. Ties are
+    included in the non-loss branch. No raise is made over an existing offer.
+    """
+
+    phase_name: PhaseName
+
+    def __post_init__(self) -> None:
+        phase = PhaseName(self.phase_name)
+        if phase not in PHASE_ORDER:
+            raise ValueError(f"Unknown wager phase: {phase}")
+        object.__setattr__(self, "phase_name", phase)
+
+    def decide(
+        self,
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+        personality: BotPersonality,
+    ) -> ActionDistribution[WagerAction]:
+        if global_context.phase_name != self.phase_name or player_context.phase_name != self.phase_name:
+            raise ValueError("Wager strategy and decision phase disagree.")
+        p_loss = player_context.statistics.outcomes_by_phase[self.phase_name].p_loss
+        if global_context.wager is not None and global_context.wager.offering_team is not None:
+            return ActionDistribution({
+                WagerAction.FOLD: p_loss,
+                WagerAction.MATCH_OR_PASS: 1.0 - p_loss,
+            })
+        return ActionDistribution({
+            WagerAction.MATCH_OR_PASS: p_loss,
+            WagerAction.RAISE_2: 1.0 - p_loss,
+        })
+
+
+@dataclass(frozen=True)
 class HeuristicWagerStrategy(WagerStrategy):
     """Default phase policy combining estimates, score, and seat."""
 

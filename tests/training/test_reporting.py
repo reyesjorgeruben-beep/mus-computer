@@ -4,7 +4,9 @@ from dataclasses import asdict, fields
 import pytest
 
 from mus_computer.bots.bot_genome import BotGenome
-from mus_computer.training.reporting import build_gene_series, generate_charts
+from mus_computer.training.reporting import (
+    build_gene_series, build_mus_decision_series, generate_charts,
+)
 
 
 def genome(value):
@@ -72,3 +74,22 @@ def test_zero_gene_baseline_has_no_gene_charts(tmp_path):
     assert build_gene_series(snapshots) == {}
     assert generate_charts(tmp_path) == []
     assert "No active genes" in (tmp_path / "charts" / "index.html").read_text()
+
+
+def test_mus_decision_chart_uses_strategy_probabilities(tmp_path):
+    pytest.importorskip("plotly")
+    snapshots = tmp_path / "snapshots"
+    snapshots.mkdir()
+    (snapshots / "generation_0050.json").write_text(json.dumps({
+        "generation": 50,
+        "active_genes": ["cut_prone"],
+        "population": [asdict(genome(0.5))] * 2,
+    }))
+    assert build_mus_decision_series(snapshots) == {
+        "neither": [(50, 0.5, 2)],
+        "pares_only": [(50, 0.5, 2)],
+        "juego_only": [(50, 0.5, 2)],
+        "both": [(50, 0.75, 2)],
+    }
+    assert "mus_decisions.html" in [path.name for path in generate_charts(tmp_path)]
+    assert "Cut probability" in (tmp_path / "charts" / "mus_decisions.html").read_text(encoding="utf-8")

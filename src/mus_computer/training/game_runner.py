@@ -13,7 +13,7 @@ from mus_computer.bots.bot_player import BotPlayer
 from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrategy
 from mus_computer.bots.strategies.mus import GeneCutMusStrategy
 from mus_computer.bots.strategies.portfolio import StrategyPortfolio
-from mus_computer.bots.strategies.wagers import HeuristicWagerStrategy
+from mus_computer.bots.strategies.wagers import HandStrengthWagerStrategy
 from mus_computer.cli import build_default_game
 from mus_computer.game.game import Game
 from mus_computer.game.match import Match
@@ -58,7 +58,7 @@ def build_bot_game(matchup: GenomeMatchup, seed: int | None = None) -> Game:
     strategies = StrategyPortfolio(
         mus_strategy=GeneCutMusStrategy(),
         discard_strategy=PersonalityWeightedDiscardStrategy(),
-        wagers_by_phase={phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER},
+        wagers_by_phase={phase: HandStrengthWagerStrategy(phase) for phase in PHASE_ORDER},
     )
     players = [
         BotPlayer("A1", team_a, matchup.team_a, strategies, random.Random(game_seed + 1)),

@@ -10,6 +10,7 @@ from mus_computer.training.config import TrainingConfig
 from mus_computer.training.game_runner import TrainingGameRunner, play_random_game
 from mus_computer.bots.bot_genome import random_genome
 from mus_computer.training.game_runner import GenomeMatchup, build_bot_game, play_genome_game
+from mus_computer.bots.strategies.wagers import HandStrengthWagerStrategy
 
 
 def test_one_random_game_finishes_without_terminal_output(capsys):
@@ -45,6 +46,10 @@ def test_genome_matchup_uses_one_genome_per_team(capsys):
     team_a, team_b = random_genome(), random_genome()
     game = build_bot_game(GenomeMatchup(team_a, team_b, seed=3))
     assert [player._personality for player in game.players_in_order] == [team_a, team_b, team_a, team_b]
+    assert all(
+        isinstance(strategy, HandStrengthWagerStrategy)
+        for strategy in game.players_in_order[0].strategies.wagers_by_phase.values()
+    )
     result = play_genome_game(GenomeMatchup(team_a, team_b, seed=3))
     assert result.winner in {"A", "B"}
     assert capsys.readouterr() == ("", "")

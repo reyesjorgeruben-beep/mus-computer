@@ -20,7 +20,7 @@ This branch starts with a throughput baseline before changing bot policies or fi
 
 See [GENES.md](GENES.md) for the staged gene tracker.
 
-Pass `gen_generator=` to `GeneticTrainer` to replace the default `CustomGeneticGenomeGenerator`. The generator provides `initial_population(size)` and `next_generation(population, fitness)`. `USED_GENES` in `src/mus_computer/training/constants.py` contains `cut_prone`, `cut_prone_with_pares`, and `cut_prone_with_juego`. Genome matchups compose `GeneCutMusStrategy` with the unchanged discard and wager policies. Ordinary bots without an injected strategy portfolio retain the fixed Mus policy. See [GENES.md](GENES.md) for the exact cut formula.
+Pass `gen_generator=` to `GeneticTrainer` to replace the default `CustomGeneticGenomeGenerator`. The generator provides `initial_population(size)` and `next_generation(population, fitness)`. `USED_GENES` in `src/mus_computer/training/constants.py` contains `cut_prone`, `cut_prone_with_pares`, and `cut_prone_with_juego`. Genome matchups compose `GeneCutMusStrategy` with the unchanged discard policy and the new gene-free `HandStrengthWagerStrategy` baseline. Ordinary bots without an injected strategy portfolio retain the fixed Mus and wager policies. See [GENES.md](GENES.md) for the exact cut and wager behavior.
 
 Configure a bot by constructing one complete `StrategyPortfolio(mus_strategy=..., discard_strategy=..., wagers_by_phase=...)` and passing it as `strategies=` to `BotPlayer`. `build_bot_game` shows the three concrete policies used for genome matchups. Every policy is required at construction; there is no replacement step.
 
@@ -37,6 +37,8 @@ Each `GenomeMatchup(team_a, team_b, seed, wins_to_match)` seats one genome in bo
 Within a game, the first seat rotates after every completed hand (after Juego or Punto), so each player becomes mano in turn. All four seats retain their original team membership. The game stops before rotating if the hand produces a winner.
 
 ## Snapshots and charts
+
+`mus_decisions.html` evaluates the configured Mus strategy for every genome in each snapshot under four hand conditions: neither Pares nor Juego, Pares only, Juego only, and both. It plots the mean probability of cutting Mus in each condition. This is the strategy's decision distribution, not a count of sampled actions, and can be generated from older snapshots without replaying games.
 
 Install reporting support with `python -m pip install -e ".[reporting]"`. A CLI run writes full population snapshots every `--snapshot` generations and at the final generation. Each snapshot stores the generation number, active gene names, and every bot's personality in `--run-dir/snapshots/`. The CLI then writes `--run-dir/winning_genomes.json`, an overview chart, and one mean plus p5–p95 chart per active gene under `--run-dir/charts/`. With no active genes, the index explains that the run is a fixed baseline and no gene charts are generated. Open `charts/index.html` in a browser to navigate the interactive charts. They use a local Plotly JavaScript file and work offline. Rebuild charts from saved snapshots with `generate_charts(run_dir)` from `mus_computer.training.reporting`.
 

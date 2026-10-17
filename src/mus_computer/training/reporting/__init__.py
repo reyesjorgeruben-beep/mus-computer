@@ -4,8 +4,11 @@ import json
 from dataclasses import fields
 from pathlib import Path
 from statistics import fmean
+from types import SimpleNamespace
 
 from mus_computer.bots.bot_genome import BotGenome
+from mus_computer.bots.strategies.actions import MusAction
+from mus_computer.bots.strategies.mus import GeneCutMusStrategy
 
 
 def _percentile(sorted_values: list[float], fraction: float) -> float:
@@ -42,13 +45,44 @@ def build_gene_series(snapshot_dir: Path) -> dict[str, list[tuple[int, float, fl
     return series
 
 
+def build_mus_decision_series(snapshot_dir: Path) -> dict[str, list[tuple[int, float, int]]]:
+    """Evaluate the configured Mus strategy for each genome and hand feature set."""
+    scenarios = {
+        "neither": {},
+        "pares_only": {"Pares": 2},
+        "juego_only": {"Juego": 2},
+        "both": {"Pares": 2, "Juego": 2},
+    }
+    series: dict[str, list[tuple[int, float, int]]] = {name: [] for name in scenarios}
+    strategy = GeneCutMusStrategy()
+    for path in sorted(Path(snapshot_dir).glob("generation_*.json")):
+        snapshot = json.loads(path.read_text(encoding="utf-8"))
+        if not set(snapshot.get("active_genes", ())) & {
+            "cut_prone", "cut_prone_with_pares", "cut_prone_with_juego",
+        }:
+            continue
+        population = [BotGenome(**genes) for genes in snapshot["population"]]
+        for name, intrinsic_points in scenarios.items():
+            # This strategy reads only intrinsic_points_by_phase from the private context.
+            hand = SimpleNamespace(intrinsic_points_by_phase=intrinsic_points)
+            cut_probabilities = [
+                strategy.decide(None, hand, genome).probabilities[MusAction.CORTA]
+                for genome in population
+            ]
+            series[name].append((
+                snapshot["generation"], fmean(cut_probabilities), len(population),
+            ))
+    return series if any(series.values()) else {}
+
+
 def generate_charts(run_dir: Path) -> list[Path]:
     """Write offline Plotly HTML charts from a run's population snapshots."""
     run_dir = Path(run_dir)
     series = build_gene_series(run_dir / "snapshots")
+    decision_series = build_mus_decision_series(run_dir / "snapshots")
     chart_dir = run_dir / "charts"
     chart_dir.mkdir(parents=True, exist_ok=True)
-    if not series:
+    if not series and not decision_series:
         (chart_dir / "index.html").write_text(
             "<!doctype html><html><head><meta charset='utf-8'><title>Training baseline</title>"
             "</head><body><h1>Training baseline</h1><p>No active genes. "
@@ -66,16 +100,18 @@ def generate_charts(run_dir: Path) -> list[Path]:
         yaxis_range=[0, 1], height=620,
     )
 
-    overview = go.Figure()
-    for index, (name, points) in enumerate(series.items()):
-        overview.add_trace(go.Scatter(
-            x=[point[0] for point in points], y=[point[1] for point in points],
-            mode="lines+markers", name=name,
-            line=dict(color=palette[index % len(palette)], width=2),
-        ))
-    overview.update_layout(title="Mean genome values across training", **common_layout)
-    outputs = [chart_dir / "all_genes.html"]
-    overview.write_html(outputs[0], include_plotlyjs="directory")
+    outputs = []
+    if series:
+        overview = go.Figure()
+        for index, (name, points) in enumerate(series.items()):
+            overview.add_trace(go.Scatter(
+                x=[point[0] for point in points], y=[point[1] for point in points],
+                mode="lines+markers", name=name,
+                line=dict(color=palette[index % len(palette)], width=2),
+            ))
+        overview.update_layout(title="Mean genome values across training", **common_layout)
+        outputs.append(chart_dir / "all_genes.html")
+        overview.write_html(outputs[-1], include_plotlyjs="directory")
 
     for index, (name, points) in enumerate(series.items()):
         generations, means, lows, highs = zip(*points)
@@ -97,6 +133,34 @@ def generate_charts(run_dir: Path) -> list[Path]:
         ))
         figure.update_layout(title=name.replace("_", " ").title(), **common_layout)
         path = chart_dir / f"{name}.html"
+        figure.write_html(path, include_plotlyjs="directory")
+        outputs.append(path)
+
+    if decision_series:
+        figure = go.Figure()
+        labels = {
+            "neither": "Neither Pares nor Juego",
+            "pares_only": "Pares only",
+            "juego_only": "Juego only",
+            "both": "Pares and Juego",
+        }
+        for index, (name, points) in enumerate(decision_series.items()):
+            if not points:
+                continue
+            figure.add_trace(go.Scatter(
+                x=[point[0] for point in points], y=[point[1] for point in points],
+                customdata=[point[2] for point in points],
+                mode="lines+markers", name=labels[name],
+                line=dict(color=palette[index % len(palette)], width=2),
+                hovertemplate="Generation %{x}<br>Cut probability %{y:.1%}<br>Genomes %{customdata}<extra>%{fullData.name}</extra>",
+            ))
+        figure.update_layout(
+            title="Mus decisions: cut probability by hand type",
+            template="plotly_white", hovermode="x unified", height=620,
+            xaxis_title="Generation checkpoint", yaxis_title="Cut probability", yaxis_range=[0, 1],
+            yaxis_tickformat=".0%",
+        )
+        path = chart_dir / "mus_decisions.html"
         figure.write_html(path, include_plotlyjs="directory")
         outputs.append(path)
 
