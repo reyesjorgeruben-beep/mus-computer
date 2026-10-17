@@ -16,6 +16,7 @@ from mus_computer.bots.strategies.portfolio import StrategyPortfolio
 from mus_computer.bots.strategies.wagers import HeuristicWagerStrategy
 from mus_computer.cli import build_default_game
 from mus_computer.game.game import Game
+from mus_computer.game.match import Match
 from mus_computer.game.phases import PHASE_ORDER
 from mus_computer.game.team import Team
 from mus_computer.training.config import TrainingConfig
@@ -23,10 +24,21 @@ from mus_computer.training.config import TrainingConfig
 
 @dataclass(frozen=True)
 class GameResult:
-    """A game's outcome and its elapsed time measured with ``perf_counter``."""
+    """A single game's outcome and elapsed time measured with ``perf_counter``."""
 
     winner: str
     victory_reason: str
+    elapsed_seconds: float
+    worker_pid: int
+
+
+@dataclass(frozen=True)
+class MatchRunResult:
+    """A match outcome, game-win score, and elapsed time."""
+
+    winner: str
+    wins_a: int
+    wins_b: int
     elapsed_seconds: float
     worker_pid: int
 
@@ -36,10 +48,12 @@ class GenomeMatchup:
     team_a: BotGenome
     team_b: BotGenome
     seed: int = 0
+    wins_to_match: int = 1
 
 
-def build_bot_game(matchup: GenomeMatchup) -> Game:
+def build_bot_game(matchup: GenomeMatchup, seed: int | None = None) -> Game:
     """Seat two copies of each team's genome in A/B/A/B order."""
+    game_seed = matchup.seed if seed is None else seed
     team_a, team_b = Team("A"), Team("B")
     strategies = StrategyPortfolio(
         mus_strategy=GeneCutMusStrategy(),
@@ -47,10 +61,10 @@ def build_bot_game(matchup: GenomeMatchup) -> Game:
         wagers_by_phase={phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER},
     )
     players = [
-        BotPlayer("A1", team_a, matchup.team_a, strategies, random.Random(matchup.seed + 1)),
-        BotPlayer("B1", team_b, matchup.team_b, strategies, random.Random(matchup.seed + 2)),
-        BotPlayer("A2", team_a, matchup.team_a, strategies, random.Random(matchup.seed + 3)),
-        BotPlayer("B2", team_b, matchup.team_b, strategies, random.Random(matchup.seed + 4)),
+        BotPlayer("A1", team_a, matchup.team_a, strategies, random.Random(game_seed + 1)),
+        BotPlayer("B1", team_b, matchup.team_b, strategies, random.Random(game_seed + 2)),
+        BotPlayer("A2", team_a, matchup.team_a, strategies, random.Random(game_seed + 3)),
+        BotPlayer("B2", team_b, matchup.team_b, strategies, random.Random(game_seed + 4)),
     ]
     return Game.from_players(players)
 
@@ -78,9 +92,31 @@ def play_random_game(seed: int = 0) -> GameResult:
     return _play_game(lambda: build_default_game(on_action=None), seed)
 
 
-def play_genome_game(matchup: GenomeMatchup) -> GameResult:
-    """Play one silent matchup with genomes supplied by the trainer."""
-    return _play_game(lambda: build_bot_game(matchup), matchup.seed)
+def play_genome_match(matchup: GenomeMatchup) -> MatchRunResult:
+    """Play fresh games until one genome team wins the requested match."""
+    previous_state = random.getstate()
+    try:
+        random.seed(matchup.seed)
+        game_index = 0
+
+        def next_game() -> Game:
+            nonlocal game_index
+            game = build_bot_game(matchup, seed=matchup.seed + 4 * game_index)
+            game_index += 1
+            return game
+
+        start = perf_counter()
+        result = Match(next_game, matchup.wins_to_match).play()
+        return MatchRunResult(
+            result.winner, result.wins_a, result.wins_b, perf_counter() - start, os.getpid(),
+        )
+    finally:
+        random.setstate(previous_state)
+
+
+def play_genome_game(matchup: GenomeMatchup) -> MatchRunResult:
+    """Compatibility entry point for a genome matchup (one or more games)."""
+    return play_genome_match(matchup)
 
 
 def _prepare_worker() -> None:
@@ -132,7 +168,7 @@ class TrainingGameRunner:
             raise ValueError("Game count must be nonnegative")
         return list(self._executor.map(play_random_game, range(seed_start, seed_start + count)))
 
-    def play_matchups(self, matchups: list[GenomeMatchup]) -> list[GameResult]:
+    def play_matchups(self, matchups: list[GenomeMatchup]) -> list[MatchRunResult]:
         if self._executor is None:
             raise RuntimeError("TrainingGameRunner must be used as a context manager")
-        return list(self._executor.map(play_genome_game, matchups))
+        return list(self._executor.map(play_genome_match, matchups))
