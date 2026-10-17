@@ -4,7 +4,6 @@ import json
 from dataclasses import fields
 from pathlib import Path
 from statistics import fmean
-from types import SimpleNamespace
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.strategies.actions import MusAction
@@ -48,10 +47,10 @@ def build_gene_series(snapshot_dir: Path) -> dict[str, list[tuple[int, float, fl
 def build_mus_decision_series(snapshot_dir: Path) -> dict[str, list[tuple[int, float, int]]]:
     """Evaluate the configured Mus strategy for each genome and hand feature set."""
     scenarios = {
-        "neither": {},
-        "pares_only": {"Pares": 2},
-        "juego_only": {"Juego": 2},
-        "both": {"Pares": 2, "Juego": 2},
+        "neither": (False, False),
+        "pares_only": (True, False),
+        "juego_only": (False, True),
+        "both": (True, True),
     }
     series: dict[str, list[tuple[int, float, int]]] = {name: [] for name in scenarios}
     strategy = GeneCutMusStrategy()
@@ -62,11 +61,9 @@ def build_mus_decision_series(snapshot_dir: Path) -> dict[str, list[tuple[int, f
         }:
             continue
         population = [BotGenome(**genes) for genes in snapshot["population"]]
-        for name, intrinsic_points in scenarios.items():
-            # This strategy reads only intrinsic_points_by_phase from the private context.
-            hand = SimpleNamespace(intrinsic_points_by_phase=intrinsic_points)
+        for name, (has_pares, has_juego) in scenarios.items():
             cut_probabilities = [
-                strategy.decide(None, hand, genome).probabilities[MusAction.CORTA]
+                strategy.distribution_for_hand(genome, has_pares, has_juego).probabilities[MusAction.CORTA]
                 for genome in population
             ]
             series[name].append((
@@ -167,8 +164,9 @@ def generate_charts(run_dir: Path) -> list[Path]:
     links = "\n".join(f'<li><a href="{path.name}">{path.stem.replace("_", " ").title()}</a></li>' for path in outputs)
     (chart_dir / "index.html").write_text(
         f"<!doctype html><html><head><meta charset='utf-8'><title>Training charts</title></head>"
-        f"<body><h1>Training charts</h1><p>Population means every saved generation; individual charts "
-        f"show the p5–p95 range.</p><ul>{links}</ul></body></html>",
+        f"<body><h1>Training charts</h1><p>Gene charts show population means and p5 to p95 ranges. "
+        f"The Mus decisions chart shows cut probabilities from the configured strategy for four hand types."
+        f"</p><ul>{links}</ul></body></html>",
         encoding="utf-8",
     )
     return outputs

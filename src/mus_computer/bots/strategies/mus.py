@@ -79,6 +79,12 @@ class GeneCutMusStrategy(MusStrategy):
     ) -> ActionDistribution[MusAction]:
         has_pares = player_context.intrinsic_points_by_phase.get("Pares", 0) > 0
         has_juego = player_context.intrinsic_points_by_phase.get("Juego", 0) > 0
+        return self.distribution_for_hand(personality, has_pares, has_juego)
+
+    def distribution_for_hand(
+        self, personality: BotPersonality, has_pares: bool, has_juego: bool,
+    ) -> ActionDistribution[MusAction]:
+        """Return the same decision distribution for known Pares/Juego flags."""
         if not has_pares and not has_juego:
             p_cut = personality.cut_prone
         else:
