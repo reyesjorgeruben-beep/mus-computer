@@ -2,8 +2,9 @@
 
 import json
 import random
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Literal
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.training.config import TrainingConfig
@@ -12,6 +13,14 @@ from mus_computer.training.genome_generator import CustomGeneticGenomeGenerator
 
 
 GAMES_PER_WINNER = 10
+
+
+@dataclass(frozen=True)
+class CandidateAssignment:
+    """Identify a saved genome and the team it occupies in one game."""
+
+    candidate_index: int
+    candidate_team: Literal["A", "B"]
 
 
 def load_winners(path: Path) -> list[BotGenome]:
@@ -29,7 +38,7 @@ def validate_winners(
 ) -> dict:
     """Play ten separate games per winner against newly sampled genomes.
 
-    Every winner occupies team A five times and team B five times. Opponents
+    Every saved genome occupies team A five times and team B five times. Opponents
     sample active genes uniformly through the configured genome generator;
     inactive genes stay at the neutral 0.5 value. The one process pool is
     shared by every matchup, and the caller's random sequence is preserved.
@@ -46,17 +55,17 @@ def validate_winners(
         random.setstate(previous_random_state)
 
     matchups: list[GenomeMatchup] = []
-    assignments: list[tuple[int, int, str, BotGenome]] = []
-    for winner_index, winner in enumerate(winners):
+    assignments: list[CandidateAssignment] = []
+    for candidate_index, candidate in enumerate(winners):
         for game_index in range(GAMES_PER_WINNER):
-            opponent = opponents[winner_index * GAMES_PER_WINNER + game_index]
-            winner_seat = "A" if game_index < GAMES_PER_WINNER // 2 else "B"
-            team_a, team_b = (winner, opponent) if winner_seat == "A" else (opponent, winner)
+            opponent = opponents[candidate_index * GAMES_PER_WINNER + game_index]
+            candidate_team: Literal["A", "B"] = "A" if game_index < GAMES_PER_WINNER // 2 else "B"
+            team_a, team_b = (candidate, opponent) if candidate_team == "A" else (opponent, candidate)
             matchups.append(GenomeMatchup(
                 team_a=team_a, team_b=team_b,
                 seed=seed + len(matchups), wins_to_match=1,
             ))
-            assignments.append((winner_index, game_index, winner_seat, opponent))
+            assignments.append(CandidateAssignment(candidate_index, candidate_team))
 
     with TrainingGameRunner(TrainingConfig(max_concurrent_games=workers)) as runner:
         results = runner.play_matchups(matchups)
@@ -68,17 +77,18 @@ def validate_winners(
          "games": GAMES_PER_WINNER, "win_percentage": 0.0, "matchups": []}
         for index, winner in enumerate(winners)
     ]
-    for matchup, result, (winner_index, game_index, winner_seat, opponent) in zip(
+    for matchup, result, assignment in zip(
         matchups, results, assignments,
     ):
         if result.winner not in ("A", "B"):
             raise ValueError(f"Unexpected validation winner: {result.winner!r}")
-        record = records[winner_index]
-        won = result.winner == winner_seat
+        record = records[assignment.candidate_index]
+        opponent = matchup.team_b if assignment.candidate_team == "A" else matchup.team_a
+        won = result.winner == assignment.candidate_team
         record["wins"] += int(won)
         record["matchups"].append({
-            "game": game_index + 1,
-            "winner_seat": winner_seat,
+            "game": len(record["matchups"]) + 1,
+            "candidate_team": assignment.candidate_team,
             "opponent": asdict(opponent),
             "seed": matchup.seed,
             "won": won,
