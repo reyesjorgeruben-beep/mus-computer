@@ -1,4 +1,5 @@
 import pytest
+from dataclasses import fields
 from mus_computer.bots.bot_genome import BotGenome, random_genome, crossover, mutate
 
 def test_random_genome_genes_in_range():
@@ -13,8 +14,8 @@ def test_random_genome_returns_botgenome():
 def test_crossover_genes_from_parents():
     import random
     random.seed(42)
-    parent_a = BotGenome(*([0.0] * 13))
-    parent_b = BotGenome(*([1.0] * 13))
+    parent_a = BotGenome(*([0.0] * len(fields(BotGenome))))
+    parent_b = BotGenome(*([1.0] * len(fields(BotGenome))))
     child = crossover(parent_a, parent_b)
     for field in child.__dataclass_fields__:
         gene_value = getattr(child, field)
@@ -40,5 +41,7 @@ def test_mutate_with_rate_zero_returns_unchanged():
     mutated_genome = mutate(genome, mutation_rate=0.0, sigma=0.5)
     assert genome == mutated_genome
 
-def test_genome_has_13_fields():
-    assert len(BotGenome.__dataclass_fields__) == 13
+def test_genome_exposes_three_cut_genes():
+    assert {field.name for field in fields(BotGenome)} >= {
+        "cut_prone", "cut_prone_with_pares", "cut_prone_with_juego",
+    }

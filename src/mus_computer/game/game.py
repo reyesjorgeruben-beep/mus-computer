@@ -94,6 +94,8 @@ class Game:
             self._deal_initial_cards()
             self._mus_phase()
             self._play_all_phases()
+            if self.winner is None:
+                self.players_in_order = self.players_in_order[1:] + self.players_in_order[:1]
         if self.victory_reason == "ordago":
             self._emit(f"Team {self.winner.name} wins by ordago!")
         else:

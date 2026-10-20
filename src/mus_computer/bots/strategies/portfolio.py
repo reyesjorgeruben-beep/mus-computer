@@ -18,30 +18,38 @@ class StrategyPortfolio:
     defaults. ``BotPlayer`` receives this portfolio at construction time.
     """
 
-    mus: MusStrategy
-    discard: DiscardStrategy
+    mus_strategy: MusStrategy
+    discard_strategy: DiscardStrategy
     wagers_by_phase: Mapping[PhaseName, WagerStrategy]
 
     def __post_init__(self) -> None:
+        if not callable(getattr(self.mus_strategy, "decide", None)):
+            raise TypeError("Mus strategy must provide decide().")
+        if not callable(getattr(self.discard_strategy, "decide", None)):
+            raise TypeError("Discard strategy must provide decide().")
+        if not isinstance(self.wagers_by_phase, Mapping):
+            raise TypeError("Wager strategy map is required.")
         strategies = {
             PhaseName(phase): strategy
             for phase, strategy in self.wagers_by_phase.items()
         }
         if set(strategies) != set(PHASE_ORDER):
             raise ValueError("A wager strategy is required for every phase.")
+        if any(not callable(getattr(strategy, "decide", None)) for strategy in strategies.values()):
+            raise TypeError("Every wager strategy must provide decide().")
         if len({id(strategy) for strategy in strategies.values()}) != len(PHASE_ORDER):
             raise ValueError("Every wager phase needs a distinct strategy instance.")
         object.__setattr__(self, "wagers_by_phase", MappingProxyType(strategies))
 
     @classmethod
     def default(cls) -> "StrategyPortfolio":
-        """Build the current heuristic policies as separate strategy instances."""
+        """Build the default Mus, discard, and wager strategies."""
         from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrategy
         from mus_computer.bots.strategies.mus import EstimateMusStrategy
         from mus_computer.bots.strategies.wagers import HeuristicWagerStrategy
 
         return cls(
-            mus=EstimateMusStrategy(),
-            discard=PersonalityWeightedDiscardStrategy(),
+            mus_strategy=EstimateMusStrategy(),
+            discard_strategy=PersonalityWeightedDiscardStrategy(),
             wagers_by_phase={phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER},
         )

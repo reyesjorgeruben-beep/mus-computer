@@ -9,6 +9,11 @@ from mus_computer.game.team import Team
 
 
 def build_default_game(on_action: Callable[[str], None] | None = None) -> Game:
+    """Build a random-bot game; call ``on_action`` with each event message.
+
+    Pass ``print`` to show the game in the terminal, or ``None`` to avoid
+    forwarding messages while running games silently for training.
+    """
     team_a = Team("A")
     team_b = Team("B")
     players = [

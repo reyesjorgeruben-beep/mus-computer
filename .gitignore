@@ -8,3 +8,9 @@ __pycache__/
 /build/
 /dist/
 /probability_tables.pkl
+/training_runs/
+/.deps/
+/winning_genomes*.json
+/population_gen*.json
+/docs/training/experiments/*.log
+/docs/training/experiments/*/

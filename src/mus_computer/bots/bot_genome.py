@@ -19,10 +19,14 @@ class BotGenome:
     raise_threshold: float
     score_urgency_sensitivity: float
     position_preference: float
+    cut_prone: float = 0.5
+    cut_prone_with_pares: float = 0.5
+    cut_prone_with_juego: float = 0.5
+    extreme_bluff_rate: float = 0.0
 
 
 def random_genome() -> BotGenome:
-    return BotGenome(*[random.random() for _ in range(13)])
+    return BotGenome(*[random.random() for _ in fields(BotGenome)])
 
 
 def crossover(first_parent: BotGenome, second_parent: BotGenome) -> BotGenome:

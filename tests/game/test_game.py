@@ -27,6 +27,26 @@ def replace_with_scripted(game, mus_votes=None, discards=None, wager_actions=Non
     ]
 
 
+def test_mano_rotates_after_each_completed_hand(monkeypatch, game):
+    first_seats = []
+
+    def deal():
+        first_seats.append(game.players_in_order[0].name)
+        assert game._global_context().seat_order[0].player_name == first_seats[-1]
+        assert game._global_context().mano_seat == 0
+
+    def finish_hand():
+        if len(first_seats) == 5:
+            game.winner = game.teams[0]
+
+    monkeypatch.setattr(game, "_deal_initial_cards", deal)
+    monkeypatch.setattr(game, "_mus_phase", lambda: None)
+    monkeypatch.setattr(game, "_play_all_phases", finish_hand)
+    game.play()
+
+    assert first_seats == ["A1", "B1", "A2", "B2", "A1"]
+
+
 class TestGameDealing:
     def test_each_player_gets_four_cards(self, game):
         game._deal_initial_cards()

@@ -72,8 +72,8 @@ def test_bot_uses_fresh_private_statistics_for_mus():
     bot = BotPlayer("bot", Team("A"), _genome(), random_generator=random.Random(0))
     public, weak = _contexts(0.1)
     _, strong = _contexts(0.9)
-    weak_chance = bot.strategies.mus.decide(public, weak, bot._personality).probabilities[MusAction.MUS]
-    strong_chance = bot.strategies.mus.decide(public, strong, bot._personality).probabilities[MusAction.MUS]
+    weak_chance = bot.strategies.mus_strategy.decide(public, weak, bot._personality).probabilities[MusAction.MUS]
+    strong_chance = bot.strategies.mus_strategy.decide(public, strong, bot._personality).probabilities[MusAction.MUS]
     assert weak_chance > strong_chance
 
 
@@ -109,7 +109,7 @@ def test_weak_hand_can_fold_a_wager_and_strong_hand_can_raise():
     assert raise_distribution[WagerAction.RAISE_2] > 0
 
 
-def test_bluff_personality_increases_raises_with_same_weak_hand():
+def test_bluff_personality_does_not_change_builtin_raise_probability():
     public, private = _contexts(0.2, "Grande", WagerState(1, 1, None))
     cautious = BotPlayer("bot", Team("A"), _genome(bluff_rate=0.0))
     bluffer = BotPlayer("bot", Team("A"), _genome(bluff_rate=1.0))
@@ -119,4 +119,4 @@ def test_bluff_personality_increases_raises_with_same_weak_hand():
     bluff_raise = bluffer.strategies.wagers_by_phase["Grande"].decide(
         public, private, bluffer._personality,
     ).probabilities[WagerAction.RAISE_2]
-    assert bluff_raise > cautious_raise
+    assert bluff_raise == cautious_raise
