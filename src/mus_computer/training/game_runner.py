@@ -12,9 +12,11 @@ from typing import Callable, Iterable, TypeVar
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.bot_player import BotPlayer
 from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrategy
-from mus_computer.bots.strategies.mus import GeneCutMusStrategy
+from mus_computer.bots.strategies.mus import AlwaysCutMusStrategy
 from mus_computer.bots.strategies.portfolio import StrategyPortfolio
-from mus_computer.bots.strategies.wagers import HandStrengthWagerStrategy
+from mus_computer.bots.strategies.wagers import (
+    BluffRaiseLayer, ComposedWagerStrategy, ExtremeBluffLayer, HandStrengthWagerStrategy,
+)
 from mus_computer.cli import build_default_game
 from mus_computer.game.game import Game
 from mus_computer.game.match import Match
@@ -58,9 +60,14 @@ class GenomeMatchup:
 def build_genome_strategies() -> StrategyPortfolio:
     """Compose the policies used by genome-controlled training and validation bots."""
     return StrategyPortfolio(
-        mus_strategy=GeneCutMusStrategy(),
+        mus_strategy=AlwaysCutMusStrategy(),
         discard_strategy=PersonalityWeightedDiscardStrategy(),
-        wagers_by_phase={phase: HandStrengthWagerStrategy(phase) for phase in PHASE_ORDER},
+        wagers_by_phase={
+            phase: ComposedWagerStrategy(
+                HandStrengthWagerStrategy(phase), (BluffRaiseLayer(), ExtremeBluffLayer()),
+            )
+            for phase in PHASE_ORDER
+        },
     )
 
 

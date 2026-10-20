@@ -4,8 +4,8 @@ import random
 from dataclasses import replace
 
 from mus_computer.bots.bot_genome import BotGenome
-from mus_computer.bots.strategies.actions import MusAction
-from mus_computer.bots.strategies.mus import GeneCutMusStrategy
+from mus_computer.bots.strategies.actions import MusAction, WagerAction
+from mus_computer.bots.strategies.mus import AlwaysCutMusStrategy
 from mus_computer.training.constants import USED_GENES
 from mus_computer.training.game_runner import GenomeMatchup, build_bot_game
 
@@ -33,8 +33,26 @@ def test_mus_eagerness_does_not_change_real_game_mus_decision():
     assert results[0] == results[1]
 
 
-def test_only_three_cut_genes_are_active_in_training_matchups():
-    assert USED_GENES == ["cut_prone", "cut_prone_with_pares", "cut_prone_with_juego"]
+def test_only_two_bluff_genes_are_active_in_training_matchups():
+    assert USED_GENES == ["bluff_rate", "extreme_bluff_rate"]
     baseline = BotGenome(*([0.5] * 13))
     game = build_bot_game(GenomeMatchup(baseline, baseline, seed=77))
-    assert all(isinstance(player.strategies.mus_strategy, GeneCutMusStrategy) for player in game.players_in_order)
+    assert all(isinstance(player.strategies.mus_strategy, AlwaysCutMusStrategy) for player in game.players_in_order)
+
+
+def test_training_wager_strategy_responds_to_each_active_gene():
+    baseline = BotGenome(*([0.5] * 13))
+    game = build_bot_game(GenomeMatchup(baseline, baseline, seed=77))
+    game._deal_initial_cards()
+    player = game.players_in_order[0]
+    public = game._global_context("Grande")
+    private = player.decision_context(public, 0)
+    strategy = player.strategies.wagers_by_phase["Grande"]
+    quiet = replace(baseline, bluff_rate=0, extreme_bluff_rate=0)
+    regular = replace(quiet, bluff_rate=1)
+    extreme = replace(quiet, extreme_bluff_rate=1)
+
+    distributions = [strategy.decide(public, private, genome).probabilities for genome in (quiet, regular, extreme)]
+
+    assert distributions[1][WagerAction.RAISE_2] > distributions[0][WagerAction.RAISE_2]
+    assert distributions[2][WagerAction.ORDAGO] > 0

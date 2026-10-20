@@ -28,6 +28,19 @@ class MusStrategy(Protocol):
 
 
 @dataclass(frozen=True)
+class AlwaysCutMusStrategy(MusStrategy):
+    """End Mus immediately, independent of the hand and genome."""
+
+    def decide(
+        self,
+        global_context: GlobalGameContext,
+        player_context: PlayerDecisionContext,
+        personality: BotPersonality,
+    ) -> ActionDistribution[MusAction]:
+        return ActionDistribution({MusAction.CORTA: 1.0, MusAction.MUS: 0.0})
+
+
+@dataclass(frozen=True)
 class EstimateMusStrategy(MusStrategy):
     """Default Mus policy using the current weighted-estimate formula."""
 

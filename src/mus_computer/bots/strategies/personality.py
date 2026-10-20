@@ -37,6 +37,9 @@ class BotPersonality(Protocol):
     def bluff_rate(self) -> float: ...
 
     @property
+    def extreme_bluff_rate(self) -> float: ...
+
+    @property
     def risk_factor(self) -> float: ...
 
     @property

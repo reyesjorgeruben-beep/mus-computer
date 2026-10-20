@@ -13,3 +13,4 @@ __pycache__/
 /winning_genomes*.json
 /population_gen*.json
 /docs/training/experiments/*.log
+/docs/training/experiments/*/

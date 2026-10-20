@@ -1,11 +1,12 @@
 """Replaceable population creation and winner driven genome variation."""
 
+import math
 import random
 from dataclasses import fields
 from typing import Protocol
 
 from mus_computer.bots.bot_genome import BotGenome, crossover, mutate, random_genome
-from mus_computer.training.constants import USED_GENES
+from mus_computer.training.constants import ALPHA_VARIATION, BETA_VARIATION, USED_GENES
 
 
 class GenomeGenerator(Protocol):
@@ -59,13 +60,22 @@ class CustomGeneticGenomeGenerator:
 
     Each gene receives an independent additive change within the stated range.
     Alpha is the highest scoring half by default; ties retain population order.
+    The alpha and beta variation ranges default to training constants and can
+    be overridden for an individual generator instance.
     """
 
     def __init__(
         self, alpha_fraction: float = 0.5, active_genes: tuple[str, ...] | None = None,
+        alpha_variation: float = ALPHA_VARIATION,
+        beta_variation: float = BETA_VARIATION,
     ) -> None:
         if not 0 < alpha_fraction <= 2 / 3:
             raise ValueError("alpha_fraction must be above zero and at most two thirds")
+        if any(
+            not math.isfinite(value) or not 0 <= value <= 1
+            for value in (alpha_variation, beta_variation)
+        ):
+            raise ValueError("variation ranges must be finite values between zero and one")
         active_genes = tuple(USED_GENES) if active_genes is None else tuple(active_genes)
         known = {field.name for field in fields(BotGenome)}
         if any(name not in known for name in active_genes):
@@ -74,6 +84,8 @@ class CustomGeneticGenomeGenerator:
             raise ValueError("active_genes cannot contain duplicates")
         self.alpha_fraction = alpha_fraction
         self.active_genes = tuple(active_genes)
+        self.alpha_variation = alpha_variation
+        self.beta_variation = beta_variation
 
     def initial_population(self, size: int) -> list[BotGenome]:
         return [BotGenome(*(
@@ -112,7 +124,7 @@ class CustomGeneticGenomeGenerator:
             self._average(paired_alpha[i], paired_alpha[i + 1])
             for i in range(0, len(paired_alpha) - 1, 2)
         ]
-        varied_alpha = [self._vary(genome, 0.10) for genome in alpha]
+        varied_alpha = [self._vary(genome, self.alpha_variation) for genome in alpha]
         beta_count = count - len(averaged) - len(varied_alpha)
-        varied_beta = [self._vary(genome, 0.15) for genome in random.sample(beta, beta_count)]
+        varied_beta = [self._vary(genome, self.beta_variation) for genome in random.sample(beta, beta_count)]
         return averaged + varied_alpha + varied_beta

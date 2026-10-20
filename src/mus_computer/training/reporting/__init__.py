@@ -162,10 +162,14 @@ def generate_charts(run_dir: Path) -> list[Path]:
         outputs.append(path)
 
     links = "\n".join(f'<li><a href="{path.name}">{path.stem.replace("_", " ").title()}</a></li>' for path in outputs)
+    decision_note = (
+        " The Mus decisions chart shows cut probabilities from the configured strategy for four hand types."
+        if decision_series else ""
+    )
     (chart_dir / "index.html").write_text(
         f"<!doctype html><html><head><meta charset='utf-8'><title>Training charts</title></head>"
-        f"<body><h1>Training charts</h1><p>Gene charts show population means and p5 to p95 ranges. "
-        f"The Mus decisions chart shows cut probabilities from the configured strategy for four hand types."
+        f"<body><h1>Training charts</h1><p>Gene charts show population means and p5 to p95 ranges."
+        f"{decision_note}"
         f"</p><ul>{links}</ul></body></html>",
         encoding="utf-8",
     )

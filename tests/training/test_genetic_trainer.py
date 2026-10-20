@@ -1,6 +1,8 @@
 import pytest
 from mus_computer.bots.bot_genome import BotGenome, random_genome
-from mus_computer.training.genetic_trainer import GeneticTrainer
+from datetime import datetime
+
+from mus_computer.training.genetic_trainer import EXPERIMENTS_DIR, GeneticTrainer, experiment_folder_name, winning_genomes_path
 from mus_computer.training.game_runner import MatchRunResult, GenomeMatchup, play_genome_game
 from mus_computer.training.genome_generator import GenomeGenerator
 
@@ -10,6 +12,25 @@ def test_trainer_init_creates_population():
     population = trainer.initial_population()
     assert len(population) == 10
     assert all(isinstance(g, BotGenome) for g in population)
+
+
+def test_default_training_runs_get_distinct_experiment_folders():
+    first = GeneticTrainer(population_size=4, generations=1)
+    second = GeneticTrainer(population_size=4, generations=1)
+
+    assert first.run_dir.parent == EXPERIMENTS_DIR
+    assert second.run_dir.parent == EXPERIMENTS_DIR
+    assert first.run_dir != second.run_dir
+
+
+def test_experiment_folder_name_puts_description_after_date():
+    assert experiment_folder_name("testing_bluff_genomes", now=datetime(2026, 10, 17)) == (
+        "2026-10-17_testing_bluff_genomes"
+    )
+
+
+def test_winning_genomes_have_a_dedicated_folder(tmp_path):
+    assert winning_genomes_path(tmp_path) == tmp_path / "winning_genomes" / "genomes.json"
 
 
 def test_match_win_target_is_passed_to_every_training_matchup():
@@ -175,7 +196,7 @@ def test_matchup_seeds_vary_with_game_and_generation():
     assert [matchup.seed for matchup in batches[1]] == list(range(52, 62))
 
 
-def test_generations_share_one_warmed_runner(monkeypatch):
+def test_generations_share_one_warmed_runner(monkeypatch, tmp_path):
     calls = []
 
     class RecordingRunner:
@@ -194,7 +215,7 @@ def test_generations_share_one_warmed_runner(monkeypatch):
             return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     monkeypatch.setattr("mus_computer.training.genetic_trainer.TrainingGameRunner", RecordingRunner)
-    trainer = GeneticTrainer(population_size=20, generations=2, games_per_eval=1)
+    trainer = GeneticTrainer(population_size=20, generations=2, games_per_eval=1, run_dir=tmp_path)
     assert len(trainer.evolve()) == 10
     assert calls == ["open", "warm", 10, 10, "close"]
 
@@ -227,7 +248,7 @@ def test_periodic_snapshots_contain_final_evaluated_populations(tmp_path):
     assert all(json.loads(path.read_text())["active_genes"] == USED_GENES for path in snapshots)
 
 
-def test_evolve_returns_winners_from_final_generation(monkeypatch):
+def test_evolve_returns_winners_from_final_generation(monkeypatch, tmp_path):
     first_generation = [random_genome() for _ in range(20)]
     final_generation = [random_genome() for _ in range(20)]
     batches = []
@@ -256,14 +277,14 @@ def test_evolve_returns_winners_from_final_generation(monkeypatch):
             return [MatchRunResult("A", 1, 0, 0.0, 1) for _ in matchups]
 
     monkeypatch.setattr("mus_computer.training.genetic_trainer.TrainingGameRunner", RecordingRunner)
-    winners = GeneticTrainer(generations=2, gen_generator=FixedGenerator()).evolve()
+    winners = GeneticTrainer(generations=2, gen_generator=FixedGenerator(), run_dir=tmp_path).evolve()
     assert len(batches) == 2
     assert len(winners) == 10
     assert {id(genome) for genome in winners} == {id(matchup.team_a) for matchup in batches[-1]}
     assert {id(genome) for genome in winners}.isdisjoint({id(genome) for genome in first_generation})
 
 
-def test_seeded_training_is_repeatable_without_changing_callers_random_state(monkeypatch):
+def test_seeded_training_is_repeatable_without_changing_callers_random_state(monkeypatch, tmp_path):
     import random
 
     class FixedRunner:
@@ -281,7 +302,7 @@ def test_seeded_training_is_repeatable_without_changing_callers_random_state(mon
 
     monkeypatch.setattr("mus_computer.training.genetic_trainer.TrainingGameRunner", FixedRunner)
     state_before = random.getstate()
-    first = GeneticTrainer(generations=2, seed=123).evolve()
+    first = GeneticTrainer(generations=2, seed=123, run_dir=tmp_path / "first").evolve()
     assert random.getstate() == state_before
-    second = GeneticTrainer(generations=2, seed=123).evolve()
+    second = GeneticTrainer(generations=2, seed=123, run_dir=tmp_path / "second").evolve()
     assert first == second

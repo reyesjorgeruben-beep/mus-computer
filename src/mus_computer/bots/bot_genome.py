@@ -22,6 +22,7 @@ class BotGenome:
     cut_prone: float = 0.5
     cut_prone_with_pares: float = 0.5
     cut_prone_with_juego: float = 0.5
+    extreme_bluff_rate: float = 0.0
 
 
 def random_genome() -> BotGenome:

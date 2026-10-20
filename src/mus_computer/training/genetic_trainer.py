@@ -4,12 +4,27 @@ import json
 import random
 import time
 from dataclasses import asdict
+from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.training.config import TrainingConfig
 from mus_computer.training.game_runner import GenomeMatchup, TrainingGameRunner
 from mus_computer.training.genome_generator import CustomGeneticGenomeGenerator, GenomeGenerator
+
+EXPERIMENTS_DIR = Path(__file__).resolve().parents[3] / "docs" / "training" / "experiments"
+
+
+def experiment_folder_name(description: str | None = None, now: datetime | None = None) -> str:
+    """Name a run by date and a human description, or a unique default label."""
+    date = (now or datetime.now()).strftime("%Y-%m-%d")
+    return f"{date}_{description or f'training_{uuid4().hex[:6]}'}"
+
+
+def winning_genomes_path(run_dir: Path, filename: str = "genomes.json") -> Path:
+    """Location of an experiment's final winning genome combination."""
+    return Path(run_dir) / "winning_genomes" / filename
 
 
 class GeneticTrainer:
@@ -37,10 +52,8 @@ class GeneticTrainer:
         self.gen_generator = gen_generator or CustomGeneticGenomeGenerator()
         self.runner = runner or TrainingGameRunner()
         self._runner_open = False
-        run_name = f"seed{seed}_pop{population_size}_gen{generations}"
-        if wins_to_match > 1:
-            run_name += f"_wins{wins_to_match}"
-        self.run_dir = Path(run_dir) if run_dir is not None else Path("training_runs") / run_name
+        run_name = experiment_folder_name()
+        self.run_dir = Path(run_dir) if run_dir is not None else EXPERIMENTS_DIR / run_name
 
     def initial_population(self) -> list[BotGenome]:
         return self.gen_generator.initial_population(self.population_size)
@@ -165,11 +178,25 @@ if __name__ == "__main__":
     parser.add_argument("--gene", action="append", default=None, help="Override used genes (repeat to add more)")
     parser.add_argument("--no-genes", action="store_true", help="Run a fixed neutral baseline")
     parser.add_argument("--workers", type=int, default=10, help="Concurrent game processes (maximum: 16)")
-    parser.add_argument("--run-dir", type=Path, default=None, help="Directory for snapshots, charts, and winners")
-    parser.add_argument("--out", type=Path, default=None, help="Override final winners JSON path")
+    parser.add_argument(
+        "--experiment-name", "--run-dir", dest="experiment_name", default=None,
+        help="Description appended to today's date for a new experiment folder",
+    )
+    parser.add_argument("--out", type=Path, default=None, help="Winners JSON filename inside winning_genomes")
     args = parser.parse_args()
     if args.no_genes and args.gene is not None:
         parser.error("--no-genes cannot be combined with --gene")
+    if args.experiment_name is not None:
+        name = args.experiment_name
+        if not name or name in (".", "..") or Path(name).name != name:
+            parser.error("--experiment-name must be one folder name, without a path")
+        experiment_dir = EXPERIMENTS_DIR / experiment_folder_name(name)
+        if experiment_dir.exists():
+            parser.error(f"Experiment folder already exists: {experiment_dir}")
+    else:
+        experiment_dir = None
+    if args.out is not None and (args.out.name != str(args.out) or args.out.name in (".", "..")):
+        parser.error("--out must be a filename inside the winning_genomes folder")
     print(
         f"Training: pop={args.pop}, gen={args.gen}, pairing_rounds={args.games}, "
         f"wins_to_match={args.wins_to_match}, workers={args.workers}"
@@ -182,12 +209,18 @@ if __name__ == "__main__":
         population_size=args.pop, generations=args.gen, games_per_eval=args.games, seed=args.seed,
         wins_to_match=args.wins_to_match,
         gen_generator=generator,
-        runner=TrainingGameRunner(TrainingConfig(max_concurrent_games=args.workers)), run_dir=args.run_dir,
+        runner=TrainingGameRunner(TrainingConfig(max_concurrent_games=args.workers)), run_dir=experiment_dir,
     )
+    try:
+        trainer.run_dir.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        parser.error(f"Experiment folder already exists: {trainer.run_dir}")
     start = time.time()
     winners = trainer.evolve(snapshot_every=args.snapshot)
     elapsed = time.time() - start
-    output_path = args.out or trainer.run_dir / "winning_genomes.json"
+    output_path = winning_genomes_path(
+        trainer.run_dir, args.out.name if args.out is not None else "genomes.json",
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     trainer.save_population(winners, output_path)
     from mus_computer.training.reporting import generate_charts
@@ -196,7 +229,24 @@ if __name__ == "__main__":
     charts = generate_charts(trainer.run_dir)
     validation = validate_winners(
         winners, trainer.run_dir, seed=args.seed, workers=args.workers,
-        active_genes=generator.active_genes,
+        active_genes=generator.active_genes, wins_to_match=args.wins_to_match,
+    )
+    (trainer.run_dir / "README.md").write_text(
+        f"# Training experiment\n\n"
+        f"- Population: {args.pop} genomes\n"
+        f"- Generations: {args.gen}\n"
+        f"- Matches per generation: {trainer.games_per_generation}\n"
+        f"- First to game wins per match: {args.wins_to_match}\n"
+        f"- Concurrent workers: {args.workers}\n"
+        f"- Seed: {args.seed}\n"
+        f"- Active genes: {', '.join(generator.active_genes) if generator.active_genes else 'none'}\n"
+        f"- Snapshot interval: {args.snapshot} generations\n"
+        f"- Training time: {elapsed:.1f} seconds\n\n"
+        f"[Interactive plots](charts/index.html) · "
+        f"[Winning genomes](winning_genomes/{output_path.name}) · "
+        f"[Validation results](validation/results.md) · "
+        f"[Snapshots](snapshots/)\n",
+        encoding="utf-8",
     )
     print(f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {output_path}")
     print(f"Snapshots: {trainer.run_dir / 'snapshots'}")
@@ -207,4 +257,4 @@ if __name__ == "__main__":
             for kind, benchmark in record["benchmarks"].items()
         )
         print(f"Winner {record['index'] + 1}: {scores}")
-    print(f"Validation: {trainer.run_dir / 'validation' / 'results.json'}")
+    print(f"Validation: {trainer.run_dir / 'validation' / 'results.md'}")
