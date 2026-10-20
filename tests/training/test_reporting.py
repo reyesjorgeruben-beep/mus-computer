@@ -57,6 +57,7 @@ def test_reporting_shows_only_active_genes(tmp_path):
     }))
 
     assert list(build_gene_series(snapshots)) == ["mus_eagerness"]
+    pytest.importorskip("plotly")
     assert [path.name for path in generate_charts(tmp_path)] == [
         "all_genes.html", "mus_eagerness.html",
     ]

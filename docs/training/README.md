@@ -1,5 +1,52 @@
 # Training workspace
 
+## Shared-strategy Monte Carlo CFR
+
+The current training entry point is `python -m mus_computer.training`. It trains
+one tabular action-probability policy through four-seat self-play. All seats use
+the same frozen policy during an iteration; the trainer applies their regret
+updates together after counterfactual evaluations. It reuses the existing
+`Game`, `Deck`, decision contexts, strategy portfolio, legal actions, and
+scoring. The fixed neutral `BotGenome` instance only satisfies the existing
+bot personality interface; no genes are selected, crossed, or mutated.
+
+Run a small experiment with:
+
+```sh
+python -m mus_computer.training --iterations 10 --seed 7 --snapshot-every 5 --run-dir docs/training/cfr_runs/example
+```
+
+Install the package first with `python -m pip install -e .`, or set
+`PYTHONPATH=src`. Snapshot JSON files contain every visited information state,
+its legal actions, cumulative regrets, current action probabilities, and
+reach-weighted average probabilities. They also contain iteration count,
+sampled game count (including action rollouts), each team's running average
+utility, and the average policy's paired win fraction against the preceding
+checkpoint. Generated CFR runs are Git ignored.
+
+The trainer samples each deal using the existing random shuffle. It samples
+one complete exploratory trajectory, selects one visited decision per player,
+then replays the same history once per legal action and samples a continuation
+from the frozen current policy. The target action's value is the mean utility
+of that continuation sample, so estimates are noisy. The regret increment is
+the action value minus the current mixed-policy value, multiplied by the
+opponents' target reach divided by the trajectory behavior reach. Selecting
+one of a player's visited decisions adds a multiplier equal to the number of
+their visited decisions. These factors correct the sampled trajectory to a
+counterfactual regret estimate. Average-strategy contributions use own reach
+divided by behavior reach. The engine can see all hands to resolve outcomes;
+the policy key contains only the acting player's hand and public state.
+
+The table uses full public history within a hand, but the game clears that
+history between hands, so this abstraction can merge histories that a player
+could remember. The game also has four players in two teams. Do not infer the
+usual two-player zero-sum CFR convergence guarantee from these results.
+
+The earlier genetic trainer and its tests remain callable for compatibility
+with saved genome experiments. The default training command now uses CFR.
+
+## Earlier genome training and throughput notes
+
 This branch starts with a throughput baseline before changing bot policies or fitness. The first workload is a complete `Game` with four `RandomBotPlayer` seats. `Game` still creates public and private decision contexts at each prompt. The runner supplies no action callback, so bot actions do not print to the terminal; only the benchmark test prints timing summaries.
 
 ## Layout

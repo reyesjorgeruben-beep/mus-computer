@@ -35,7 +35,7 @@ Supplying a portfolio to `BotPlayer(..., personality=..., strategies=...)` can r
 | `src/mus_computer/game/` | Match lifecycle, phases, teams, and wagers |
 | `src/mus_computer/bots/` | Random and contextual bot players and strategies |
 | `src/mus_computer/probabilities/` | Packaged lookup data and hand estimates |
-| `src/mus_computer/training/` | Experimental genetic training code |
+| `src/mus_computer/training/` | Shared-strategy Monte Carlo CFR training and legacy genome experiments |
 | `scripts/tables/` | Offline table builders and exports |
 | `tests/` | Unit and game tests |
 
@@ -45,4 +45,4 @@ Offline table builders use NumPy. Install their optional dependencies with `pyth
 
 See the [roadmap](docs/mus-computer/TODO.md) for milestone status and the [contextual strategy design](docs/superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) for decision interfaces and scoring rules.
 
-The [training workspace](docs/training/README.md) documents the silent random-bot game runner, ten-game concurrency cap, and opt-in throughput checks.
+The [training workspace](docs/training/README.md) documents sampled CFR self-play, metrics, and the earlier genome experiments.
