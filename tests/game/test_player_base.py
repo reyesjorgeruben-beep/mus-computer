@@ -14,28 +14,41 @@ class TestPlayerBaseCards:
 
     def test_receive_cards(self):
         self.player.receive_cards([Card.A, Card.R])
-        assert self.player.cards == [Card.A, Card.R]
+        assert self.player.cards == [Card.R, Card.A]
 
     def test_receive_cards_extends(self):
         self.player.receive_cards([Card.A])
         self.player.receive_cards([Card.R])
-        assert self.player.cards == [Card.A, Card.R]
+        assert self.player.cards == [Card.R, Card.A]
+
+    def test_received_hand_and_discard_indices_use_canonical_rank_order(self):
+        self.player.receive_cards([Card.A, Card.R, Card._4, Card.R])
+        assert self.player.cards == [Card.R, Card.R, Card._4, Card.A]
+        assert self.player.throw_card(0) is Card.R
+        assert self.player.throw_card(1) is Card._4
+
+    def test_replacement_cards_are_sorted_with_retained_cards(self):
+        self.player.receive_cards([Card.R, Card.C, Card._4, Card.A])
+        self.player.throw_card(1)
+        self.player.receive_cards([Card.S])
+        assert self.player.cards == [Card.R, Card.S, Card._4, Card.A]
+        assert self.player.throw_card(1) is Card.S
 
     def test_throw_card_removes_by_index(self):
         self.player.receive_cards([Card.A, Card.R, Card._5])
         removed = self.player.throw_card(1)
-        assert removed == Card.R
-        assert self.player.cards == [Card.A, Card._5]
+        assert removed == Card._5
+        assert self.player.cards == [Card.R, Card.A]
 
     def test_throw_card_first(self):
         self.player.receive_cards([Card.A, Card.R])
         self.player.throw_card(0)
-        assert self.player.cards == [Card.R]
+        assert self.player.cards == [Card.A]
 
     def test_throw_card_last(self):
         self.player.receive_cards([Card.A, Card.R, Card._5])
         self.player.throw_card(2)
-        assert self.player.cards == [Card.A, Card.R]
+        assert self.player.cards == [Card.R, Card._5]
 
     def test_throw_card_invalid_index_raises(self):
         self.player.receive_cards([Card.A, Card.R])

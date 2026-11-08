@@ -26,12 +26,12 @@ def information_key(
     kind: DecisionKind, public: GlobalGameContext, private: PlayerDecisionContext,
     legal: tuple[Action, ...],
 ) -> str:
-    """Describe only what this seat can observe, including its own hand."""
+    """Describe observable state using the same canonical card order as discards."""
     return json.dumps({
         "kind": kind.value,
         "seat": private.seat,
         "team": private.team_name,
-        "cards": sorted(card.value for card in private.cards),
+        "cards": [card.value for card in sorted(private.cards, reverse=True)],
         "scores": [public.team_scores["A"], public.team_scores["B"]],
         "mus_exchanges": public.mus_exchanges,
         "phase": public.phase_name.value if public.phase_name else None,

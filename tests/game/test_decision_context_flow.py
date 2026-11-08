@@ -19,9 +19,9 @@ def test_real_mus_history_full_seats_and_private_hands_reach_each_decision():
     a,b=Team("A"),Team("B")
     players=[Recorder(str(i),a if i%2==0 else b,mus_votes=[True,False],
                       discards=[[]],wager_actions=[0]*5) for i in range(4)]
-    hands=[[C._7,C._7,C._4,C._5],[C.A,C._4,C._5,C._6],
-           [C.A,C._4,C._5,C._7],[C._4,C._4,C._5,C._6]]
-    for p,h in zip(players,hands): p.cards=h
+    hands=[[C._7,C._7,C._5,C._4],[C._6,C._5,C._4,C.A],
+           [C._7,C._5,C._4,C.A],[C._6,C._5,C._4,C._4]]
+    for p,h in zip(players,hands): p.receive_cards(h)
     events=[]
     game=Game.from_players(players,events.append)
     game._emit_hands()

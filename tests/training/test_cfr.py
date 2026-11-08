@@ -4,9 +4,11 @@ from types import SimpleNamespace
 
 import pytest
 
-from mus_computer.bots.strategies.actions import DecisionKind, MusAction
+from mus_computer.bots.strategies.actions import DecisionKind, DiscardAction, MusAction
 from mus_computer.cards.card import Card
 from mus_computer.game.context import GlobalGameContext, SeatOrderEntry
+from mus_computer.game.team import Team
+from tests.conftest import ScriptedPlayer
 from mus_computer.training.cfr import (
     CFRConfig, CFRPolicy, CFRTrainer, DecisionRecord, information_key, regret_match,
 )
@@ -78,6 +80,45 @@ def test_information_key_cannot_access_other_players_cards():
     assert information_key(DecisionKind.MUS, public, private, legal) == first
     private.cards = (Card.A,) * 4
     assert information_key(DecisionKind.MUS, public, private, legal) != first
+
+
+@pytest.mark.parametrize("cards", [
+    (Card.A, Card.R, Card.S, Card.C),
+    (Card.A, Card.R, Card.A, Card._4),
+])
+def test_discard_policy_shares_canonical_actions_between_reordered_hands(cards):
+    public = GlobalGameContext(
+        {"A": 0, "B": 0}, 0, None, None, (), {},
+        (SeatOrderEntry("A1", "A"), SeatOrderEntry("B1", "B"),
+         SeatOrderEntry("A2", "A"), SeatOrderEntry("B2", "B")),
+        0, (0, 1, 2, 3),
+    )
+    player = ScriptedPlayer("A1", Team("A"))
+    player.receive_cards(list(cards))
+    private = player.decision_context(public, 0)
+    legal = (DiscardAction(()), DiscardAction((0,)))
+    actions = ("discard:", "discard:0")
+    prior = {"discard:": 0.5, "discard:0": 0.5}
+    first = information_key(DecisionKind.DISCARD, public, private, legal)
+    policy = CFRPolicy()
+    record = DecisionRecord(
+        0, 0, first, actions, prior, prior, "discard:0", 1, 1, 1,
+    )
+    policy.apply([record], {first: {"discard:": -1, "discard:0": 1}})
+    assert policy.probabilities(first, actions, prior) == {
+        "discard:": 0, "discard:0": 1,
+    }
+
+    other_player = ScriptedPlayer("A1", Team("A"))
+    other_player.receive_cards(list(reversed(cards)))
+    reordered_private = other_player.decision_context(public, 0)
+    reordered = information_key(DecisionKind.DISCARD, public, reordered_private, legal)
+    assert reordered == first
+    assert policy.probabilities(reordered, actions, prior) == {
+        "discard:": 0, "discard:0": 1,
+    }
+    assert player.throw_card(0) is Card.R
+    assert other_player.throw_card(0) is Card.R
 
 
 def test_team_utility_follows_player_identity_after_seat_rotation():

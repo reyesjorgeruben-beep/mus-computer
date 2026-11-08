@@ -9,7 +9,9 @@ class PlayerBase(ABC):
         self.cards: list = []
 
     def receive_cards(self, cards: list) -> None:
+        """Merge dealt or replacement cards into descending canonical rank order."""
         self.cards.extend(cards)
+        self.cards.sort(reverse=True)
 
     def throw_card(self, index: int):
         if 0 <= index < len(self.cards):
@@ -68,7 +70,7 @@ class PlayerBase(ABC):
 
     @abstractmethod
     def choose_discards(self, global_context, player_context):
-        """Return original zero-based card indices to discard."""
+        """Return zero-based indices into the current canonical hand to discard."""
         ...
 
     @abstractmethod
