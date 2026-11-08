@@ -14,3 +14,4 @@ __pycache__/
 /population_gen*.json
 /docs/training/experiments/*.log
 /docs/training/experiments/*/
+/docs/training/cfr_runs/

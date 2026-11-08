@@ -1,5 +1,179 @@
 # Training workspace
 
+## Context-specific coefficient training (default, version 2)
+
+```sh
+python -m mus_computer.training --rounds 1000 --batch-size 16 --workers 16 --seed 7 --run-dir training_runs/coefficient_cfr_v2_seed7
+```
+
+This evaluates **16,000 fixed no-Mus hands**, performs 1,000 updates, writes
+coefficient evolution charts, and then plays **100 full matches per baseline**.
+A match is first to four game wins; each normal game starts at 0 and continues
+through fresh hands until 40 points or an accepted ordago. Use `--workers 1` for
+serial execution, `--validation-matches` for an even per-baseline match count,
+`--wins-to-match` to change the match target, or `--skip-validation` to train only.
+No plotting or machine-learning dependency is required.
+
+### Twelve named coefficients with separate purposes
+
+Each winning/losing case has six stored probabilities:
+
+| Coefficients | Interpretation |
+|---|---|
+| pass / bet | Opening probability pair; sums to one |
+| fold / match | Response probability pair when not re-bidding; sums to one |
+| rebid | Independent chance of raising an opponent's ordinary bet |
+| ordago | Independent chance that an intended bet or re-bid becomes ordago |
+
+There is no six-way normalization. Updating `ordago` or `rebid` does not rescale
+the opening or calling pairs. Complementary pairs leave four independent
+probability choices per winning/losing case. Initially, pairs are 0.5/0.5,
+re-bid is 0.5, and ordago is 0.1. All twelve values are recorded each batch.
+
+A hand's probability of winning combines the two endpoint predictions:
+`c = (1 - p_win) * c_losing + p_win * c_winning`, as in the original proposal.
+This does not change the stored coefficients or make them functions of hand
+strength. It evaluates the policy for an uncertain hand. The existing tables
+use only that player's private cards; ties favor the first eligible seat.
+
+For the mixed probabilities `f, p, m, b, r, o`, action probabilities are:
+
+| Public wager situation | Action distribution |
+|---|---|
+| No bet yet | pass `p`, bet two `b*(1-o)`, ordago `b*o` |
+| Facing the opening bet | fold `(1-r)*f`, match `(1-r)*m`, raise two `r*(1-o)`, ordago `r*o` |
+| Facing a numeric counter-raise | fold `1-r*o`, ordago `r*o` |
+| Facing ordago | fold `f`, match `m` |
+
+These distributions sum to one by construction. The final counter-raise
+response excludes matching and further numeric raises, per the simplified
+rule. Non-ordago probability goes to folding there. These restrictions belong
+to the decision logic, not the coefficients. Both eligible teammates can
+respond, so one fold does not automatically fold the team.
+
+### Exact hand evaluation and coefficient updates
+
+Every training hand draws physical cards without replacement and independent
+starting scores uniformly from 10 through 28. It covers Grande, Chica, eligible
+Pares, and Juego or Punto with the same hands and no Mus or exchanges. Actual
+cards determine settlement; policy input never contains opponents' cards.
+
+The evaluator enumerates wager responses and propagates a distribution of
+surviving score pairs into each later lance. Accepted ordago or reaching 40
+ends that branch. It settles each lance immediately in this simplified model;
+the playable game retains its normal deferred showdown accounting.
+
+Utility is the change in your team's score minus the other team's change
+during the hand. Scores are capped at 40; ordago fills the winner's remaining
+distance to 40. This remains a points-based training proxy, not match-win
+probability. Each action's value includes surviving future lances. Reports
+compare it with the best legal action against the frozen policy using
+`penalty[a] = max(Q) - Q[a]`. Reach-weighted local penalty sums are diagnostics,
+not exploitability or a bound on whole-game regret.
+
+All sixteen workers receive identical frozen coefficients. Each actor's exact
+local gradient holds other decisions fixed and is weighted by its full path
+reach. The main process waits for every hand, averages over the sixteen hands
+and both teams, scales by 40, and takes one gradient step. Pair updates use
+log odds; re-bid and ordago use independent logits. Small probability bounds
+keep exploration available. This is CFR-inspired parameterized policy
+improvement, not tabular CFR, regression CFR, or a convergence guarantee.
+
+### Full-match validation and charts
+
+Validation uses the existing `Game` and `Match` classes, with normal scoring
+and repeated deals. Candidate bots always cut Mus, preserving the no-Mus
+scope. The opponents are:
+
+- The existing `RandomDecisionBot`, sampling uniformly over all legal actions.
+- New random coefficient sets using this same version-2 wager policy. Each set
+  stays fixed for both opponents and every game in its match, and is reused
+  in the paired comparison with sides swapped.
+- The existing `MusMaestroBot` baseline: pass/fold wagering and always vote Mus.
+  This is the repository's existing conservative baseline, not an external engine.
+
+Each opponent gets 100 matches: 50 from each team side using paired seeds.
+`validation.json` records every match's seed, candidate side, game-win score,
+random opponent coefficients, and match win rate. Side-swapped matches share
+a seed, so they are not treated as independent samples for a confidence interval.
+`validation.md` is the readable summary. This replaces the former isolated-hand
+piedra-margin comparison as the CLI validation result.
+
+Generated files under the Git-ignored run directory:
+
+- `training.json`: configuration, policy version, final coefficients, all batch
+  metrics, and all 1,001 coefficient snapshots (including initialization).
+- `coefficients.svg`: two charts, losing and winning, with six named curves each.
+- `coefficients.csv`: all twelve curves as numerical data.
+- `example_hand.json`: a final-policy hand's initial scores, survival by lance,
+  terminal outcome probabilities, and decision histories, strength estimates,
+  reach, action values, and best-action penalties.
+- `validation.json` / `validation.md`: full-match results against all three baselines.
+
+### Limitations and layout
+
+The hand-strength table describes one unknown opponent, not the opposing team,
+and does not update from observed wagers. The policy cannot explicitly adapt
+to score, phase, seat, or teammate strength. Training's immediate scoring and
+point-based ordago value differ from the normal game's scoring and match-win
+objective; full-match validation measures transfer rather than assuming it.
+Shared self-play may cycle, and 100 matches per baseline leaves uncertainty.
+
+Implementation lives in `training/coefficient_cfr/`: `policy.py` owns contextual
+probabilities and gradients; `tree.py` legal negotiations; `round.py` scoring
+and survival; `trainer.py` frozen batches; `bot.py` the normal-game adapter;
+`validation.py` full matches; and `charts.py` coefficient history exports.
+Earlier version-1 results remain in their separate run folder; their ten
+shared action weights are not interchangeable with version-2 coefficients.
+
+## Earlier shared-strategy Monte Carlo CFR
+
+The earlier trainer remains available as `python -m mus_computer.training.cfr`. It trains
+one tabular action-probability policy through four-seat self-play. All seats use
+the same frozen policy during an iteration; the trainer applies their regret
+updates together after counterfactual evaluations. It reuses the existing
+`Game`, `Deck`, decision contexts, strategy portfolio, legal actions, and
+scoring. The fixed neutral `BotGenome` instance only satisfies the existing
+bot personality interface; no genes are selected, crossed, or mutated.
+
+Run a small experiment with:
+
+```sh
+python -m mus_computer.training.cfr --iterations 10 --seed 7 --snapshot-every 5 --run-dir docs/training/cfr_runs/example
+```
+
+Install the package first with `python -m pip install -e .`, or set
+`PYTHONPATH=src`. Snapshot JSON files contain every visited information state,
+its legal actions, cumulative regrets, current action probabilities, and
+reach-weighted average probabilities. They also contain iteration count,
+sampled game count (including action rollouts), each team's running average
+utility, and the average policy's paired win fraction against the preceding
+checkpoint. Generated CFR runs are Git ignored.
+
+The trainer samples each deal using the existing random shuffle. It samples
+one complete exploratory trajectory, selects one visited decision per player,
+then replays the same history once per legal action and samples a continuation
+from the frozen current policy. The target action's value is the mean utility
+of that continuation sample, so estimates are noisy. The regret increment is
+the action value minus the current mixed-policy value, multiplied by the
+opponents' target reach divided by the trajectory behavior reach. Selecting
+one of a player's visited decisions adds a multiplier equal to the number of
+their visited decisions. These factors correct the sampled trajectory to a
+counterfactual regret estimate. Average-strategy contributions use own reach
+divided by behavior reach. The engine can see all hands to resolve outcomes;
+the policy key contains only the acting player's hand and public state.
+
+The table uses full public history within a hand, but the game clears that
+history between hands, so this abstraction can merge histories that a player
+could remember. The game also has four players in two teams. Do not infer the
+usual two-player zero-sum CFR convergence guarantee from these results.
+
+The earlier genetic trainer and its tests remain callable for compatibility
+with saved genome experiments. The default training command now uses the
+bounded-hand coefficient trainer described above.
+
+## Earlier genome training and throughput notes
+
 This branch starts with a throughput baseline before changing bot policies or fitness. The first workload is a complete `Game` with four `RandomBotPlayer` seats. `Game` still creates public and private decision contexts at each prompt. The runner supplies no action callback, so bot actions do not print to the terminal; only the benchmark test prints timing summaries.
 
 ## Layout
