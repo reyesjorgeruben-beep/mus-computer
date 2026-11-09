@@ -4,11 +4,14 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 *.egg-info/
 /build/
 /dist/
 /probability_tables.pkl
 /training_runs/
+/docs/training/cfr_runs/
 /.deps/
 /winning_genomes*.json
 /population_gen*.json

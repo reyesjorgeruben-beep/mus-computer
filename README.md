@@ -17,6 +17,15 @@ python -m mus_computer
 python -m pytest tests/
 ```
 
+Format Python files with `make format`, or check formatting with
+`make format-check`. Install the tools first with
+`python -m pip install -e ".[dev,review]"`. These commands use `.venv` when
+present; override the interpreter with `make format PYTHON=python3`.
+GNU Make must be installed. On Windows run
+`winget install --id ezwinports.make --exact --source winget --scope user`,
+then reopen the terminal to load its PATH. Without Make, use
+`python -m ruff format src scripts tests api.py setup.py` in the project environment.
+
 ## How a match works
 
 Each bot receives four cards. In seat order, players say `mus` or `corta`. If everyone says `mus`, each may exchange zero to four cards and the Mus vote repeats. A `corta` starts play with the current hands. The discard pile replenishes the draw deck when needed.
