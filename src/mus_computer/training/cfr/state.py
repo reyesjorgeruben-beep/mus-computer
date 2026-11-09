@@ -15,6 +15,8 @@ from mus_computer.bots.strategies.actions import (
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
 from mus_computer.game.context import GlobalGameContext
 
+from .features import BettingFeatures
+
 Action = MusAction | DiscardAction | WagerAction
 
 
@@ -73,3 +75,4 @@ class DecisionRecord:
     own_reach: float
     opponent_reach: float
     behavior_reach: float
+    features: BettingFeatures | None = None

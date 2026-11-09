@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 
+from .features import BettingFeatures
 from .state import DecisionRecord
 
 
@@ -52,6 +53,7 @@ class CFRPolicy:
         prior: Mapping[str, float],
         *,
         average: bool = False,
+        features: BettingFeatures | None = None,
     ) -> dict[str, float]:
         node = self.nodes.get(key)
         if node is None:
@@ -111,6 +113,10 @@ class CFRPolicy:
     @classmethod
     def from_snapshot(cls, snapshot: Mapping) -> CFRPolicy:
         """Restore both current and average policies from saved node data."""
+        if snapshot["information_states"].get("type") == "phase_glm_v1":
+            from .glm_policy import GLMCFRPolicy
+
+            return GLMCFRPolicy.from_snapshot(snapshot)
         policy = cls()
         for key, data in snapshot["information_states"].items():
             policy.nodes[key] = RegretNode(

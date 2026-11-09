@@ -1,5 +1,7 @@
 # Review history
 
+- 2026-11-09 [user] **Phase-specific CFR betting generalization** — Keep additive GLM coefficients separate by lance, betting stage and action. Use only earlier opposing-team envida/ordago events plus private hand strength; project counterfactual regret-matching and reach-weighted average targets separately. Preserve tabular CFR and leave coefficient CFR/genetic trainers untouched.
+
 - 2026-11-09 [user] **Dedicated branches and disposable snapshots** — Put each task on a dedicated branch. Remove iteration snapshots only after checking whether resuming or rebuilding analysis needs them.
 - 2026-11-09 [user] **Disposable CFR outputs** — The orphaned check, smoke, and stability iteration snapshots have no consumers in the current source or documentation. Remove those files and ignore `docs/training/cfr_runs/`; retain genetic-training snapshots used to rebuild charts.
 - 2026-11-09 [user] **Editor commits must locate project tools** — System hooks inherited global Python and could not find Ruff, mypy, or Gitleaks. Route checks through a standard-library launcher that selects `.venv` tools explicitly; verify it without activation. Provide `make format` and `make format-check`, and document GNU Make installation on Windows.

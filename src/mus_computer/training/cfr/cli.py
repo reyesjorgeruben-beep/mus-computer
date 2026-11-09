@@ -17,10 +17,19 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--exploration", type=float, default=0.1)
     parser.add_argument("--snapshot-every", type=int, default=10)
+    parser.add_argument("--policy", choices=("tabular", "glm"), default="tabular")
+    parser.add_argument("--glm-learning-rate", type=float, default=0.1)
     parser.add_argument("--run-dir", type=Path, default=Path("docs/training/cfr_runs"))
     args = parser.parse_args()
     trainer = CFRTrainer(
-        CFRConfig(args.iterations, args.seed, args.exploration, args.snapshot_every),
+        CFRConfig(
+            args.iterations,
+            args.seed,
+            args.exploration,
+            args.snapshot_every,
+            args.policy,
+            args.glm_learning_rate,
+        ),
         run_dir=args.run_dir,
     )
     trainer.train()

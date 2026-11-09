@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import random
 from collections.abc import Mapping
-from dataclasses import fields
+from dataclasses import asdict, fields
 from pathlib import Path
 
 from mus_computer.bots.bot_genome import BotGenome
@@ -14,6 +14,7 @@ from mus_computer.game.game import Game
 from mus_computer.game.team import Team
 
 from .config import CFRConfig
+from .glm_policy import GLMCFRPolicy
 from .player import CFRBotPlayer
 from .policy import CFRPolicy
 from .sampling import DecisionController
@@ -32,13 +33,17 @@ class CFRTrainer:
     ) -> None:
         self.config = config or CFRConfig()
         self.strategies = strategies or StrategyPortfolio.default()
-        self.policy = CFRPolicy()
+        self.policy: CFRPolicy = (
+            GLMCFRPolicy(self.config.glm_learning_rate)
+            if self.config.policy == "glm"
+            else CFRPolicy()
+        )
         self.rng = random.Random(self.config.seed)
         self.personality = BotGenome(**{item.name: 0.5 for item in fields(BotGenome)})
         self.run_dir = Path(run_dir) if run_dir is not None else None
         self.metrics: list[dict] = []
         self.sampled_games = 0
-        self._previous_checkpoint = CFRPolicy()
+        self._previous_checkpoint = self.policy.frozen()
 
     def _play(
         self,
@@ -143,7 +148,12 @@ class CFRTrainer:
         increments: dict[str, dict[str, float]] = {}
         max_importance_weight = 0.0
         for seat in range(4):
-            own_records = [record for record in records if record.seat == seat]
+            own_records = [
+                record
+                for record in records
+                if record.seat == seat
+                and (self.config.policy != "glm" or record.features is not None)
+            ]
             if not own_records:
                 continue
             record = self.rng.choice(own_records)
@@ -188,7 +198,8 @@ class CFRTrainer:
         return metric
 
     def train(self) -> CFRPolicy:
-        for iteration in range(1, self.config.iterations + 1):
+        start = self.metrics[-1]["iteration"] + 1 if self.metrics else 1
+        for iteration in range(start, self.config.iterations + 1):
             metric = self.iterate(iteration)
             if self.run_dir is not None and (
                 iteration % self.config.snapshot_every == 0
@@ -197,8 +208,8 @@ class CFRTrainer:
                 metric["average_strategy_vs_previous_checkpoint"] = (
                     self.evaluate_average_against(self._previous_checkpoint)
                 )
-                self.save_snapshot(iteration)
                 self._previous_checkpoint = self.policy.frozen()
+                self.save_snapshot(iteration)
             print(
                 f"iteration {iteration}/{self.config.iterations} | "
                 f"sampled_games={metric['sampled_games']} | "
@@ -207,6 +218,33 @@ class CFRTrainer:
                 f"max_weight={metric['max_importance_weight']:.2g}"
             )
         return self.policy
+
+    @classmethod
+    def from_snapshot(
+        cls,
+        path: Path,
+        *,
+        strategies: StrategyPortfolio | None = None,
+        run_dir: Path | None = None,
+    ) -> CFRTrainer:
+        """Resume new-format checkpoints with identical policy and random state.
+
+        A custom portfolio must be supplied again by the caller.
+        Legacy policy-only snapshots still load via CFRPolicy.from_snapshot.
+        """
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        trainer = cls(
+            CFRConfig(**data["config"]), strategies=strategies, run_dir=run_dir
+        )
+        trainer.policy = CFRPolicy.from_snapshot(data)
+        trainer._previous_checkpoint = CFRPolicy.from_snapshot(
+            {"information_states": data["previous_checkpoint"]}
+        )
+        trainer.metrics = data["metrics"]
+        trainer.sampled_games = data["sampled_games"]
+        version, state, gaussian = data["rng_state"]
+        trainer.rng.setstate((version, tuple(state), gaussian))
+        return trainer
 
     def save_snapshot(self, iteration: int) -> Path:
         if self.run_dir is None:
@@ -221,6 +259,9 @@ class CFRTrainer:
                     "sampled_games": self.sampled_games,
                     "seed": self.config.seed,
                     "exploration": self.config.exploration,
+                    "config": asdict(self.config),
+                    "rng_state": self.rng.getstate(),
+                    "previous_checkpoint": self._previous_checkpoint.snapshot(),
                     "average_team_a_utility": sum(
                         m["team_a_utility"] for m in self.metrics
                     )

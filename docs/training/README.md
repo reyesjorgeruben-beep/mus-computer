@@ -1,5 +1,9 @@
 # Training workspace
 
+The opt-in [phase-specific CFR betting GLM](CFR_GLM.md) uses the separate
+`python -m mus_computer.training.cfr --policy glm` entry point. Tabular CFR
+remains its default baseline; the coefficient trainer below is unchanged.
+
 ## Context-specific coefficient training (default, version 2)
 
 ```sh
