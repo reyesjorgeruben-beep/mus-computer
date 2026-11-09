@@ -1,0 +1,350 @@
+<!doctype html><html lang="en" data-source="365ce108a85ae99f1751036d142d9ca6aecd40a70c8ec2e38a59b07e6a06965a"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Contextual Bots and Source Package Implementation Plan · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Plan / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#contextual-bots-and-source-package-implementation-plan">Contextual Bots and Source Package Implementation Plan</a><a class="depth-2" href="#global-constraints">Global Constraints</a><a class="depth-2" href="#review-focus">Review Focus</a><a class="depth-2" href="#task-1-establish-the-src-package-and-migrate-existing-code">Task 1: Establish the src Package and Migrate Existing Code</a><a class="depth-2" href="#task-2-define-shared-and-private-decision-contexts">Task 2: Define Shared and Private Decision Contexts</a><a class="depth-2" href="#parallel-wave-after-task-2">Parallel Wave After Task 2</a><a class="depth-2" href="#task-3-implement-injectable-bot-strategy-portfolios">Task 3: Implement Injectable Bot Strategy Portfolios</a><a class="depth-2" href="#task-4-integrate-contexts-wagers-and-ordered-scoring">Task 4: Integrate Contexts, Wagers, and Ordered Scoring</a><a class="depth-2" href="#task-5-document-the-package-and-update-the-milestone-roadmap">Task 5: Document the Package and Update the Milestone Roadmap</a><a class="depth-2" href="#dependency-and-parallelization-map">Dependency and Parallelization Map</a><a class="depth-2" href="#final-integration-verification">Final Integration Verification</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="contextual-bots-and-source-package-implementation-plan">Contextual Bots and Source Package Implementation Plan</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 475" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Contextual Bots and Source Package Implementatio</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#global-constraints"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Global Constraints</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#review-focus"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Review Focus</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#task-1-establish-the-src-package-and-migrate-existing-code"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Task 1: Establish the src Package and</tspan><tspan x="195" dy="17">Migrate Existing Code</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#task-2-define-shared-and-private-decision-contexts"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Task 2: Define Shared and Private Decision</tspan><tspan x="585" dy="17">Contexts</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#parallel-wave-after-task-2"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Parallel Wave After Task 2</tspan></text></a><path d="M390 65 V235 H585 V245" fill="none" stroke="#b2c7d5"/><a href="#task-3-implement-injectable-bot-strategy-portfolios"><rect x="410" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="267" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Task 3: Implement Injectable Bot Strategy</tspan><tspan x="585" dy="17">Portfolios</tspan></text></a><path d="M390 65 V310 H195 V320" fill="none" stroke="#b2c7d5"/><a href="#task-4-integrate-contexts-wagers-and-ordered-scoring"><rect x="20" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="342" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Task 4: Integrate Contexts, Wagers, and</tspan><tspan x="195" dy="17">Ordered Scoring</tspan></text></a><path d="M390 65 V310 H585 V320" fill="none" stroke="#b2c7d5"/><a href="#task-5-document-the-package-and-update-the-milestone-roadmap"><rect x="410" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="342" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Task 5: Document the Package and Update</tspan><tspan x="585" dy="17">the Milestone Roadmap</tspan></text></a><path d="M390 65 V385 H195 V395" fill="none" stroke="#b2c7d5"/><a href="#dependency-and-parallelization-map"><rect x="20" y="395" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="417" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Dependency and Parallelization Map</tspan></text></a><path d="M390 65 V385 H585 V395" fill="none" stroke="#b2c7d5"/><a href="#final-integration-verification"><rect x="410" y="395" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="417" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Final Integration Verification</tspan></text></a></svg></details><article><blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Use the parallel wave described below after Task 2. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> Deliver an installable, organized Mus game package whose strategic bots make testable decisions from shared public state, private hand statistics, and injectable personality-driven strategies.</p>
+<p><strong>Architecture:</strong> Move runtime code into a <code>src/mus_computer</code> package grouped into cards, game, bots, probabilities, and training; keep offline analysis programs in <code>scripts/tables</code>. A frozen global context carries public state, each acting bot gets private card statistics, and an injectable portfolio samples normalized distributions over legal actions. The game engine owns wager resolution, phase-order scoring, ordago termination, and the terminal event feed.</p>
+<p><strong>Tech Stack:</strong> Python 3.10+, setuptools/PEP 621, stdlib runtime; pytest 9.0.2 and NumPy for development/table-builder tests, with NumPy exposed only as optional table tooling and a dev dependency.</p>
+<p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-09-27-contextual-bot-strategies-design.md</code></p>
+<h2 id="global-constraints">Global Constraints</h2>
+<ul>
+<li>Keep the supported Python floor at 3.10 and add no third-party runtime dependencies.</li>
+<li>Preserve <code>BotGenome</code> fields and serialized genome compatibility; do not run genetic training.</li>
+<li>Never place another player's hidden cards or card-derived statistics in <code>GlobalGameContext</code>.</li>
+<li>Keep separate <code>HandStatistics</code> estimates for Grande, Chica, Pares, Juego, and Punto; Punto uses its actual card comparison rule and keeps ties separate.</li>
+<li>A strategy distribution contains finite, nonnegative values whose sum is 1 within <code>1e-9</code>; sampling may choose only legal actions.</li>
+<li>For wager responses, one eligible <code>quiero</code> accepts and stops the phase; every eligible defender must say <code>no quiero</code> for a fold. Opening raises set totals; counterraises add their amount.</li>
+<li>An accepted ordago immediately ends the match for the phase winner. A refused ordago awards only the last accepted stake and does not concede the match.</li>
+<li>Score folded wager stakes immediately. Queue ordinary phase points and folded Pares/Juego intrinsic points for end-of-hand settlement in Grande, Chica, Pares, Juego/Punto order; stop at the first score event that reaches 40.</li>
+<li>Preserve all pre-existing uncommitted generated files. The probability pickle moved into package data must use the committed <code>HEAD</code> blob byte-for-byte; do not include the larger regenerated local copy or generated CSV/HTML changes in task commits.</li>
+<li>Do not read or stage <code>.env</code>, <code>.claude/settings.local.json</code>, or any generated/local table output.</li>
+<li>Keep <code>RandomBotPlayer</code> and the existing four-bot terminal log. Do not add human play or use training results as a success measure.</li>
+</ul>
+<h2 id="review-focus">Review Focus</h2>
+<ol>
+<li>Hidden-information leakage: tests assert the shared context contains no opponents' cards, while player contexts differ by hand.</li>
+<li>Punto ties and mano priority: tests compare estimates with direct controlled-hand comparisons and preserve <code>p_tie</code> separately.</li>
+<li>Distribution legality: tests cover non-finite, negative, non-normalized, and currently illegal wager actions.</li>
+<li>Wager response sequencing: tests prove one eligible acceptance ends the exchange, all eligible defenders must refuse, and teammates are not asked after acceptance.</li>
+<li>End-of-hand scoring: tests cover ordago, folded Pares/Juego intrinsic points, immediate fold awards, and the first team reaching 40 in phase order.</li>
+</ol>
+<hr />
+<h2 id="task-1-establish-the-src-package-and-migrate-existing-code">Task 1: Establish the <code>src</code> Package and Migrate Existing Code</h2>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>pyproject.toml</code>, <code>src/mus_computer/__init__.py</code>, <code>src/mus_computer/__main__.py</code>, <code>src/mus_computer/cli.py</code>, <code>src/mus_computer/cards/__init__.py</code>, <code>src/mus_computer/game/__init__.py</code>, <code>src/mus_computer/bots/__init__.py</code>, <code>src/mus_computer/bots/strategies/__init__.py</code>, <code>src/mus_computer/probabilities/__init__.py</code>, <code>src/mus_computer/training/__init__.py</code>.</li>
+<li>Move runtime modules: <code>card.py</code>, <code>deck.py</code>, <code>hand.py</code> to <code>src/mus_computer/cards/</code>; <code>game.py</code>, <code>phases.py</code>, <code>player.py</code>, <code>player_base.py</code>, <code>team.py</code>, and <code>wager_session.py</code> to <code>src/mus_computer/game/</code>, renaming <code>game_context.py</code> to <code>src/mus_computer/game/context.py</code>; <code>bot_player.py</code>, <code>random_bot_player.py</code>, <code>bot_genome.py</code>, <code>bot_game_state.py</code> to <code>src/mus_computer/bots/</code>; <code>probability_tables.py</code> to <code>src/mus_computer/probabilities/tables.py</code>; <code>genetic_trainer.py</code> to <code>src/mus_computer/training/genetic_trainer.py</code>; <code>constants.py</code> and <code>utils.py</code> to <code>src/mus_computer/</code>.</li>
+<li>Move table programs: <code>build_tables.py</code>, <code>compute_expected_points.py</code>, <code>compute_ep_postmus.py</code>, <code>compute_hand_distribution.py</code>, <code>compute_best_discards.py</code>, <code>compute_best_discards_corrected.py</code>, and <code>export_tables.py</code> to <code>scripts/tables/</code> with <code>scripts/__init__.py</code>, <code>scripts/tables/__init__.py</code>, and <code>scripts/tables/paths.py</code> for repository-root output defaults.</li>
+<li>Move existing tests into <code>tests/cards/</code>, <code>tests/game/</code>, <code>tests/bots/</code>, <code>tests/probabilities/</code>, and <code>tests/training/</code>. Keep shared fixtures in <code>tests/conftest.py</code> and update all imports, including private test imports from the table builder.</li>
+<li>Modify: root <code>api.py</code> to become a thin compatibility wrapper; <code>.gitignore</code>; <code>.github/workflows/tests.yml</code>; <code>tests/conftest.py</code>.</li>
+<li>Test: <code>tests/test_package_layout.py</code> and <code>tests/test_cli.py</code> before migration; move existing tests into their responsibility folders.</li>
+<li>Create: <code>src/mus_computer/probabilities/data/probability_tables.pkl</code> from the committed blob and package it as read-only data.</li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>
+<p><code>mus_computer.cards</code> exports <code>Card</code>, <code>Deck</code>, and <code>Hand</code>.</p>
+</li>
+<li>
+<p><code>mus_computer.game</code> exports <code>Game</code>, <code>Team</code>, <code>PlayerBase</code>, <code>HumanPlayer</code>, and phase classes.</p>
+</li>
+<li>
+<p><code>mus_computer.bots</code> exports <code>BotPlayer</code> and <code>RandomBotPlayer</code>.</p>
+</li>
+<li>
+<p><code>mus_computer.probabilities.tables.load_tables(path: str | Path | None = None) -&gt; dict</code> loads an explicit file when supplied, otherwise reads the packaged pickle through <code>importlib.resources</code>.</p>
+</li>
+<li>
+<p><code>mus_computer.cli.build_default_game(on_action=None) -&gt; Game</code> creates the four random bot seats; <code>mus_computer.cli.main(argv=None) -&gt; int</code> drives the match. <code>python -m mus_computer</code> and <code>python api.py</code> both start it.</p>
+</li>
+<li>
+<p>Analysis commands run as <code>python -m scripts.tables.&lt;module&gt;</code> after editable install. Their default generated output path is the repository root, never <code>src/</code>.</p>
+</li>
+<li>
+<p><code>python api.py</code> stays compatible; the package runner is added in Task 5.</p>
+</li>
+<li>
+<input type="checkbox" class="source-check" disabled aria-label="Source task status"> <p><strong>Step 1: Write the failing package import and table-resource test</strong></p>
+</li>
+</ul>
+<p>Create <code>tests/test_package_layout.py</code> and <code>tests/test_cli.py</code>:</p>
+<pre><code class="language-python">def test_public_modules_import_from_the_package():
+    from mus_computer.cards import Card, Deck, Hand
+    from mus_computer.game import Game, Pares
+    from mus_computer.bots import BotPlayer, RandomBotPlayer
+    from mus_computer.probabilities.tables import load_tables
+    from mus_computer.cli import build_default_game
+
+    assert Card.A.value == &quot;A&quot;
+    assert Deck is not None and Hand is not None
+    assert Game is not None and Pares is not None
+    assert BotPlayer is not None and RandomBotPlayer is not None
+    game = build_default_game()
+    assert [player.name for player in game.players_in_order] == [&quot;Bot 1&quot;, &quot;Bot 2&quot;, &quot;Bot 3&quot;, &quot;Bot 4&quot;]
+    assert [player.team.name for player in game.players_in_order] == [&quot;A&quot;, &quot;B&quot;, &quot;A&quot;, &quot;B&quot;]
+</code></pre>
+<p>In <code>tests/test_cli.py</code>, launch <code>[sys.executable, &quot;-m&quot;, &quot;mus_computer&quot;, &quot;--help&quot;]</code> and assert exit code 0 and <code>usage:</code> in stdout.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 2: Run the test to verify the package is missing</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/test_package_layout.py -q</code>
+Expected: FAIL with <code>ModuleNotFoundError: No module named 'mus_computer'</code>.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 3: Add package metadata and perform the source migration</strong></li>
+</ul>
+<p>Add setuptools package discovery from <code>src</code>, <code>requires-python = &quot;&gt;=3.10&quot;</code>, an empty runtime dependency list, a <code>tables</code> extra for NumPy and a <code>dev</code> extra containing <code>pytest==9.0.2</code> plus NumPy for the offline builder tests, pytest paths/<code>slow</code> marker configuration, package data <code>probabilities/data/*.pkl</code>, and a <code>mus-computer = &quot;mus_computer.cli:main&quot;</code> script entry point. Move the modules listed above, convert internal imports to package imports, update grouped tests, and update the table scripts to use <code>scripts.tables.*</code> imports and <code>paths.py</code> output paths. Move the existing four-random-bot runner into <code>cli.py</code>, add <code>__main__.py</code>, and reduce root <code>api.py</code> to the compatibility call.</p>
+<p>For the lookup resource, write the stdout bytes of <code>git show HEAD:probability_tables.pkl</code> into the package data path with a binary-safe Python write; do not use PowerShell text redirection. Leave the existing modified root <code>probability_tables.pkl</code> untouched as a local artifact, remove only its tracked index entry, and add <code>/probability_tables.pkl</code> to <code>.gitignore</code>. Do not move, stage, or regenerate <code>tables_report.html</code>, <code>tables_summary.csv</code>, <code>tables_discard_insights_corrected.csv</code>, or other local analysis outputs.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 4: Install and verify the migrated public imports and runner</strong></li>
+</ul>
+<p>Run: <code>python -m pip install -e &quot;.[dev]&quot;</code>; then <code>python -m pytest tests/test_package_layout.py tests/test_cli.py -q</code>.
+Expected: PASS for package exports, the A/B/A/B default roster, and <code>python -m mus_computer --help</code>.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 5: Add failing package-resource and explicit-path coverage</strong></li>
+</ul>
+<p>Extend <code>tests/test_package_layout.py</code> with assertions that <code>load_tables()</code> reads non-empty packaged data and that a temporary pickle containing <code>{&quot;fixture&quot;: 1}</code> is returned by <code>load_tables(path)</code>. Expected before the loader change: <code>FileNotFoundError</code> for the default resource and <code>TypeError</code> for the explicit path.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 6: Implement packaged and override table loading</strong></li>
+</ul>
+<p>Load default bytes from <code>importlib.resources.files(&quot;mus_computer.probabilities&quot;).joinpath(&quot;data&quot;, &quot;probability_tables.pkl&quot;)</code>; load an explicit <code>path</code> with <code>Path.open(&quot;rb&quot;)</code>. Cache the default package result and explicit paths independently so one test override cannot contaminate later lookups.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 7: Update CI installation and run the migrated suite</strong></li>
+</ul>
+<p>Change the workflow to <code>python -m pip install -e &quot;.[dev]&quot;</code>, then run <code>python -m pytest tests/ -v</code>. Expected: all migrated existing tests plus package/resource tests pass.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 8: Verify artifact preservation and commit only Task 1 files</strong></li>
+</ul>
+<p>Run <code>git status --short</code> and <code>git diff --stat</code>; confirm the pre-existing report/summary modifications and corrected CSV remain unstaged and that the packaged pickle hash equals <code>git rev-parse HEAD:probability_tables.pkl</code>. Commit only source moves, tests, packaging config, CI, ignore rules, and the unchanged table blob relocation.</p>
+<hr />
+<h2 id="task-2-define-shared-and-private-decision-contexts">Task 2: Define Shared and Private Decision Contexts</h2>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <code>src/mus_computer/game/context.py</code> to replace the wager-only <code>GameContext</code> with immutable <code>GlobalGameContext</code> and <code>WagerState</code>; update all consumers and tests to the shared context.</li>
+<li>Create: <code>src/mus_computer/bots/strategies/contexts.py</code> with immutable <code>OutcomeProbability</code>, <code>HandStatistics</code>, and <code>PlayerDecisionContext</code>.</li>
+<li>Create: <code>src/mus_computer/probabilities/estimates.py</code> with table-backed hand and discard statistics plus Punto enumeration.</li>
+<li>Create: <code>src/mus_computer/bots/strategies/actions.py</code> with <code>DecisionKind</code>, <code>MusAction</code>, <code>DiscardAction</code>, <code>WagerAction</code>, <code>ActionDistribution</code>, and <code>legal_wager_actions(wager_state)</code>.</li>
+<li>Test: <code>tests/game/test_decision_contexts.py</code>, <code>tests/probabilities/test_hand_statistics.py</code>, <code>tests/bots/test_action_distribution.py</code>.</li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>
+<p><code>GlobalGameContext(team_scores: Mapping[str, int], mus_exchanges: int, phase_name: str | None, wager: WagerState | None, public_actions: tuple[str, ...], discard_counts: Mapping[str, int], seat_order: tuple[tuple[str, str], ...], mano_seat: int, eligible_seats: tuple[int, ...])</code> copies and freezes its mappings and stores public action records only. It replaces the old wager-only <code>GameContext</code> rather than coexisting with another global snapshot type.</p>
+</li>
+<li>
+<p><code>WagerState(current_total: int, previous_accepted_total: int, offering_team: str | None, ordago_offered: bool)</code> carries the public current wager state.</p>
+</li>
+<li>
+<p><code>PlayerDecisionContext(player_name: str, team_name: str, seat: int, cards: tuple[Card, ...], phase_name: PhaseName | None, eligible: bool, intrinsic_points_by_phase: Mapping[PhaseName, int], statistics: HandStatistics, discard_options: tuple[DiscardOption, ...])</code> contains only the acting player's cards, derived statistics, and discard alternatives. Each <code>DiscardOption</code> pairs a <code>DiscardAction(indices)</code> with its resulting <code>HandStatistics</code>; the tuple always contains at least one option. When alternatives are not estimated, that option keeps all cards.</p>
+</li>
+<li>
+<p><code>HandStatistics(outcomes_by_phase: Mapping[PhaseName, OutcomeProbability], expected_points_by_phase: Mapping[PhaseName, float])</code> maps Grande, Chica, Pares, Juego, and Punto to <code>OutcomeProbability(p_win, p_tie, p_loss)</code> and estimated points.</p>
+</li>
+<li>
+<p><code>ActionDistribution[ActionT](probabilities: Mapping[ActionT, float])</code> copies and freezes its mapping, rejects missing mass, values below zero, non-finite values, or totals outside <code>1e-9</code>; <code>sample(rng: random.Random, legal_actions: Collection[ActionT]) -&gt; ActionT</code> rejects positive probability on an illegal action and never returns an illegal action. Each distribution contains one hashable action type: Mus and wager enums or <code>DiscardAction</code>.</p>
+</li>
+<li>
+<p><code>WagerAction</code>: <code>ORDAGO</code>, <code>RAISE_5</code>, <code>RAISE_4</code>, <code>RAISE_3</code>, <code>RAISE_2</code>, <code>MATCH_OR_PASS</code>, <code>FOLD</code>; <code>MusAction</code>: <code>MUS</code>, <code>CORTA</code>.</p>
+</li>
+<li>
+<p><code>DecisionKind</code>: <code>MUS</code>, <code>DISCARD</code>, or <code>WAGER</code>; each BotPlayer strategy method consumes <code>(GlobalGameContext, PlayerDecisionContext, BotPersonality)</code> and returns an <code>ActionDistribution</code> of <code>MusAction</code>, <code>DiscardAction</code>, or <code>WagerAction</code> respectively. <code>choose_discards</code> converts the selected <code>DiscardAction</code> to the original card-index tuple required by the game.</p>
+</li>
+<li>
+<p><code>legal_wager_actions(wager_state)</code> includes <code>FOLD</code> only during a response; before an offer, <code>MATCH_OR_PASS</code> means <code>paso</code>, and during a response it means <code>quiero</code>.</p>
+</li>
+<li>
+<input type="checkbox" class="source-check" disabled aria-label="Source task status"> <p><strong>Step 1: Add failing immutability and distribution tests</strong></p>
+</li>
+</ul>
+<p>Test that mutating the source dictionary after context construction does not change the context; item assignment into a context mapping raises <code>TypeError</code>; valid distributions sample only a supplied legal action; positive mass on an illegal action, negative, NaN, infinity, and sum-0.9 distributions raise <code>ValueError</code>.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 2: Run focused tests to verify missing types and validation</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/game/test_decision_contexts.py tests/bots/test_action_distribution.py -q</code>
+Expected: FAIL because the context/action modules and validators do not yet exist.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 3: Implement immutable shared/private types and action distribution validation</strong></li>
+</ul>
+<p>Copy mapping inputs before wrapping them read-only. Keep public history as action/event records that exclude the <code>Hands | ...</code> display messages. Derive legal wager categories from whether <code>WagerState</code> has an active offer; fold is excluded before an offer.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 4: Add failing statistics and Punto comparison tests</strong></li>
+</ul>
+<p>Use controlled hands with a known Punto win, loss, and tie; compare <code>p_win</code>, <code>p_loss</code>, and <code>p_tie</code> to exact weighted enumeration over the 40-card rank multiplicities after blocking the acting player's four cards. Assert mano changes only tie-as-win expected points, not <code>p_tie</code>. Add a discard-option test keyed by original card indices.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 5: Implement hand statistics and Punto estimation</strong></li>
+</ul>
+<p>Read Grande/Chica/Pares/Juego values from the bundled table. Compute Punto by enumerating unique opponent rank multisets with physical multiplicity and calling <code>Punto.play</code>; cache by canonical acting hand. Estimate points using <code>p_win</code> plus <code>p_tie</code> only when the acting seat has mano priority, multiplied by that phase's base point plus the acting hand's intrinsic phase points. Mark these as estimates and never include opponent cards.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 6: Run focused tests and commit Task 2</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/game/test_decision_contexts.py tests/probabilities/test_hand_statistics.py tests/bots/test_action_distribution.py -q</code>
+Expected: PASS, including the hidden-information and Punto cases. Commit context, probability-estimate, action-contract, and test files only.</p>
+<hr />
+<h2 id="parallel-wave-after-task-2">Parallel Wave After Task 2</h2>
+<p>Tasks 3, 4, and 5 have distinct file ownership and may run concurrently. All consume the exact interfaces defined in Task 2; none may rename or edit another task's files. Each worker must preserve other agents' shared-worktree changes.</p>
+<h2 id="task-3-implement-injectable-bot-strategy-portfolios">Task 3: Implement Injectable Bot Strategy Portfolios</h2>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: <code>src/mus_computer/bots/strategies/portfolio.py</code>, <code>mus.py</code>, <code>discard.py</code>, and <code>wagers.py</code>.</li>
+<li>Modify: <code>src/mus_computer/bots/bot_player.py</code> and <code>src/mus_computer/bots/__init__.py</code>.</li>
+<li>Test: <code>tests/bots/test_contextual_strategies.py</code>.</li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>
+<p><code>BotPersonality</code> is a type alias of <code>BotGenome</code>; preserve every existing field and JSON shape.</p>
+</li>
+<li>
+<p><code>StrategyPortfolio(mus, discard, wagers_by_phase)</code> stores one Mus strategy, one discard strategy, and distinct wager strategies for Grande, Chica, Pares, Juego, and Punto.</p>
+</li>
+<li>
+<p>Every strategy receives <code>(GlobalGameContext, PlayerDecisionContext, BotPersonality)</code> and returns an <code>ActionDistribution</code> over legal actions.</p>
+</li>
+<li>
+<p><code>BotPlayer(name, team, genome: BotGenome, strategies: StrategyPortfolio | None = None, rng: random.Random | None = None)</code> owns the portfolio and implements <code>take_decision(kind: DecisionKind, global_context, player_context)</code>; it returns <code>MusAction</code>, <code>DiscardAction</code>, or <code>WagerAction</code>. The game-facing <code>choose_discards</code> method returns the selected action's card-index tuple.</p>
+</li>
+<li>
+<p>Remove <code>BotPlayer.set_round_state</code> and its cached <code>_state</code>; decision data is supplied afresh to each strategy call.</p>
+</li>
+<li>
+<input type="checkbox" class="source-check" disabled aria-label="Source task status"> <p><strong>Step 1: Write deterministic injected-strategy tests</strong></p>
+</li>
+</ul>
+<p>Add a fixed strategy returning a one-hot <code>ActionDistribution</code>. Assert one-hot <code>MUS</code> votes mus, one-hot <code>CORTA</code> stops mus, a one-hot discard tuple returns those indices, and one-hot <code>ORDAGO</code>, <code>RAISE_2</code>–<code>RAISE_5</code>, <code>MATCH_OR_PASS</code>, and <code>FOLD</code> each return their matching typed intent in a legal state. Assert the portfolio has a different wager strategy instance for every phase and changes to one phase's statistics reach only that phase's strategy.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 2: Run focused tests to verify the strategy API is missing</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/bots/test_contextual_strategies.py -q</code>
+Expected: FAIL because <code>StrategyPortfolio</code> and typed strategy interfaces do not exist.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 3: Implement strategy protocols, default portfolio, and dispatch</strong></li>
+</ul>
+<p>Keep strategy classes stateless between calls. The default Mus strategy uses current/post-discard estimates and <code>mus_eagerness</code>; the discard strategy ranks legal discards by expected points with <code>discard_aggressiveness</code> as the tie preference; the phase-specific wager strategy uses only its phase outcome, score/mus/position context, and genome thresholds. It assigns normalized mass across legal fold, match/pass, raises 2–5, and ordago; if all heuristic weights are zero it assigns mass 1 to match/pass. Injected portfolios bypass all defaults.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 4: Test legal actions and personality/context sensitivity</strong></li>
+</ul>
+<p>Test that every default distribution validates for opening and response states, that fold is absent before an offer, and that changing scores, Mus exchanges, position, consumed phase probabilities, <code>mus_eagerness</code>, <code>discard_aggressiveness</code>, or wager thresholds changes the relevant decision distribution. Do not assert tournament win rates.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 5: Run focused bot tests and commit Task 3</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/bots/ -q</code>
+Expected: PASS for deterministic injection, strategy selection, old genome serialization, and bot compatibility. Commit bot strategy files and bot tests only.</p>
+<hr />
+<h2 id="task-4-integrate-contexts-wagers-and-ordered-scoring">Task 4: Integrate Contexts, Wagers, and Ordered Scoring</h2>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Modify: <code>src/mus_computer/game/game.py</code>, <code>player_base.py</code>, <code>player.py</code>, and <code>wager_session.py</code>; <code>src/mus_computer/bots/random_bot_player.py</code> for the expanded decision method signatures.</li>
+<li>Test: <code>tests/game/test_wager_session.py</code>, <code>tests/game/test_game_scoring.py</code>, and <code>tests/game/test_decision_context_flow.py</code>.</li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>
+<p><code>PlayerBase.vote_mus(global_context, player_context)</code>, <code>choose_discards(global_context, player_context)</code>, and <code>wager_action(global_context, player_context)</code> receive fresh snapshots; <code>HumanPlayer</code> and <code>RandomBotPlayer</code> may ignore the contexts. Both return the typed actions defined in Task 2; RandomBotPlayer samples uniformly from the supplied legal actions.</p>
+</li>
+<li>
+<p><code>WagerResult(outcome, offering_team, accepted_stake)</code> uses <code>WagerOutcome.SHOWDOWN</code>, <code>DECLINED</code>, or <code>ORDAGO_ACCEPTED</code>; <code>accepted_stake</code> is <code>None</code> for accepted ordago, otherwise the numeric stake. <code>WagerSession.run() -&gt; WagerResult</code> replaces the old tuple return. <code>WagerSession</code> receives <code>seat_numbers: tuple[int, ...]</code> aligned with its eligible players so private contexts keep absolute table seats.</p>
+</li>
+<li>
+<p><code>Game</code> appends public action records before requesting the next decision, but never puts display-only hand strings/cards in the shared context.</p>
+</li>
+<li>
+<input type="checkbox" class="source-check" disabled aria-label="Source task status"> <p><strong>Step 1: Add failing wager-session unit tests with scripted player responses</strong></p>
+</li>
+</ul>
+<p>Use scripted strategies, not mocked player internals. Add parameterized opening tests for <code>RAISE_2</code> through <code>RAISE_5</code> setting totals 2 through 5; verify <code>RAISE_2</code> accepted by <code>MATCH_OR_PASS</code> yields 2 total points; counterraise tests proving each raise adds its number; a refused opening <code>RAISE_2</code> awards only the one point already in play; one acceptance stops before a second teammate is queried; and fold tests where one <code>no quiero</code> asks the next eligible defender but all eligible refusals fold for the last accepted stake only. Include the concrete sequence opening raise 2, counterraise 3, Bot 1 and Bot 3 refuse, and Team B receives 2 points; assert Bot 4 is not asked after Bot 2 already counterraised for Team B. Assert ineligible players are never asked.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 2: Add failing ordago tests</strong></li>
+</ul>
+<p>Test accepted ordago stops responses and returns <code>ORDAGO_ACCEPTED</code>; refused ordago returns <code>DECLINED</code> with only the previously accepted stake; refusing ordago does not set a match winner.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 3: Run wager tests to verify current integer protocol fails the new contract</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/game/test_wager_session.py -q</code>
+Expected: FAIL because <code>WagerSession</code> currently accepts integer actions and returns a tuple.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 4: Implement typed wager resolution and context handoff</strong></li>
+</ul>
+<p>Adapt each typed intent at the <code>WagerSession</code> boundary. Opening <code>RAISE_n</code> sets <code>current_total = n</code>; a counterraise sets <code>current_total += n</code>; <code>MATCH_OR_PASS</code> returns a showdown on an offer and records <code>paso</code> before an offer; <code>FOLD</code> records <code>no quiero</code> and only folds after every eligible defender refuses. One eligible <code>quiero</code> ends that exchange immediately. An accepted ordago stops the response loop and leaves card resolution to <code>Game</code>. <code>RandomBotPlayer</code> chooses uniformly from <code>legal_wager_actions</code>; <code>HumanPlayer</code> translates its existing input into the same typed actions.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 5: Add failing phase scoring tests for folds and 40-point ordering</strong></li>
+</ul>
+<p>Test folded Pares winner intrinsic values for pair=1, two pairs=3, and triples=2; folded Juego winner values for 31=3 and other Juego=2; only eligible winning-team hands contribute. Add a case where a fold pays accepted stake immediately and the intrinsic points are still settled if play continues. Add cases where an immediate fold award reaches 40 and where ordered deferred Grande/Chica/Pares/Juego awards make one team cross 40 before the other. Test that accepted ordago ends <code>Game.play()</code> for the card winner even below 40, while refused ordago awards only the prior stake and allows the match to continue.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 6: Implement context construction, ordago match result, and ordered score settlement</strong></li>
+</ul>
+<p>Build global/private contexts for every Mus vote, discard, and wager response. Reuse one equal global snapshot for players at the same decision point; rebuild it after public state changes. Preserve the terminal callback feed. On accepted ordago, resolve eligible hands and stop the match for the phase winner regardless of numeric score. On a decline, award the previous accepted stake immediately. For folded Pares/Juego, queue intrinsic values for eligible hands of the wager-winning team. At the end of the hand, settle phase award records in order and stop at the first award that reaches 40.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 7: Run game/wager and regression tests, then commit Task 4</strong></li>
+</ul>
+<p>Run: <code>python -m pytest tests/game/ -q</code>
+Expected: PASS for wager response order, ordago outcomes, folds, eligibility, phase-order scoring, first-to-40, and existing game rules. Commit only engine/player changes and game tests.</p>
+<hr />
+<h2 id="task-5-document-the-package-and-update-the-milestone-roadmap">Task 5: Document the Package and Update the Milestone Roadmap</h2>
+<p><strong>Files:</strong></p>
+<ul>
+<li>Create: root <code>README.md</code>.</li>
+<li>Modify: <code>docs/mus-computer/README.md</code> and <code>docs/mus-computer/TODO.md</code> to keep commands/table references current, remove stale local Git-status claims, and show the four-bot runner as complete with contextual strategies as the active milestone.</li>
+</ul>
+<p><strong>Interfaces:</strong></p>
+<ul>
+<li>
+<p><code>README.md</code> documents the installable package entry points and links to detailed design/table docs.</p>
+</li>
+<li>
+<p><code>docs/mus-computer/TODO.md</code> marks the four-random-bot runner complete and the contextual-strategy/package work active.</p>
+</li>
+<li>
+<input type="checkbox" class="source-check" disabled aria-label="Source task status"> <p><strong>Step 1: Write the root README</strong></p>
+</li>
+</ul>
+<p>Document Python 3.10+, editable installation (<code>python -m pip install -e &quot;.[dev]&quot;</code>), <code>python -m mus_computer</code>, <code>python api.py</code>, <code>python -m pytest</code>, source tree boundaries, 2v2/A-B-A-B and Mus/phase/wager rules, random baseline versus injectable strategic bot, data/table assumptions, and links to <code>docs/mus-computer/README.md</code>, <code>docs/mus-computer/TODO.md</code>, <code>docs/mus-computer/lookup-tables/README.md</code>, and the strategy spec. Label current capabilities and strategy limitations accurately.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 2: Update the technical reference and roadmap</strong></li>
+</ul>
+<p>Replace root-module path references with package/script paths and remove obsolete branch/ahead-of-remote statements. Update the roadmap to mark the playable four-random-bot game complete and this strategy/package milestone active.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 3: Verify documentation commands and links</strong></li>
+</ul>
+<p>Run <code>python -m mus_computer --help</code>, <code>python -m pytest tests/test_cli.py -q</code>, and <code>git diff --check</code>. Confirm each README link resolves to a file and generated table/report changes remain outside the commit. The parent runs the full suite after Tasks 3, 4, and 5 have all completed.</p>
+<ul>
+<li><input type="checkbox" class="source-check" disabled aria-label="Source task status"> <strong>Step 4: Commit only Task 5 documentation</strong></li>
+</ul>
+<p>Commit the root README and updated technical reference/roadmap. Do not push or merge without a new explicit request.</p>
+<hr />
+<h2 id="dependency-and-parallelization-map">Dependency and Parallelization Map</h2>
+<pre><code class="language-text">Task 1: package migration
+   |
+Task 2: shared contexts/action contracts
+   |
+   +----------------------+----------------------+
+   |                      |                      |
+Task 3: bot strategies  Task 4: game/wagers   Task 5: CLI/docs
+   +----------------------+----------------------+
+</code></pre>
+<p>Task 2 completes before the parallel wave because it defines the types all three tasks consume. During the wave, Task 3 owns only <code>bots/</code>, Task 4 owns only <code>game/</code> plus <code>bots/random_bot_player.py</code>, and Task 5 owns only CLI/docs files. The parent coordinates their interfaces and verifies the combined suite after they finish.</p>
+<h2 id="final-integration-verification">Final Integration Verification</h2>
+<p>After Tasks 3, 4, and 5 commit and the working tree changes are integrated, the parent runs <code>python -m pytest tests/ -v</code>, <code>python -m mus_computer --help</code>, and one complete <code>python -m mus_computer</code> match. The match must end with the 40-point winner message; review the terminal log for hands after deal/exchange, public actions, phase results, and score events. Run <code>git diff --check</code>, compare the package pickle's blob hash with <code>HEAD:probability_tables.pkl</code>, and confirm no generated/local outputs or <code>.claude/settings.local.json</code> entered any task commit. Do not push or merge.</p>
+</article><footer>Source: docs/superpowers/plans/2026-09-28-contextual-bot-src-layout.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 365ce108a85ae99f1751036d142d9ca6aecd40a70c8ec2e38a59b07e6a06965a</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

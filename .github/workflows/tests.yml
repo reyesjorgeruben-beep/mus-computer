@@ -25,3 +25,6 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -v
+
+      - name: Check human HTML documents
+        run: python -m mus_computer.documentation check

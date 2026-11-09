@@ -1,0 +1,83 @@
+<!doctype html><html lang="en" data-source="711f27340adc3ffe70ece7d934f408290e8028f6c1827fc244258d72f041a279"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Observable Four-Bot Mus Game — Implementation Plan · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Plan / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#observable-four-bot-mus-game-implementation-plan">Observable Four-Bot Mus Game — Implementation Plan</a><a class="depth-2" href="#goal">Goal</a><a class="depth-2" href="#shared-interface-contract">Shared interface contract</a><a class="depth-2" href="#parallel-tasks">Parallel tasks</a><a class="depth-3" href="#task-1-game-lifecycle-deck-logging-and-trainer-seats">Task 1 — Game lifecycle, deck, logging, and trainer seats</a><a class="depth-3" href="#task-2-random-bot">Task 2 — Random bot</a><a class="depth-3" href="#task-3-four-bot-terminal-runner">Task 3 — Four-bot terminal runner</a><a class="depth-2" href="#integration-ownership">Integration ownership</a><a class="depth-2" href="#acceptance-checklist">Acceptance checklist</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="observable-four-bot-mus-game-implementation-plan">Observable Four-Bot Mus Game — Implementation Plan</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 325" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Observable Four-Bot Mus Game — Implementation Pl</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#goal"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Goal</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#shared-interface-contract"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Shared interface contract</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#parallel-tasks"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Parallel tasks</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#integration-ownership"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Integration ownership</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#acceptance-checklist"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Acceptance checklist</tspan></text></a></svg></details><article><p><strong>Design:</strong> <code>docs/superpowers/specs/2026-09-26-observable-four-bot-game-design.md</code></p>
+<h2 id="goal">Goal</h2>
+<p>Run a full 2v2 Mus match from <code>python api.py</code> with four random bots, live readable action logs, repeated Mus exchanges, correct card recycling, and a 40-point finish.</p>
+<h2 id="shared-interface-contract">Shared interface contract</h2>
+<ul>
+<li><code>Game.from_players(players_in_order, on_action=None)</code> accepts exactly four <code>PlayerBase</code> objects in A/B/A/B order. Seats 0 and 2 share one team; seats 1 and 3 share the other.</li>
+<li><code>on_action</code> is optional and accepts one complete human-readable string per event. When omitted, simulation remains silent.</li>
+<li><code>RandomBotPlayer(name, team)</code> implements <code>vote_mus()</code>, <code>choose_discards()</code>, and <code>wager_action(context)</code> using random legal actions; it has no genome or table dependency.</li>
+<li>The terminal runner creates <code>Bot 1</code> in A, <code>Bot 2</code> in B, <code>Bot 3</code> in A, and <code>Bot 4</code> in B, then passes <code>print</code> as <code>on_action</code>.</li>
+<li>No worker edits files assigned to another worker. The workers share the repository, so they must preserve one another's changes.</li>
+</ul>
+<h2 id="parallel-tasks">Parallel tasks</h2>
+<h3 id="task-1-game-lifecycle-deck-logging-and-trainer-seats">Task 1 — Game lifecycle, deck, logging, and trainer seats</h3>
+<p><strong>Owner:</strong> Game-engine worker</p>
+<p><strong>Files:</strong> <code>game.py</code>, <code>deck.py</code>, <code>wager_session.py</code>, <code>genetic_trainer.py</code></p>
+<ul>
+<li>Add <code>Game.from_players(...)</code> with the shared contract and preserve the existing name-based constructor.</li>
+<li>Implement repeated Mus voting. Emit the action for each vote; stop asking after the first <code>corta</code>. If every player says <code>mus</code>, ask each for discards (including zero), put discarded cards in the deck's discard pile, draw replacements, then vote again.</li>
+<li>Keep the discard pile across Mus exchanges within a hand. If the draw stock has fewer cards than a player's requested draw, combine stock and discard pile, shuffle, then fulfill the complete draw.</li>
+<li>Emit a readable line when the stock is replenished from discards.</li>
+<li>Emit all four current hands after the initial deal and after each complete Mus exchange, using <code>card.value</code> for readable ranks.</li>
+<li>Preserve the phase order and Punto fallback. Emit readable phase, wager, outcome, and score events through the callback.</li>
+<li>Stop the remaining phases as soon as a team reaches 40. Return the winning <code>Team</code> from <code>play()</code>.</li>
+<li>Update the trainer's bot game builder and team attribution to use alternating A/B/A/B seats and the public game factory. Do not turn on action logs in training.</li>
+</ul>
+<h3 id="task-2-random-bot">Task 2 — Random bot</h3>
+<p><strong>Owner:</strong> Bot-policy worker</p>
+<p><strong>Files:</strong> create <code>random_bot_player.py</code></p>
+<ul>
+<li>Implement <code>RandomBotPlayer(PlayerBase)</code> independently of <code>BotGenome</code> and probability tables.</li>
+<li>Vote Mus randomly.</li>
+<li>Pick a uniformly random discard count from zero through the current hand size, then return unique valid indices.</li>
+<li>Randomly choose fold, pass/call, or a small positive raise using the <code>PlayerBase</code> wager protocol.</li>
+<li>Do not print from inside the player. <code>Game</code> owns the action feed so bot-only games can run silently without a callback.</li>
+</ul>
+<h3 id="task-3-four-bot-terminal-runner">Task 3 — Four-bot terminal runner</h3>
+<p><strong>Owner:</strong> Terminal-runner worker</p>
+<p><strong>Files:</strong> <code>api.py</code></p>
+<ul>
+<li>Construct four <code>RandomBotPlayer</code> instances in alternating A/B/A/B order.</li>
+<li>Start the complete match automatically when run as a script and pass <code>print</code> as the action callback.</li>
+<li>Keep the output focused on current hands, public actions, phase results, score, and winner. Do not request human input.</li>
+<li>Use labels <code>Pequeña</code> for the <code>Chica</code> phase and Mus terms such as <code>mus</code>, <code>corta</code>, <code>paso</code>, <code>envida</code>, and <code>quiero</code> in user-facing output.</li>
+</ul>
+<h2 id="integration-ownership">Integration ownership</h2>
+<p>The primary agent owns <code>docs/mus-computer/TODO.md</code>, <code>docs/mus-computer/README.md</code>, and the integration review. After the parallel tasks finish, review the shared interface and changed files together. Do not run or add tests in this task; report any unverified behavior clearly.</p>
+<h2 id="acceptance-checklist">Acceptance checklist</h2>
+<ul>
+<li>The runner starts four bots and needs no keyboard input.</li>
+<li>Mus continues through successful exchanges until a player says <code>corta</code>.</li>
+<li>A player can keep all cards; discarded cards recycle into the stock when needed.</li>
+<li>The match starts a new hand after the phases and ends at 40 points.</li>
+<li>Each bot's hand is printed after the initial deal and every complete Mus exchange.</li>
+<li>Action, phase, wager, score, and winner lines are emitted in order.</li>
+<li>Stock replenishment is reported when it occurs.</li>
+<li>The game engine and trainer use the same alternating team seat order.</li>
+</ul>
+</article><footer>Source: docs/superpowers/plans/2026-09-26-observable-four-bot-game.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 711f27340adc3ffe70ece7d934f408290e8028f6c1827fc244258d72f041a279</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

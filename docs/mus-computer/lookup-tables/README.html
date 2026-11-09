@@ -1,0 +1,94 @@
+<!doctype html><html lang="en" data-source="0bc0b2445b8ebfc51d8aa1ffa9bcafd3f7fd2742853a0eb99e4812078607bf0b"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lookup tables · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#lookup-tables">Lookup tables</a><a class="depth-2" href="#what-they-expose">What they expose</a><a class="depth-2" href="#construction-flow">Construction flow</a><a class="depth-2" href="#exactness-labels">Exactness labels</a><a class="depth-2" href="#runtime-use">Runtime use</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="lookup-tables">Lookup tables</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 250" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Lookup tables</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#what-they-expose"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">What they expose</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#construction-flow"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Construction flow</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#exactness-labels"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Exactness labels</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#runtime-use"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Runtime use</tspan></text></a></svg></details><article><h2 id="what-they-expose">What they expose</h2>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Exposes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hand phase probabilities</td>
+<td>For each canonical hand, per-phase win, tie, and loss probabilities against the table's reference opponent-hand distribution.</td>
+</tr>
+<tr>
+<td>Discard options</td>
+<td>For each starting hand and each retained sub-hand, expected per-phase win probabilities after replacement draws.</td>
+</tr>
+<tr>
+<td>ep_mano</td>
+<td>For a fixed mano hand, expected team points and win probabilities by phase against three other dealt hands.</td>
+</tr>
+<tr>
+<td>hand_distribution_post_mus</td>
+<td>A marginal distribution over final hands after the deterministic best-discard Mus proxy.</td>
+</tr>
+<tr>
+<td>ep_mano_postmus</td>
+<td>Expected team points by phase when the other hands are drawn from the post-mus marginal model.</td>
+</tr>
+<tr>
+<td>best_discards</td>
+<td>Expected-net-points summaries for every possible retained subset, calculated from ep_mano.</td>
+</tr>
+<tr>
+<td>best_discards_corrected</td>
+<td>A separate summary calculated from ep_mano_postmus. It does not replace or feed back into the existing post-mus distribution.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="construction-flow">Construction flow</h2>
+<p>The source files in <code>scripts/tables/</code> describe a staged pipeline. Install the optional table tooling with <code>python -m pip install -e &quot;.[tables]&quot;</code> before running builders:</p>
+<ol>
+<li>build_tables.py enumerates canonical hands, hand probabilities, draw options, average opponent improvements, and ep_mano.</li>
+<li>compute_best_discards.py values each retained subset using ep_mano.</li>
+<li>compute_hand_distribution.py applies that best-discard rule to the initial deal distribution and writes hand_distribution_post_mus.</li>
+<li>compute_ep_postmus.py calculates ep_mano_postmus using the post-mus distribution.</li>
+<li>compute_best_discards_corrected.py revalues retained subsets using ep_mano_postmus and stores the result separately.</li>
+<li>export_tables.py creates human-readable CSV and HTML reports.</li>
+</ol>
+<p>The best-discard and post-mus steps currently make one pass. The corrected discard table does not trigger a second hand-distribution build.</p>
+<h2 id="exactness-labels">Exactness labels</h2>
+<ul>
+<li>The initial hand-type counts are exact for the configured deck.</li>
+<li>ep_mano and ep_mano_postmus use combinatorial weights and no random sampling. ep_mano currently fixes the evaluated hand in seat 0 and uses an unordered pair of opponent hands; the same pair-reduction approach is used post-mus. The formula and rationale are recorded as the current working assumption, with an ordered-seat cross-check deferred.</li>
+<li>The best-discard averages enumerate rank-composition draw outcomes and weight them by physical-card combinations. The weights are appropriate for the stated pool, but builders currently restore the player's exact discarded copies; the one-exchange marginal pool should exclude the original four cards while retaining other copies of those ranks.</li>
+<li>hand_distribution_post_mus is generated deterministically for the best-discard proxy. Its current transition uses the full deck minus the kept subset, so it includes the player's discarded copies. It also conditions on modeled Mus hands rather than estimating each hand's probability of asking for Mus.</li>
+<li>ep_mano_postmus uses a marginal post-mus hand distribution for the other seats. Its current formula multiplies aggregate type mass by raw remaining-deck multiplicity, thereby reweighting types according to available physical realizations. This is an explicit working assumption to revisit; see <a href="post-mus-model.html">Post-mus model</a>.</li>
+</ul>
+<h2 id="runtime-use">Runtime use</h2>
+<p><code>src/mus_computer/probabilities/tables.py</code> loads the bundled table and exposes per-hand lookup accessors. The default four-random-bot runner does not use the lookup data to choose actions. See the <a href="../../superpowers/specs/2026-09-27-contextual-bot-strategies-design.html">contextual strategy design</a> for how the strategic bot consumes estimates.</p>
+<p>Detailed table definitions:</p>
+<ul>
+<li><a href="hand-strength-and-discard-options.html">Hand probabilities and discard options</a></li>
+<li><a href="enumeration-method.html">Exact enumeration method</a></li>
+<li><a href="team-expected-points.html">Team expected points</a></li>
+<li><a href="post-mus-model.html">Post-mus model</a></li>
+<li><a href="discard-value-tables.html">Discard value summaries</a></li>
+</ul>
+</article><footer>Source: docs/mus-computer/lookup-tables/README.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 0bc0b2445b8ebfc51d8aa1ffa9bcafd3f7fd2742853a0eb99e4812078607bf0b</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

@@ -1,0 +1,138 @@
+<!doctype html><html lang="en" data-source="75313303fcc1cfa1cd28e9b36148f9176429b9f6960b487273c0d4ca14d727b9"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reviewing project documents in HTML · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#reviewing-project-documents-in-html">Reviewing project documents in HTML</a><a class="depth-2" href="#what-to-read-first">What to read first</a><a class="depth-2" href="#authoring-and-delivery-workflow">Authoring and delivery workflow</a><a class="depth-2" href="#explicit-document-status">Explicit document status</a><a class="depth-2" href="#hierarchy-and-diagrams">Hierarchy and diagrams</a><a class="depth-2" href="#templates-and-examples">Templates and examples</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="reviewing-project-documents-in-html">Reviewing project documents in HTML</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 325" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Reviewing project documents in HTML</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#what-to-read-first"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">What to read first</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#authoring-and-delivery-workflow"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Authoring and delivery workflow</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#explicit-document-status"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Explicit document status</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#hierarchy-and-diagrams"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Hierarchy and diagrams</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#templates-and-examples"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Templates and examples</tspan></text></a></svg></details><article><p>Open <a href="index.html">the project review desk</a>. Specs, brainstorms, plans and reviews
+have adjacent offline HTML copies. Read the HTML; edit the Markdown source.</p>
+<h2 id="what-to-read-first">What to read first</h2>
+<p>Active review pages begin with a prioritized queue, regardless of where those
+sections appear in the source:</p>
+<ol>
+<li><strong>Merge blockers:</strong> Important findings that prevent a safe merge.</li>
+<li><strong>Important findings:</strong> concrete regressions or material risks.</li>
+<li><strong>Decisions:</strong> design choices needing human judgment, separate from findings.</li>
+<li><strong>Nits:</strong> small actionable improvements.</li>
+<li><strong>Pre-existing issues:</strong> useful context, clearly separated from this change.</li>
+</ol>
+<p><span class="diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730 460" role="img" aria-label="Review priorities">
+  <title>Human review order</title>
+  <g font-family="Segoe UI,Arial,sans-serif" font-size="18">
+    <rect x="25" y="15" width="680" height="65" rx="8" fill="#fbeff0" stroke="#a83235" /><text x="48" y="43" fill="#8d282c">1. Merge blockers</text><text x="48" y="65" font-size="14">Important findings that prevent a safe merge</text>
+    <rect x="25" y="100" width="680" height="65" rx="8" fill="#fbf5e9" stroke="#b58b43" /><text x="48" y="128">2. Important findings</text><text x="48" y="150" font-size="14">Concrete regressions and material risks</text>
+    <rect x="25" y="185" width="680" height="65" rx="8" fill="#eaf6f2" stroke="#117869" /><text x="48" y="213">3. Decisions</text><text x="48" y="235" font-size="14">Design choices needing human judgment, separate from findings</text>
+    <rect x="25" y="270" width="680" height="65" rx="8" fill="#edf4f8" stroke="#9bb5c6" /><text x="48" y="298">4. Nits</text><text x="48" y="320" font-size="14">Small actionable improvements</text>
+    <rect x="25" y="355" width="680" height="65" rx="8" fill="#f0f3f5" stroke="#9baab5" /><text x="48" y="383">5. Pre-existing issues</text><text x="48" y="405" font-size="14">Baseline context, clearly separated from this change</text>
+  </g>
+</svg><span class="diagram-caption">Review priorities</span></span></p>
+<p>Use the reading checkboxes to track items you have inspected. Progress is local
+to the browser and source version. It does not approve a PR, resolve a finding,
+change the source or merge code. Follow section links for complete locations,
+impacts, evidence and next steps.</p>
+<h2 id="authoring-and-delivery-workflow">Authoring and delivery workflow</h2>
+<p><span class="diagram"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 230" role="img" aria-label="Document workflow">
+  <title>HTML-first document review workflow</title>
+  <defs><marker id="workflow-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8" fill="#225e83" /></marker></defs>
+  <g font-family="Segoe UI,Arial,sans-serif" text-anchor="middle" font-size="17">
+    <rect x="10" y="55" width="180" height="80" rx="9" fill="#edf5f9" stroke="#9dbbd0" /><text x="100" y="88">Markdown source</text><text x="100" y="113" font-size="13">and SVG diagrams</text>
+    <rect x="225" y="55" width="180" height="80" rx="9" fill="#edf5f9" stroke="#9dbbd0" /><text x="315" y="88">Token-based build</text><text x="315" y="113" font-size="13">preserve structure</text>
+    <rect x="440" y="55" width="180" height="80" rx="9" fill="#193f59" /><text x="530" y="88" fill="white">Offline HTML</text><text x="530" y="113" fill="white" font-size="13">priorities and navigation</text>
+    <rect x="655" y="55" width="180" height="80" rx="9" fill="#e9f5f1" stroke="#7bb4a7" /><text x="745" y="88">Human review</text><text x="745" y="113" font-size="13">highest impact first</text>
+    <rect x="870" y="55" width="180" height="80" rx="9" fill="#edf5f9" stroke="#9dbbd0" /><text x="960" y="88">Agent follow-up</text><text x="960" y="113" font-size="13">update source and rebuild</text>
+  </g>
+  <g fill="none" stroke="#225e83" stroke-width="2" marker-end="url(#workflow-arrow)"><path d="M190 95H222" /><path d="M405 95H437" /><path d="M620 95H652" /><path d="M835 95H867" /><path d="M960 140V195H100V140" /></g>
+</svg><span class="diagram-caption">Document workflow</span></span></p>
+<p>Install the optional tools once:</p>
+<pre><code class="language-powershell">python -m pip install -e &quot;.[dev,review,docs]&quot;
+</code></pre>
+<p>After editing a human-facing Markdown document:</p>
+<pre><code class="language-powershell">python -m mus_computer.documentation build
+python -m mus_computer.documentation check
+</code></pre>
+<p><code>make docs</code> and <code>make docs-check</code> select the project virtual environment too.
+Commit source and HTML together; deliver the HTML link in handoffs. The hook is
+check-only and refuses stale/missing HTML. CI verifies a fresh checkout.
+Generated HTML is marked as generated for GitHub diff presentation, so source
+reviews stay focused. Download/open the HTML file to use the rendered view.</p>
+<p>For a standalone or ignored training-run summary:</p>
+<pre><code class="language-powershell">python -m mus_computer.documentation render training_runs/example/validation.md
+</code></pre>
+<p>This creates <code>validation.html</code> without retraining. Existing native HTML reports
+can keep their own renderer; do not convert canonical JSON into Markdown first.
+The public catalogue excludes ignored runs and private agent directories.</p>
+<h2 id="explicit-document-status">Explicit document status</h2>
+<p>Start a live review with this first-line comment:</p>
+<pre><code class="language-text">&lt;!-- human-review: {&quot;kind&quot;:&quot;review&quot;,&quot;status&quot;:&quot;active&quot;} --&gt;
+</code></pre>
+<p>Kinds: <code>review</code>, <code>spec</code>, <code>brainstorm</code>, <code>plan</code>, <code>guide</code>, <code>policy</code>, <code>history</code>.
+Statuses: <code>active</code>, <code>draft</code>, <code>approved</code>, <code>historical</code>, <code>reference</code>, <code>template</code>.
+Without metadata a document is reference material. Old plans' unresolved
+questions or unchecked tasks are never silently promoted to current blockers.
+Source checkboxes remain disabled status indicators; reading progress is separate.</p>
+<p>Preserve machine-readable front matter required by other tools. If that format
+cannot carry this metadata, render it as a reference and add a separate active
+review companion. Do not break a tool-owned source schema merely to activate a
+review queue.</p>
+<p>Active/draft documents opt into priority headings such as:</p>
+<pre><code class="language-markdown">### Blocker: A concrete merge-blocking regression
+Location, impact, evidence and next step.
+
+### Important: A material risk
+Location, impact, evidence and next step.
+
+### Decision: A design choice
+The options, recommendation and practical tradeoff.
+
+### Nit: A small actionable improvement
+Location and next step.
+
+### Pre-existing: A relevant earlier issue
+Baseline evidence and next step.
+</code></pre>
+<p><code>Blocker</code> means an Important merge blocker; it does not add another code-review
+repair pass. Empty categories need no placeholder finding. Do not invent issues
+or label stylistic preferences Important just to populate the page.</p>
+<h2 id="hierarchy-and-diagrams">Hierarchy and diagrams</h2>
+<p>Use one H1, H2 for major questions and H3/H4 for supporting detail. Every page
+has section links and a compact document map extracted from parsed headings.
+Fenced code comments are not headings. Tables and code blocks remain readable
+without flattening the source's structure.</p>
+<p>Prefer small SVG diagrams linked with normal Markdown image syntax. The builder
+embeds safe local SVG, so individual HTML pages work offline. Use presentation
+attributes for colors/fonts/lines; scripts, HTML-enabled SVG labels, external
+resources and unsupported elements are stripped. Export diagrams to plain SVG
+when using another authoring tool. No Mermaid CDN or browser-side rendering is
+required. Raster images inside the project can also be embedded; external images
+remain explicit links and are never fetched automatically.</p>
+<h2 id="templates-and-examples">Templates and examples</h2>
+<ul>
+<li><a href="templates/REVIEW.html">Review template</a></li>
+<li><a href="templates/SPEC.html">Spec template</a></li>
+<li><a href="templates/BRAINSTORM.html">Brainstorm template</a></li>
+<li><a href="REVIEW.html">Review this documentation change</a></li>
+</ul>
+<p>Copy a template, replace placeholders and set its status to <code>draft</code> or <code>active</code>.
+Build the HTML before asking a human to inspect it. The parser follows the
+<a href="https://markdown-it-py.readthedocs.io/en/latest/using.html">documented Markdown token/renderer interface</a>;
+game-only installations do not need that optional package.</p>
+</article><footer>Source: docs/review/README.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 75313303fcc1cfa1cd28e9b36148f9176429b9f6960b487273c0d4ca14d727b9</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

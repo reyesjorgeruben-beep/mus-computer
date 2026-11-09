@@ -1,0 +1,54 @@
+<!doctype html><html lang="en" data-source="288cc0d9fd9fa84d544c87f1b559dd4a596c7d2d7955a813cf2e2429e9e1c199"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Final winner validation · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#final-winner-validation">Final winner validation</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="final-winner-validation">Final winner validation</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><article><p>Validation plays each saved winner in 100 independent matches against each of three opponent policies. A match uses fresh games until one team wins four games by default; <code>--wins-to-match</code> can change that target. For each policy, the candidate occupies Team A in 50 matches and Team B in 50 matches. Every match and its games have distinct deterministic seeds, and one process pool runs all matches.</p>
+<table>
+<thead>
+<tr>
+<th>Report key</th>
+<th>Opponent policy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>random_genes</code></td>
+<td>A newly sampled genome for every match, using the same Mus, discard, and wager strategies as the candidate. Only active genes vary, and active gene combinations are unique across the validation run.</td>
+</tr>
+<tr>
+<td><code>random_decisions</code></td>
+<td>Uniform choice among legal Mus and wager actions and all 16 discard subsets of a four-card hand.</td>
+</tr>
+<tr>
+<td><code>mus_maestro</code></td>
+<td>Always votes Mus, discards all cards after an exchange, passes without an offer, and folds when answering an offer. It never raises.</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-sh">python -m mus_computer.training.validation --winners docs/training/experiments/example/winning_genomes/genomes.json --seed 42 --workers 10 --wins-to-match 4
+</code></pre>
+<p>The command writes <code>docs/training/experiments/example/validation/results.md</code> by default. Use <code>--out PATH</code> to change the location. The table has one row per winning genome plus an average row, showing only win percentages against the three opponent policies. The Python return value still contains the underlying matchup details for programmatic inspection.</p>
+<p>Use repeatable <code>--gene NAME</code> flags to override <code>USED_GENES</code> when the training run used a custom active-gene set. The training CLI passes its configured active genes to validation automatically, including the empty set selected by <code>--no-genes</code>.</p>
+<p>In Python, call <code>validate_winners(winners, run_dir, seed=42, workers=10, active_genes=(&quot;bluff_rate&quot;,), wins_to_match=4)</code> after training. Omit <code>active_genes</code> to use <code>USED_GENES</code>, or pass <code>()</code> for a neutral baseline. With no active genes, random-gene opponents all have the same neutral genome, so uniqueness does not apply. Percentages now move in one-point steps per winner because each faces 100 matches per opponent.</p>
+</article><footer>Source: docs/training/VALIDATION.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 288cc0d9fd9fa84d544c87f1b559dd4a596c7d2d7955a813cf2e2429e9e1c199</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

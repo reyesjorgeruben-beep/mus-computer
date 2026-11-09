@@ -1,0 +1,356 @@
+<!doctype html><html lang="en" data-source="eab4cac3c7c37774be58740d48bd2041bbc231e4b8924918ef740559d4651a7a"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bot Player Design · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Spec / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#bot-player-design">Bot Player Design</a><a class="depth-2" href="#overview">Overview</a><a class="depth-2" href="#1-probability-tables">1. Probability Tables</a><a class="depth-3" href="#motivation">Motivation</a><a class="depth-3" href="#structure">Structure</a><a class="depth-3" href="#storage">Storage</a><a class="depth-3" href="#accuracy-note">Accuracy note</a><a class="depth-2" href="#2-botgenome-the-13-gene-flat-vector">2. BotGenome — the 13-gene flat vector</a><a class="depth-3" href="#genetic-operations">Genetic operations</a><a class="depth-2" href="#3-game-state-discretization">3. Game State Discretization</a><a class="depth-3" href="#scoretier">ScoreTier</a><a class="depth-3" href="#urgency-signal">Urgency signal</a><a class="depth-3" href="#position-signal">Position signal</a><a class="depth-3" href="#botgamestate">BotGameState</a><a class="depth-3" href="#passing-state-to-the-bot">Passing state to the bot</a><a class="depth-2" href="#4-decision-formulas">4. Decision Formulas</a><a class="depth-3" href="#41-hand-strength">4.1 Hand strength</a><a class="depth-3" href="#42-vote_mus">4.2 vote_mus()</a><a class="depth-4" href="#expected-improvement-calculation-analytical-bayesian">Expected improvement calculation (analytical / Bayesian)</a><a class="depth-4" href="#full-vote_mus-formula">Full vote_mus formula</a><a class="depth-3" href="#43-choose_discards">4.3 choose_discards()</a><a class="depth-3" href="#44-wager_action">4.4 wager_action()</a><a class="depth-2" href="#5-genetic-trainer">5. Genetic Trainer</a><a class="depth-3" href="#population-and-fitness">Population and fitness</a><a class="depth-3" href="#selection">Selection</a><a class="depth-3" href="#evolution-loop">Evolution loop</a><a class="depth-3" href="#output">Output</a><a class="depth-2" href="#6-file-structure">6. File Structure</a><a class="depth-2" href="#7-constraints-and-open-questions">7. Constraints and open questions</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="bot-player-design">Bot Player Design</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 400" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Bot Player Design</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#overview"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Overview</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#1-probability-tables"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">1. Probability Tables</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#2-botgenome-the-13-gene-flat-vector"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">2. BotGenome — the 13-gene flat vector</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#3-game-state-discretization"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">3. Game State Discretization</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#4-decision-formulas"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">4. Decision Formulas</tspan></text></a><path d="M390 65 V235 H585 V245" fill="none" stroke="#b2c7d5"/><a href="#5-genetic-trainer"><rect x="410" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="267" text-anchor="middle" font-size="13"><tspan x="585" dy="0">5. Genetic Trainer</tspan></text></a><path d="M390 65 V310 H195 V320" fill="none" stroke="#b2c7d5"/><a href="#6-file-structure"><rect x="20" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="342" text-anchor="middle" font-size="13"><tspan x="195" dy="0">6. File Structure</tspan></text></a><path d="M390 65 V310 H585 V320" fill="none" stroke="#b2c7d5"/><a href="#7-constraints-and-open-questions"><rect x="410" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="342" text-anchor="middle" font-size="13"><tspan x="585" dy="0">7. Constraints and open questions</tspan></text></a></svg></details><article><h2 id="overview">Overview</h2>
+<p>A parametric bot player for the mus card game whose behavior is entirely controlled by a
+13-gene flat vector (<code>BotGenome</code>). Win probabilities are computed analytically from
+precomputed lookup tables. Every decision (mus vote, discards, wager) starts from a
+table-derived probability and is then shifted by the genome parameters and a discretized
+game state signal. The genome is the unit of evolution in a genetic algorithm trained by
+bot-vs-bot tournament play.</p>
+<hr />
+<h2 id="1-probability-tables">1. Probability Tables</h2>
+<h3 id="motivation">Motivation</h3>
+<p>Suits do not affect any mus phase outcome — Grande/Chica compare card values, Pares counts
+value matches, Juego sums juego values. Two hands with the same value multiset are
+strategically identical. This reduces the 91,390 possible 4-card hands to approximately
+<strong>715 canonical hands</strong> (distinct sorted value-tuples), making full precomputation
+practical.</p>
+<h3 id="structure">Structure</h3>
+<p>For each canonical hand and each of the four contested phases (Grande, Chica, Pares,
+Juego), we precompute:</p>
+<pre><code>P(win | my_canonical_hand, phase)
+</code></pre>
+<p>computed by comparing the hand against every possible opponent 4-card hand drawn from the
+full 40-card deck, weighted by multiplicity. Result: a <code>dict[tuple[int,...], dict[str, float]]</code> with 715 entries.</p>
+<p>For Pares and Juego, hands that cannot play those phases receive <code>win_prob = 0.0</code> (they
+lose by default if the phase is played, so the bot should account for that when the phase
+is still contested).</p>
+<h3 id="storage">Storage</h3>
+<p>Tables are computed once via a build script and saved to <code>probability_tables.pkl</code>. At
+startup the bot loads the pickle; the build script is re-run only when card values change.
+Lookup is <code>O(1)</code> per decision.</p>
+<h3 id="accuracy-note">Accuracy note</h3>
+<p>Tables are computed against the full deck, ignoring the 4 cards already in our own hand.
+This introduces a small (~10%) error on the margin. This is acceptable: the noise is
+dominated by personality parameters and opponent behavior, and it keeps tables static and
+reusable across all hands.</p>
+<hr />
+<h2 id="2-botgenome-the-13-gene-flat-vector">2. BotGenome — the 13-gene flat vector</h2>
+<p>All genes are <code>float</code> in <code>[0, 1]</code>. The genome is a plain dataclass; no hidden structure.</p>
+<pre><code class="language-python">@dataclass
+class BotGenome:
+    # --- Mus voting (2 genes) ---
+    mus_eagerness: float
+    # Base willingness to vote yes to mus (request card exchange).
+    # 0 = almost never requests mus; 1 = always eager to exchange.
+
+    mus_risk_sensitivity: float
+    # How strongly the improvement delta (our expected gain vs. opponent expected gain
+    # from doing mus) shifts the mus vote.
+    # 0 = ignores improvement analysis entirely; 1 = fully driven by improvement delta.
+
+    # --- Discard strategy (5 genes) ---
+    w_grande: float    # weight for Grande win-prob when evaluating hand strength
+    w_chica: float     # weight for Chica win-prob
+    w_pares: float     # weight for Pares win-prob
+    w_juego: float     # weight for Juego win-prob
+    discard_aggressiveness: float
+    # Bias toward discarding more cards during mus.
+    # 0 = keep the hand; 1 = swap aggressively for potentially stronger hands.
+
+    # --- Wagering (4 genes) ---
+    bluff_rate: float
+    # Probability of acting as if win_prob &gt;= raise_threshold even when it is not.
+    # 0 = never bluffs; 1 = always bets as if holding a strong hand.
+
+    risk_factor: float
+    # Scales the raise amount when the bot decides to raise.
+    # 0 = minimum legal raise; 1 = maximum raise the rules allow.
+
+    fold_threshold: float
+    # Win probability below which the bot normally folds.
+    # Subject to bluff_rate override.
+
+    raise_threshold: float
+    # Win probability above which the bot raises rather than calls.
+
+    # --- Game state sensitivity (2 genes) ---
+    score_urgency_sensitivity: float
+    # How much the score tier differential shifts all decisions.
+    # 0 = ignores scores entirely; 1 = fully adjusts based on urgency.
+
+    position_preference: float
+    # 0 = mano-preferring: more aggressive (higher bets, more no-mus) when first to act,
+    #     exploiting the tiebreaker advantage.
+    # 1 = last-preferring: more aggressive when last to act,
+    #     exploiting the information advantage.
+    # Intermediate values blend both tendencies proportionally.
+</code></pre>
+<h3 id="genetic-operations">Genetic operations</h3>
+<p><strong>Crossover</strong> — uniform: for each gene independently, take value from parent A or parent B
+with equal probability.</p>
+<p><strong>Mutation</strong> — Gaussian noise: <code>gene += N(0, σ)</code> where <code>σ = 0.05</code>, clipped to <code>[0, 1]</code>.
+Each gene is mutated independently with probability <code>mutation_rate = 0.15</code>.</p>
+<p><strong>Elite preservation</strong> — top 5% of population copied unchanged to next generation.</p>
+<hr />
+<h2 id="3-game-state-discretization">3. Game State Discretization</h2>
+<h3 id="scoretier">ScoreTier</h3>
+<p>Scores are bucketed into four tiers based on fraction of <code>WIN_SCORE</code> (40):</p>
+<pre><code class="language-python">class ScoreTier(Enum):
+    EARLY    = 0   # &lt; 25%  (&lt; 10 points)
+    MID      = 1   # 25–60% (10–23 points)
+    LATE     = 2   # 60–85% (24–33 points)
+    CRITICAL = 3   # &gt; 85%  (≥ 34 points)
+</code></pre>
+<h3 id="urgency-signal">Urgency signal</h3>
+<pre><code class="language-python">def compute_urgency(my_tier: ScoreTier, opp_tier: ScoreTier) -&gt; float:
+    &quot;&quot;&quot;
+    Returns a value in [-1, 1].
+    Positive = opponent is closer to winning → we need to be more aggressive.
+    Negative = we are closer to winning → we can be more conservative.
+    &quot;&quot;&quot;
+    return (opp_tier.value - my_tier.value) / 3.0
+</code></pre>
+<h3 id="position-signal">Position signal</h3>
+<pre><code class="language-python">def compute_position_signal(position: int, n_players: int, position_preference: float) -&gt; float:
+    &quot;&quot;&quot;
+    Returns a value in [-1, 1] representing how favorable the current position is
+    given the bot's positional preference.
+    position 0 = mano (first to act), position n-1 = last.
+
+    A mano-preferring bot (preference=0) gets a positive signal when position=0.
+    A last-preferring bot (preference=1) gets a positive signal when position=n-1.
+    &quot;&quot;&quot;
+    normalized_pos = position / (n_players - 1)          # 0.0 (mano) → 1.0 (last)
+    preferred_pos = position_preference                    # 0.0 (mano) → 1.0 (last)
+    return 1.0 - 2.0 * abs(normalized_pos - preferred_pos)
+</code></pre>
+<h3 id="botgamestate">BotGameState</h3>
+<pre><code class="language-python">@dataclass
+class BotGameState:
+    my_score_tier: ScoreTier
+    opponent_score_tier: ScoreTier
+    position: int                        # 0-based index in betting order
+    n_players: int                       # total players in this betting round
+    opponent_discard_counts: List[int]   # cards each opponent discarded in mus
+    mus_rounds_completed: int            # how many mus rounds happened this hand
+</code></pre>
+<h3 id="passing-state-to-the-bot">Passing state to the bot</h3>
+<p><code>vote_mus()</code> and <code>choose_discards()</code> have no context parameter in the <code>PlayerBase</code>
+interface. The <code>Game</code> class calls <code>player.set_round_state(state: BotGameState)</code> at two
+points each hand:</p>
+<ol>
+<li><strong>Before the first mus vote</strong> — <code>opponent_discard_counts</code> is <code>[]</code> (no discards yet).
+Subsequent mus votes within the same hand see <code>opponent_discard_counts</code> populated with
+counts from the previous mus round, updated after each round completes.</li>
+<li><strong>Before wagering begins</strong> — <code>opponent_discard_counts</code> holds the final totals from all
+mus rounds.</li>
+</ol>
+<p><code>PlayerBase</code> gains a default no-op <code>set_round_state()</code>. <code>BotPlayer</code> overrides it to store
+state internally.</p>
+<p><code>GameContext</code> gains two optional fields used during <code>wager_action()</code>:</p>
+<pre><code class="language-python">@dataclass
+class GameContext:
+    phase_name: str
+    team_scores: Dict[str, int]
+    current_bet: int
+    previous_bet: int
+    hand: List[Card]
+    position: int = 0                          # position in betting order this action
+    opponent_discard_counts: List[int] = field(default_factory=list)
+</code></pre>
+<hr />
+<h2 id="4-decision-formulas">4. Decision Formulas</h2>
+<h3 id="41-hand-strength">4.1 Hand strength</h3>
+<p>The <strong>weighted phase strength</strong> is the core signal used in mus and discard decisions:</p>
+<pre><code>phase_probs = {
+    &quot;Grande&quot;: table[canonical(hand)][&quot;Grande&quot;],
+    &quot;Chica&quot;:  table[canonical(hand)][&quot;Chica&quot;],
+    &quot;Pares&quot;:  table[canonical(hand)][&quot;Pares&quot;],
+    &quot;Juego&quot;:  table[canonical(hand)][&quot;Juego&quot;],
+}
+
+weights = [w_grande, w_chica, w_pares, w_juego]  # from genome, not normalized
+hand_strength = sum(w * p for w, p in zip(weights, phase_probs.values()))
+               / sum(weights)   # normalize to [0, 1]
+</code></pre>
+<h3 id="42-vote_mus">4.2 vote_mus()</h3>
+<p>Goal: return <code>True</code> to request mus (exchange cards), <code>False</code> to stop.</p>
+<p>The decision incorporates three signals: <strong>current hand strength</strong>, <strong>expected improvement
+for us if mus continues</strong>, and <strong>expected improvement for opponents if mus continues</strong>.</p>
+<h4 id="expected-improvement-calculation-analytical-bayesian">Expected improvement calculation (analytical / Bayesian)</h4>
+<pre><code>expected_improvement_ours = E[hand_strength(hand_after_optimal_discards)] - hand_strength(current_hand)
+</code></pre>
+<p>Computed by iterating over all 16 discard subsets, sampling replacement hands from the
+remaining deck, and taking the improvement of the best subset. This reuses the same
+sampling infrastructure as <code>choose_discards()</code> and can be partially cached per canonical
+hand.</p>
+<pre><code>expected_improvement_opponent = E[hand_strength(opponent_hand_after_optimal_discards)]
+                               - E[hand_strength(random_opponent_hand)]
+</code></pre>
+<p>The opponent's current hand is unknown. We model it as a random 4-card hand drawn from
+the remaining 36 cards (full deck minus ours). Their expected improvement is computed as
+the average improvement across all canonical hands weighted by the number of ways each
+can be formed from the remaining deck. This value is <strong>precomputed and stored</strong> as a
+scalar in the probability tables (it depends only on the remaining deck composition,
+which we approximate as fixed for simplicity).</p>
+<pre><code>improvement_delta = expected_improvement_ours - expected_improvement_opponent
+</code></pre>
+<p>A positive <code>improvement_delta</code> means mus benefits us more than it benefits opponents on
+average → more reason to vote yes. A negative delta means opponents are likely to improve
+more → more reason to stop mus if we already have a decent hand.</p>
+<h4 id="full-vote_mus-formula">Full vote_mus formula</h4>
+<pre><code>urgency         = compute_urgency(my_score_tier, opp_score_tier)
+pos_signal      = compute_position_signal(position, n_players, position_preference)
+combined_signal = score_urgency_sensitivity * urgency
+                + position_preference_scale * pos_signal  # fixed small scale, e.g. 0.15
+
+# improvement_delta ∈ [-1, 1]: positive = mus helps us more than opponents
+improvement_signal = improvement_delta * mus_risk_sensitivity
+
+adjusted_strength = clamp(hand_strength - improvement_signal + combined_signal, 0, 1)
+# Subtracting improvement_signal: if mus helps us a lot, act as if hand is weaker
+# (more willing to request mus); if mus helps opponents more, treat hand as stronger
+# (more willing to stop).
+
+# stop_mus_prob: strong adjusted hand + low eagerness → stop
+stop_mus_prob = adjusted_strength * (1 - mus_eagerness)
+return random() &gt; stop_mus_prob
+</code></pre>
+<p><strong>Intuition:</strong></p>
+<ul>
+<li>A <code>mus_eagerness=0</code> bot always stops when it has a strong hand.</li>
+<li>A <code>mus_eagerness=1</code> bot always votes yes regardless of hand.</li>
+<li>High urgency (opponent near win) pushes the bot to accept mus more (seek improvement).</li>
+<li>If mus is analytically better for us than for opponents (<code>improvement_delta &gt; 0</code>), the
+bot is more willing to vote yes — independently of raw hand strength.</li>
+<li>A mano-preferring bot with mano position is more willing to stop mus when strong,
+locking in its tiebreaker advantage.</li>
+</ul>
+<h3 id="43-choose_discards">4.3 choose_discards()</h3>
+<p>For each of the 16 discard subsets (powerset of 4 cards):</p>
+<ol>
+<li>Sample 300 replacement hands from the remaining deck.</li>
+<li>For each replacement hand, compute <code>hand_strength</code> using the tables and genome weights.</li>
+<li><code>expected_strength[subset] = mean(sampled strengths)</code>.</li>
+<li>Apply aggressiveness bias: <code>score[subset] = expected_strength[subset] - discard_aggressiveness * penalty(len(subset))</code> where <code>penalty</code> is a small linearly decreasing function (high aggressiveness removes the penalty for discarding many cards).</li>
+<li>Return the subset with the highest score.</li>
+</ol>
+<p>The sampling uses <code>opponent_discard_counts</code> as a soft prior: cards whose value was
+discarded more by opponents are slightly less likely to appear as replacement draws
+(partial information update).</p>
+<h3 id="44-wager_action">4.4 wager_action()</h3>
+<pre><code>base_prob   = table[canonical(self.cards)][context.phase_name]
+
+urgency     = compute_urgency(my_score_tier, opp_score_tier)
+pos_signal  = compute_position_signal(context.position, n_players, position_preference)
+
+modifier    = score_urgency_sensitivity * urgency * URGENCY_SCALE   # e.g. URGENCY_SCALE=0.2
+            + pos_signal * position_sensitivity_scale                # e.g. 0.1
+
+adjusted_prob = clamp(base_prob + modifier, 0, 1)
+
+# Bluff override
+if random() &lt; bluff_rate:
+    adjusted_prob = max(adjusted_prob, raise_threshold + 0.01)
+
+# Decision
+if adjusted_prob &lt; fold_threshold:
+    return -1                                        # fold
+elif adjusted_prob &lt; raise_threshold:
+    return 0                                         # call / pass
+else:
+    min_raise = 1
+    max_raise = context.current_bet                  # capped at doubling
+    raise_amount = round(min_raise + risk_factor * (max_raise - min_raise))
+    return raise_amount
+</code></pre>
+<p><strong>Parameter interaction with game state:</strong></p>
+<ul>
+<li><code>score_urgency_sensitivity=0</code>: bot bets the same early game and crisis game.</li>
+<li><code>score_urgency_sensitivity=1, urgency=1.0</code>: bot's adjusted_prob jumps +0.2 → more
+likely to raise when opponent is critical.</li>
+<li><code>bluff_rate</code> is independent of game state — it's pure randomness baked into personality.</li>
+<li><code>risk_factor</code> only affects <em>how much</em> the bot raises, not <em>whether</em> it raises.</li>
+</ul>
+<hr />
+<h2 id="5-genetic-trainer">5. Genetic Trainer</h2>
+<h3 id="population-and-fitness">Population and fitness</h3>
+<pre><code class="language-python">class GeneticTrainer:
+    population_size: int = 100
+    generations: int    = 300
+    games_per_eval: int = 10       # full games per bot per generation
+    elite_fraction: float = 0.05
+    survivor_fraction: float = 0.5
+    mutation_rate: float = 0.15
+    mutation_sigma: float = 0.05
+</code></pre>
+<p><strong>Fitness</strong>: each bot plays <code>games_per_eval</code> full games (up to <code>WIN_SCORE=40</code>) paired
+randomly with other bots from the population. Fitness = win rate across those games.</p>
+<p>Teams are assembled by pairing bots from the same generation randomly, so no bot always
+plays with the same partner. This prevents co-evolution of partner-specific strategies.</p>
+<h3 id="selection">Selection</h3>
+<p>Tournament selection: randomly sample 5 bots, pick the highest-fitness one as a parent.
+Repeat until the next generation is filled.</p>
+<h3 id="evolution-loop">Evolution loop</h3>
+<pre><code>for each generation:
+    1. Evaluate fitness for all bots (parallel game runs)
+    2. Copy top elite_fraction unchanged
+    3. Fill remainder via tournament selection + uniform crossover + Gaussian mutation
+    4. Log: best fitness, mean fitness, gene value distributions
+</code></pre>
+<h3 id="output">Output</h3>
+<p>After training, save the best genome to <code>best_genome.json</code>. The trainer also saves a
+snapshot of the full population every 50 generations to enable resuming or analysis.</p>
+<hr />
+<h2 id="6-file-structure">6. File Structure</h2>
+<pre><code>mus_computer/
+├── bot_genome.py          # BotGenome dataclass, crossover(), mutate(), random_genome()
+├── probability_tables.py  # build_tables(), load_tables(), lookup(hand, phase)
+├── bot_game_state.py      # ScoreTier, BotGameState, compute_urgency(), compute_position_signal()
+├── bot_player.py          # BotPlayer(PlayerBase): all three decision methods
+├── genetic_trainer.py     # GeneticTrainer class, run_tournament(), evolve()
+├── build_tables.py        # one-off script: computes and saves probability_tables.pkl
+│
+├── game.py                # modified: tracks discard counts, calls set_round_state()
+├── game_context.py        # extended: add position, opponent_discard_counts fields
+├── player_base.py         # extended: add default no-op set_round_state()
+</code></pre>
+<p>No new external dependencies. Training uses Python's <code>multiprocessing</code> for parallel game
+evaluation.</p>
+<hr />
+<h2 id="7-constraints-and-open-questions">7. Constraints and open questions</h2>
+<ul>
+<li><code>fold_threshold</code> and <code>raise_threshold</code> should satisfy <code>fold_threshold &lt; raise_threshold</code>
+for sensible behavior; the trainer does not enforce this — invalid genomes will just play
+oddly and be selected against naturally.</li>
+<li>The Punto phase (fallback when no one has Juego) is not in the probability tables
+(it's a pure showdown on point count). <code>wager_action</code> for Punto falls back to
+Grande-table probabilities as a proxy.</li>
+<li>Mus rules allow a maximum bet depth; the <code>max_raise</code> cap in <code>wager_action</code> is a
+placeholder — exact rule limits should be confirmed and enforced.</li>
+</ul>
+</article><footer>Source: docs/superpowers/specs/2026-06-05-bot-player-design.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: eab4cac3c7c37774be58740d48bd2041bbc231e4b8924918ef740559d4651a7a</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>
