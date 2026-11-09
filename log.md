@@ -1,5 +1,9 @@
 # Review history
 
+- 2026-11-09 [review] **Freeze inference inputs and complete checkpoint payloads** — Include game constants and bundled probability-table bytes in built-in inference identity, record bundled-data hashes, and reject added/missing native payload files or escaping links before loading. Preserve old runs and rerun validation after fingerprint changes. (PR #7)
+
+- 2026-11-09 [user] **Repeatable champion/challenger training experiments** — Put training/checkpoint/player construction behind versioned design adapters. Preserve a frozen champion, compare trained candidates against the same static suite and each other, record an evidence-based follow-up, then use separate confirmation and explicit guarded promotion. Keep generated runs ignored and preserve inference compatibility/provenance. (PR #7)
+
 - 2026-11-09 [user] **Phase-specific CFR betting generalization** — Keep additive GLM coefficients separate by lance, betting stage and action. Use only earlier opposing-team envida/ordago events plus private hand strength; project counterfactual regret-matching and reach-weighted average targets separately. Preserve tabular CFR and leave coefficient CFR/genetic trainers untouched.
 
 - 2026-11-09 [user] **Dedicated branches and disposable snapshots** — Put each task on a dedicated branch. Remove iteration snapshots only after checking whether resuming or rebuilding analysis needs them.

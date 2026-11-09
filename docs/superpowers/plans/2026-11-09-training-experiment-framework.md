@@ -57,39 +57,39 @@ Promotion defaults are an implementation decision: explicit command, minimum 32 
 
 **Files:** create `experiments/contracts.py`, `experiments/adapters.py`, `experiments/__init__.py`; test `tests/training/test_experiment_pipeline.py`.
 
-- [ ] Write failing tests for loading a custom module adapter, native artifact round-trip, unsupported version, corrupt/missing checkpoint, escaping checkpoint path and overwrite refusal.
-- [ ] Implement declarative specs, public protocols, validation and hashed artifact references. Keep Python 3.10 imports dependency-free. Configuration errors must surface before starting expensive training.
-- [ ] Implement CFR adapter using the documented public checkpoint/training interface. Preserve its default portfolio, private hand estimates, average-policy deployment and seeded RNGs. Static adapters build existing bots; they do not invent new baselines.
-- [ ] Run focused tests; verify the existing CFR and coefficient/genetic tests stay unchanged.
+- [x] Write failing tests for loading a custom module adapter, native artifact round-trip, unsupported version, corrupt/missing checkpoint, escaping checkpoint path and overwrite refusal.
+- [x] Implement declarative specs, public protocols, validation and hashed artifact references. Keep Python 3.10 imports dependency-free. Configuration errors must surface before starting expensive training.
+- [x] Implement CFR adapter using the documented public checkpoint/training interface. Preserve its default portfolio, private hand estimates, average-policy deployment and seeded RNGs. Static adapters build existing bots; they do not invent new baselines.
+- [x] Run focused tests; verify the existing CFR and coefficient/genetic tests stay unchanged.
 
 ## Task 2: generic paired evaluation
 
 **Files:** create `experiments/evaluation.py`; extend focused tests.
 
-- [ ] Write failing tests for actual full-game evaluation of mixed adapter designs, A/B/A/B team identity, same-seed side swaps, identical static models across both candidates, restored global RNG state and serial reproducibility.
-- [ ] Build games only through adapter-loaded player factories and `Game.from_players`; build matches through `Match`. Give each player a deterministic action RNG distinct from deck randomness. Never share mutable player/game state across games.
-- [ ] Use disjoint deterministic namespaces for training, development, confirmation and each game index. Apply the same deck/action seed schedule to champion-versus-static and challenger-versus-static comparisons.
-- [ ] Persist every matchup's pair ID, candidate side, seed, winner and game-win score. Aggregate from raw records; pair-level statistics must treat the pair as the sampling unit.
-- [ ] Start serially; retain `map_tasks`-compatible serializable task/factory boundaries. Multiprocessing, distributed execution and scheduling are optional future executors, not required to prove the design.
+- [x] Write failing tests for actual full-game evaluation of mixed adapter designs, A/B/A/B team identity, same-seed side swaps, identical static models across both candidates, restored global RNG state and serial reproducibility.
+- [x] Build games only through adapter-loaded player factories and `Game.from_players`; build matches through `Match`. Give each player a deterministic action RNG distinct from deck randomness. Never share mutable player/game state across games.
+- [x] Use disjoint deterministic namespaces for training, development, confirmation and each game index. Apply the same deck/action seed schedule to champion-versus-static and challenger-versus-static comparisons.
+- [x] Persist every matchup's pair ID, candidate side, seed, winner and game-win score. Aggregate from raw records; pair-level statistics must treat the pair as the sampling unit.
+- [x] Start serially; retain `map_tasks`-compatible serializable task/factory boundaries. Multiprocessing, distributed execution and scheduling are optional future executors, not required to prove the design.
 
 ## Task 3: attempts, reports and champion lifecycle
 
 **Files:** create `experiments/pipeline.py`, `experiments/__main__.py`; extend focused tests and add `docs/training/EXPERIMENTS.md`.
 
-- [ ] Write failing tests for fresh bootstrap, refusing champion overwrite, two-attempt provenance, changing champion between trial and promotion, failed/insufficient/tied confirmation, and explicit promotion preserving prior artifacts.
-- [ ] Add commands for bootstrap, trial, confirmation and promotion. Keep JSON configuration and readable command-line help; existing training entry points retain their current meaning.
-- [ ] Write immutable per-run manifests/reports and update the champion pointer atomically only after validation. Interrupted/failed training or evaluation leaves the previous champion intact and records failure when possible. Keep enough checkpoint/native metadata to resume and regenerate analysis.
-- [ ] Report partial progress to stdout so a long run can be observed. Bound each run with explicit model budgets and match counts; record elapsed time. Do not introduce a background scheduler, dashboard, arbitrary shell runner, automatic source edits or cloud dependency.
-- [ ] Document the Codex workflow in repository guidance: for substantive training-behavior changes, run a budgeted training experiment, inspect results, perform at least one recorded follow-up, and report both attempts. Slow experiments remain opt-in and separate from default unit tests.
+- [x] Write failing tests for fresh bootstrap, refusing champion overwrite, two-attempt provenance, changing champion between trial and promotion, failed/insufficient/tied confirmation, and explicit promotion preserving prior artifacts.
+- [x] Add commands for bootstrap, trial, confirmation and promotion. Keep JSON configuration and readable command-line help; existing training entry points retain their current meaning.
+- [x] Write immutable per-run manifests/reports and update the champion pointer atomically only after validation. Interrupted/failed training or evaluation leaves the previous champion intact and records failure when possible. Keep enough checkpoint/native metadata to resume and regenerate analysis.
+- [x] Report partial progress to stdout so a long run can be observed. Bound each run with explicit model budgets and match counts; record elapsed time. Do not introduce a background scheduler, dashboard, arbitrary shell runner, automatic source edits or cloud dependency.
+- [x] Document the Codex workflow in repository guidance: for substantive training-behavior changes, run a budgeted training experiment, inspect results, perform at least one recorded follow-up, and report both attempts. Slow experiments remain opt-in and separate from default unit tests.
 
 ## Task 4: exercise the full workflow and hand off
 
-- [ ] Run a cheap real end-to-end smoke using CFR-GLM checkpoints and every initial static adapter; verify snapshot round-trip and repeated evaluation equality.
-- [ ] Run a meaningful but bounded local training comparison: bootstrap trained CFR-GLM champion, train challenger, evaluate static/head-to-head development results, then choose and document a follow-up based on those results. Use at least 100 CFR iterations per trained artifact and at least 8 development pairs as the initial local budget; record any budget changes/failures rather than silently shrinking them.
-- [ ] Run a separate confirmation of the selected candidate with at least 32 pairs. Retain the champion if promotion gates fail. A failed challenger is useful evidence; do not edit thresholds afterward to manufacture success.
-- [ ] Commit only a compact human-readable evidence summary with configs, source revision, seeds, budgets, results and artifact hashes. Keep actual models, raw training runs and snapshots under ignored `training_runs/`; retain them for continuation/reanalysis.
-- [ ] Run configured lint/format/mypy/secret hooks and non-slow/non-performance tests. Review the additional PR diff relative to the CFR-GLM branch, apply at most one verified Important repair batch, rerun required gates and review its delta read-only.
-- [ ] Stage only framework files/docs, rerun hooks and relevant tests on the staged revision, commit, push and open the second PR with base `refactor/phase-specific-cfr-glm`. Link the first PR; handle CI/review feedback without merging automatically.
+- [x] Run a cheap real end-to-end smoke using CFR-GLM checkpoints and every initial static adapter; verify snapshot round-trip and repeated evaluation equality.
+- [x] Run a meaningful but bounded local training comparison: bootstrap trained CFR-GLM champion, train challenger, evaluate static/head-to-head development results, then choose and document a follow-up based on those results. Use at least 100 CFR iterations per trained artifact and at least 8 development pairs as the initial local budget; record any budget changes/failures rather than silently shrinking them.
+- [x] Run a separate confirmation of the selected candidate with at least 32 pairs. Retain the champion if promotion gates fail. A failed challenger is useful evidence; do not edit thresholds afterward to manufacture success.
+- [x] Commit only a compact human-readable evidence summary with configs, source revision, seeds, budgets, results and artifact hashes. Keep actual models, raw training runs and snapshots under ignored `training_runs/`; retain them for continuation/reanalysis.
+- [x] Run configured lint/format/mypy/secret hooks and non-slow/non-performance tests. Review the additional PR diff relative to the CFR-GLM branch, apply at most one verified Important repair batch, rerun required gates and review its delta read-only.
+- [x] Stage only framework files/docs, rerun hooks and relevant tests on the staged revision, commit, push and open the second PR with base `refactor/phase-specific-cfr-glm`. Link the first PR; handle CI/review feedback without merging automatically.
 
 ## Deferred extensions and anti-pattern guards
 
