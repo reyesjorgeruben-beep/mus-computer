@@ -34,4 +34,7 @@ def test_match_stops_at_target_and_reports_both_game_win_counts():
 @pytest.mark.parametrize("wins_to_match", [0, -1, 1.5, True])
 def test_match_rejects_invalid_win_target(wins_to_match):
     with pytest.raises(ValueError, match="wins_to_match"):
-        Match(lambda: None, wins_to_match)
+        Match(
+            lambda: pytest.fail("Invalid target must fail before creating a game"),
+            wins_to_match,
+        )

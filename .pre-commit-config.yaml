@@ -1,0 +1,27 @@
+repos:
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: Ruff lint (check only)
+        entry: python scripts/review_checks.py lint
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ruff-format
+        name: Ruff format (check only)
+        entry: python scripts/review_checks.py format
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: mypy
+        name: Project type check
+        entry: python scripts/review_checks.py types
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: gitleaks
+        name: Gitleaks staged secrets (redacted)
+        entry: python scripts/review_checks.py secrets
+        language: system
+        pass_filenames: false
+        always_run: true

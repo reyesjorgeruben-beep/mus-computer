@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from mus_computer.game.team import Team
 
 
@@ -32,10 +33,25 @@ class PlayerBase(ABC):
         cached by card set and mano status.
         """
         from mus_computer.bots.strategies.actions import DiscardAction
-        from mus_computer.bots.strategies.contexts import DiscardOption, HandStatistics, PlayerDecisionContext
+        from mus_computer.bots.strategies.contexts import (
+            DiscardOption,
+            HandStatistics,
+            PlayerDecisionContext,
+        )
         from mus_computer.cards.hand import Hand
-        from mus_computer.game.phases import Grande, Chica, Pares, Juego, Punto, PhaseName
-        from mus_computer.probabilities.estimates import estimate_hand_statistics, estimate_discard_options
+        from mus_computer.game.phases import (
+            Chica,
+            Grande,
+            Juego,
+            Pares,
+            PhaseName,
+            Punto,
+        )
+        from mus_computer.probabilities.estimates import (
+            estimate_discard_options,
+            estimate_hand_statistics,
+        )
+
         is_mano = seat == global_context.mano_seat
         cards = tuple(self.cards)
         statistics = estimate_hand_statistics(cards, is_mano)
@@ -45,20 +61,32 @@ class PlayerBase(ABC):
             has_priority = seat == min(global_context.eligible_seats)
             phase_statistics = estimate_hand_statistics(cards, has_priority)
             expected_points_by_phase = dict(statistics.expected_points_by_phase)
-            expected_points_by_phase[phase_name] = phase_statistics.expected_points_by_phase[phase_name]
-            statistics = HandStatistics(statistics.outcomes_by_phase, expected_points_by_phase)
+            expected_points_by_phase[phase_name] = (
+                phase_statistics.expected_points_by_phase[phase_name]
+            )
+            statistics = HandStatistics(
+                statistics.outcomes_by_phase, expected_points_by_phase
+            )
         if include_discards and self.needs_discard_statistics:
             discard_options = tuple(
                 DiscardOption(DiscardAction(indices), estimated_statistics)
-                for indices, estimated_statistics in estimate_discard_options(cards, is_mano).items()
+                for indices, estimated_statistics in estimate_discard_options(
+                    cards, is_mano
+                ).items()
             )
         else:
             discard_options = (DiscardOption(DiscardAction(()), statistics),)
         return PlayerDecisionContext(
-            self.name, self.team.name, seat, cards, global_context.phase_name,
+            self.name,
+            self.team.name,
+            seat,
+            cards,
+            global_context.phase_name,
             seat in global_context.eligible_seats,
-            {PhaseName(phase.__name__): phase.calculate_points(Hand(list(cards)))
-             for phase in (Grande, Chica, Pares, Juego, Punto)},
+            {
+                PhaseName(phase.__name__): phase.calculate_points(Hand(list(cards)))
+                for phase in (Grande, Chica, Pares, Juego, Punto)
+            },
             statistics,
             discard_options,
         )

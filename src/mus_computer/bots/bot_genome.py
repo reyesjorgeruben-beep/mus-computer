@@ -40,7 +40,9 @@ def crossover(first_parent: BotGenome, second_parent: BotGenome) -> BotGenome:
     return BotGenome(*genes)
 
 
-def mutate(genome: BotGenome, mutation_rate: float = 0.15, sigma: float = 0.05) -> BotGenome:
+def mutate(
+    genome: BotGenome, mutation_rate: float = 0.15, sigma: float = 0.05
+) -> BotGenome:
     """Gaussian mutation clipped to [0, 1] applied independently per gene."""
     genes = []
     for gene_field in fields(genome):

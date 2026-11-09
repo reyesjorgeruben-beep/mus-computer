@@ -5,13 +5,18 @@ from typing import Protocol
 
 from mus_computer.bots.strategies.actions import ActionDistribution, MusAction
 from mus_computer.bots.strategies.contexts import HandStatistics, PlayerDecisionContext
-from mus_computer.bots.strategies.personality import BotPersonality, FIXED_PHASE_WEIGHTS
+from mus_computer.bots.strategies.personality import FIXED_PHASE_WEIGHTS, BotPersonality
 from mus_computer.game.context import GlobalGameContext
+from mus_computer.game.phases import PhaseName
 
 
 def _weighted_hand_strength(statistics: HandStatistics) -> float:
     return sum(
-        weight * (statistics.outcomes_by_phase[name].p_win + 0.5 * statistics.outcomes_by_phase[name].p_tie)
+        weight
+        * (
+            statistics.outcomes_by_phase[name].p_win
+            + 0.5 * statistics.outcomes_by_phase[name].p_tie
+        )
         for name, weight in FIXED_PHASE_WEIGHTS.items()
     )
 
@@ -52,13 +57,20 @@ class EstimateMusStrategy(MusStrategy):
     ) -> ActionDistribution[MusAction]:
         current = _weighted_hand_strength(player_context.statistics)
         best_after_discard = max(
-            (_weighted_hand_strength(option.statistics) for option in player_context.discard_options),
+            (
+                _weighted_hand_strength(option.statistics)
+                for option in player_context.discard_options
+            ),
             default=current,
         )
         improvement = max(0.0, best_after_discard - current)
         own_score = global_context.team_scores.get(player_context.team_name, 0)
         opponent_score = max(
-            (score for team, score in global_context.team_scores.items() if team != player_context.team_name),
+            (
+                score
+                for team, score in global_context.team_scores.items()
+                if team != player_context.team_name
+            ),
             default=0,
         )
         score_signal = (opponent_score - own_score) / 40.0
@@ -90,12 +102,15 @@ class GeneCutMusStrategy(MusStrategy):
         player_context: PlayerDecisionContext,
         personality: BotPersonality,
     ) -> ActionDistribution[MusAction]:
-        has_pares = player_context.intrinsic_points_by_phase.get("Pares", 0) > 0
-        has_juego = player_context.intrinsic_points_by_phase.get("Juego", 0) > 0
+        has_pares = player_context.intrinsic_points_by_phase.get(PhaseName.PARES, 0) > 0
+        has_juego = player_context.intrinsic_points_by_phase.get(PhaseName.JUEGO, 0) > 0
         return self.distribution_for_hand(personality, has_pares, has_juego)
 
     def distribution_for_hand(
-        self, personality: BotPersonality, has_pares: bool, has_juego: bool,
+        self,
+        personality: BotPersonality,
+        has_pares: bool,
+        has_juego: bool,
     ) -> ActionDistribution[MusAction]:
         """Return the same decision distribution for known Pares/Juego flags."""
         if not has_pares and not has_juego:

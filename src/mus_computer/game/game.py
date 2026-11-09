@@ -1,13 +1,22 @@
+from collections.abc import Callable, Sequence
+
+from mus_computer.bots.strategies.actions import MusAction
 from mus_computer.cards.deck import Deck
 from mus_computer.cards.hand import Hand
-from mus_computer.game.phases import Phase, PhaseName, Grande, Chica, Pares, Juego, Punto
-from mus_computer.game.player_base import PlayerBase
-from mus_computer.game.player import HumanPlayer
-from mus_computer.game.team import Team
-from mus_computer.game.wager_session import WagerSession, WagerOutcome, WagerResult
 from mus_computer.game.context import GlobalGameContext, SeatOrderEntry
-from mus_computer.bots.strategies.actions import MusAction
-from typing import Callable, Sequence
+from mus_computer.game.phases import (
+    Chica,
+    Grande,
+    Juego,
+    Pares,
+    Phase,
+    PhaseName,
+    Punto,
+)
+from mus_computer.game.player import HumanPlayer
+from mus_computer.game.player_base import PlayerBase
+from mus_computer.game.team import Team
+from mus_computer.game.wager_session import WagerOutcome, WagerResult, WagerSession
 
 WIN_SCORE = 40
 ActionCallback = Callable[[str], None]
@@ -22,7 +31,9 @@ class Game:
 
     on_action: ActionCallback | None
 
-    def __init__(self, player_a1: str, player_a2: str, player_b1: str, player_b2: str) -> None:
+    def __init__(
+        self, player_a1: str, player_a2: str, player_b1: str, player_b2: str
+    ) -> None:
         team_a = Team("A")
         team_b = Team("B")
         players = [
@@ -36,7 +47,7 @@ class Game:
     @classmethod
     def from_players(
         cls,
-        players_in_order: list[PlayerBase],
+        players_in_order: Sequence[PlayerBase],
         on_action: ActionCallback | None = None,
     ) -> "Game":
         players = list(players_in_order)
@@ -55,10 +66,10 @@ class Game:
         return game
 
     def _initialize(
-        self, players: list[PlayerBase], on_action: ActionCallback | None
+        self, players: Sequence[PlayerBase], on_action: ActionCallback | None
     ) -> None:
         """Store the seats supplied by either constructor before game setup."""
-        self.players_in_order = players
+        self.players_in_order = list(players)
         self.teams = [players[0].team, players[1].team]
         self.on_action = on_action
         self.deck = Deck(on_replenish=self._emit)
@@ -85,7 +96,9 @@ class Game:
 
     def play(self) -> Team:
         """Play hands until a team reaches the score or wins an ordago."""
-        self.winner = self.winner or next((t for t in self.teams if t.points >= WIN_SCORE), None)
+        self.winner = self.winner or next(
+            (t for t in self.teams if t.points >= WIN_SCORE), None
+        )
         while self.winner is None:
             self.deck = Deck(on_replenish=self._emit)
             self._discard_counts = {}
@@ -95,11 +108,15 @@ class Game:
             self._mus_phase()
             self._play_all_phases()
             if self.winner is None:
-                self.players_in_order = self.players_in_order[1:] + self.players_in_order[:1]
+                self.players_in_order = (
+                    self.players_in_order[1:] + self.players_in_order[:1]
+                )
         if self.victory_reason == "ordago":
             self._emit(f"Team {self.winner.name} wins by ordago!")
         else:
-            self._emit(f"Team {self.winner.name} wins with {self.winner.points} points!")
+            self._emit(
+                f"Team {self.winner.name} wins with {self.winner.points} points!"
+            )
         return self.winner
 
     def _deal_initial_cards(self) -> None:
@@ -115,12 +132,19 @@ class Game:
         eligible_players: Sequence[PlayerBase] | None = None,
     ) -> GlobalGameContext:
         """Build the public snapshot visible to all seats at this prompt."""
-        eligible = self.players_in_order if eligible_players is None else eligible_players
+        eligible = (
+            self.players_in_order if eligible_players is None else eligible_players
+        )
         return GlobalGameContext(
-            {t.name: t.points for t in self.teams}, self._mus_rounds, phase_name, None,
-            tuple(self._public_actions), self._discard_counts,
-            tuple(SeatOrderEntry(p.name, p.team.name) for p in self.players_in_order), 0,
-            tuple(i for i,p in enumerate(self.players_in_order) if p in eligible),
+            {t.name: t.points for t in self.teams},
+            self._mus_rounds,
+            phase_name,
+            None,
+            tuple(self._public_actions),
+            self._discard_counts,
+            tuple(SeatOrderEntry(p.name, p.team.name) for p in self.players_in_order),
+            0,
+            tuple(i for i, p in enumerate(self.players_in_order) if p in eligible),
         )
 
     def _mus_phase(self) -> None:
@@ -130,14 +154,21 @@ class Game:
         while self._all_vote_mus():
             for seat, player in enumerate(self.players_in_order):
                 shared = self._global_context()
-                indices = tuple(player.choose_discards(shared, player.decision_context(shared, seat, include_discards=True)))
+                indices = tuple(
+                    player.choose_discards(
+                        shared,
+                        player.decision_context(shared, seat, include_discards=True),
+                    )
+                )
                 if len(set(indices)) != len(indices) or any(
                     type(idx) is not int or idx < 0 or idx >= len(player.cards)
                     for idx in indices
                 ):
                     raise ValueError(f"{player.name} chose invalid discard indices.")
                 self._discard_counts[player.name] += len(indices)
-                discarded = [player.throw_card(idx) for idx in sorted(indices, reverse=True)]
+                discarded = [
+                    player.throw_card(idx) for idx in sorted(indices, reverse=True)
+                ]
                 self.deck.discard(discarded)
                 self._emit(f"Mus | {player.name} discards {len(indices)}")
                 player.receive_cards(self.deck.draw(len(indices)))
@@ -148,9 +179,12 @@ class Game:
         """Ask seats in order; stop as soon as one player cuts Mus."""
         for seat, player in enumerate(self.players_in_order):
             shared = self._global_context()
-            action = player.vote_mus(shared, player.decision_context(shared, seat, include_discards=True))
+            action = player.vote_mus(
+                shared, player.decision_context(shared, seat, include_discards=True)
+            )
             if not isinstance(action, MusAction):
-                raise ValueError(f"{player.name} chose an invalid Mus action.")
+                # Invalid decisions remain ValueError for callers of this API.
+                raise ValueError(f"{player.name} chose an invalid Mus action.")  # noqa: TRY004
             self._emit(f"Mus | {player.name}: {action.value}")
             if action is MusAction.CORTA:
                 return False
@@ -168,7 +202,9 @@ class Game:
             if phase in (Pares, Juego):
                 no_hand_label = "No pares" if phase is Pares else "No Juego"
                 for player in self.players_in_order:
-                    declaration = phase.__name__ if player in eligible else no_hand_label
+                    declaration = (
+                        phase.__name__ if player in eligible else no_hand_label
+                    )
                     self._emit(f"{phase_label} | {player.name}: {declaration}")
             if not eligible:
                 self._emit(f"{phase_label} | no players qualify")
@@ -178,29 +214,46 @@ class Game:
             result: WagerResult | None = None
             if self._is_contested(eligible):
                 result = WagerSession(
-                    players=eligible, teams=tuple(self.teams), base_bet=phase.base_bet,
-                    public_context=self._global_context(PhaseName(phase.__name__), eligible),
-                    on_action=self._emit, phase_label=phase_label,
+                    players=eligible,
+                    teams=(self.teams[0], self.teams[1]),
+                    base_bet=phase.base_bet,
+                    public_context=self._global_context(
+                        PhaseName(phase.__name__), eligible
+                    ),
+                    on_action=self._emit,
+                    phase_label=phase_label,
                     players_in_order=self.players_in_order,
                 ).run()
             if result is not None and result.outcome is WagerOutcome.ORDAGO_ACCEPTED:
                 self.winner = self._resolve_phase(phase, eligible)
                 self.victory_reason = "ordago"
-                self._emit(f"{phase_label} | Team {self.winner.name} wins the match by ordago")
+                self._emit(
+                    f"{phase_label} | Team {self.winner.name} wins the match by ordago"
+                )
                 return
             if result is not None and result.outcome is WagerOutcome.DECLINED:
                 winner = result.offering_team
+                assert winner is not None and result.accepted_stake is not None
                 self._emit(f"{phase_label} | Team {winner.name} wins the wager")
                 self._award_points(winner, result.accepted_stake)
                 if self.winner is not None:
                     return
                 if phase in (Pares, Juego):
-                    intrinsic = sum(phase.calculate_points(Hand(p.cards)) for p in eligible if p.team is winner)
+                    intrinsic = sum(
+                        phase.calculate_points(Hand(p.cards))
+                        for p in eligible
+                        if p.team is winner
+                    )
                     pending_awards.append((winner, intrinsic))
             else:
                 winner = self._resolve_phase(phase, eligible)
                 stake = result.accepted_stake if result is not None else 0
-                intrinsic = sum(phase.calculate_points(Hand(p.cards)) for p in eligible if p.team is winner)
+                assert stake is not None
+                intrinsic = sum(
+                    phase.calculate_points(Hand(p.cards))
+                    for p in eligible
+                    if p.team is winner
+                )
                 self._emit(f"{phase_label} | Team {winner.name} wins the phase")
                 pending_awards.append((winner, stake + intrinsic))
         for team, points in pending_awards:

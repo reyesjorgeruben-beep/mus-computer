@@ -1,9 +1,8 @@
 import pytest
+
 from mus_computer.cards.card import Card
-from mus_computer.cards.hand import Hand
-from mus_computer.game.team import Team
 from mus_computer.game.game import Game
-from mus_computer.game.phases import Grande, Chica, Pares, Juego, Punto
+from mus_computer.game.phases import Chica, Grande, Juego, Pares
 from tests.conftest import ScriptedPlayer
 
 
@@ -20,10 +19,18 @@ def replace_with_scripted(game, mus_votes=None, discards=None, wager_actions=Non
     dc = discards or [[], [], [], []]
     wa = wager_actions or [[0] * 20, [0] * 20, [0] * 20, [0] * 20]
     game.players_in_order = [
-        ScriptedPlayer("A1", team_a, mus_votes=mv[0], discards=dc[0], wager_actions=wa[0]),
-        ScriptedPlayer("B1", team_b, mus_votes=mv[1], discards=dc[1], wager_actions=wa[1]),
-        ScriptedPlayer("A2", team_a, mus_votes=mv[2], discards=dc[2], wager_actions=wa[2]),
-        ScriptedPlayer("B2", team_b, mus_votes=mv[3], discards=dc[3], wager_actions=wa[3]),
+        ScriptedPlayer(
+            "A1", team_a, mus_votes=mv[0], discards=dc[0], wager_actions=wa[0]
+        ),
+        ScriptedPlayer(
+            "B1", team_b, mus_votes=mv[1], discards=dc[1], wager_actions=wa[1]
+        ),
+        ScriptedPlayer(
+            "A2", team_a, mus_votes=mv[2], discards=dc[2], wager_actions=wa[2]
+        ),
+        ScriptedPlayer(
+            "B2", team_b, mus_votes=mv[3], discards=dc[3], wager_actions=wa[3]
+        ),
     ]
 
 
@@ -103,7 +110,9 @@ class TestGameMusPhase:
         game._deal_initial_cards()
         original = [list(p.cards) for p in game.players_in_order]
         game._mus_phase()
-        assert all(list(p.cards) == original[i] for i, p in enumerate(game.players_in_order))
+        assert all(
+            list(p.cards) == original[i] for i, p in enumerate(game.players_in_order)
+        )
 
     def test_mus_discards_and_redraws(self, game):
         # One round of mus: all vote yes, then all vote no. Each discards card 0.
@@ -166,17 +175,17 @@ class TestGameResolvePhase:
     def test_team_a_wins_grande(self, game):
         team_a = game.players_in_order[0].team
         p = game.players_in_order
-        p[0].cards = [Card.R, Card.R, Card.R, Card.C]   # A1: best overall
+        p[0].cards = [Card.R, Card.R, Card.R, Card.C]  # A1: best overall
         p[1].cards = [Card.R, Card.R, Card.S, Card._7]  # B1
         p[2].cards = [Card.R, Card.R, Card.C, Card._7]  # A2
-        p[3].cards = [Card.S, Card.S, Card._7, Card._6] # B2
+        p[3].cards = [Card.S, Card.S, Card._7, Card._6]  # B2
         assert game._resolve_phase(Grande) is team_a
 
     def test_team_b_wins_grande(self, game):
         team_b = game.players_in_order[1].team
         p = game.players_in_order
         p[0].cards = [Card.A, Card.A, Card.A, Card._4]
-        p[1].cards = [Card.R, Card.R, Card.R, Card.C]   # B1: best
+        p[1].cards = [Card.R, Card.R, Card.R, Card.C]  # B1: best
         p[2].cards = [Card.A, Card.A, Card._4, Card._5]
         p[3].cards = [Card.R, Card.R, Card.S, Card._7]
         assert game._resolve_phase(Grande) is team_b
@@ -185,15 +194,15 @@ class TestGameResolvePhase:
         team_a = game.players_in_order[0].team
         p = game.players_in_order
         p[0].cards = [Card.A, Card.A, Card.A, Card._4]  # A1: weak
-        p[1].cards = [Card.R, Card.S, Card._7, Card._6] # B1
+        p[1].cards = [Card.R, Card.S, Card._7, Card._6]  # B1
         p[2].cards = [Card.R, Card.R, Card.C, Card._7]  # A2: team A champion
-        p[3].cards = [Card.S, Card.S, Card._6, Card._5] # B2
+        p[3].cards = [Card.S, Card.S, Card._6, Card._5]  # B2
         assert game._resolve_phase(Grande) is team_a
 
     def test_team_b_wins_chica(self, game):
         team_b = game.players_in_order[1].team
         p = game.players_in_order
-        p[0].cards = [Card.R, Card.R, Card.R, Card.C]   # high cards (bad for Chica)
+        p[0].cards = [Card.R, Card.R, Card.R, Card.C]  # high cards (bad for Chica)
         p[1].cards = [Card.A, Card.A, Card.A, Card._4]  # B1: best (low)
         p[2].cards = [Card.R, Card.C, Card.S, Card._7]
         p[3].cards = [Card.A, Card.A, Card._4, Card._5]
@@ -237,7 +246,7 @@ class TestGamePlayAllPhases:
         replace_with_scripted(game, wager_actions=[[0] * 20 for _ in range(4)])
         for player in game.players_in_order:
             player.cards = [Card.A, Card._4, Card._5, Card._6]
-        events = []
+        events: list[str] = []
         game.on_action = events.append
 
         game._play_all_phases()
@@ -261,24 +270,30 @@ class TestGamePlayAllPhases:
         )
         for player in game.players_in_order:
             player.cards = [Card.A, Card._4, Card._5, Card._6]
-        events = []
+        events: list[str] = []
         game.on_action = events.append
 
         game._play_all_phases()
 
         immediate_score = "Team A +1 | Score A 1 - B 0"
         assert immediate_score in events
-        assert events.index("Grande | A1: envida") < events.index("Grande | B1: no quiero")
-        assert events.index("Grande | B1: no quiero") < events.index("Grande | B2: no quiero")
+        assert events.index("Grande | A1: envida") < events.index(
+            "Grande | B1: no quiero"
+        )
+        assert events.index("Grande | B1: no quiero") < events.index(
+            "Grande | B2: no quiero"
+        )
         assert events.index("Grande | B2: no quiero") < events.index(immediate_score)
         next_phase_index = next(
-            i for i, event in enumerate(events)
+            i
+            for i, event in enumerate(events)
             if event.endswith(" begins") and event != "Grande begins"
         )
         assert events.index(immediate_score) < next_phase_index
         punto_index = events.index("Punto begins")
         later_score_indices = [
-            i for i, event in enumerate(events)
+            i
+            for i, event in enumerate(events)
             if "| Score " in event and event != immediate_score
         ]
         assert all(i > punto_index for i in later_score_indices)
@@ -299,21 +314,29 @@ class TestQualifiedPhaseWagers:
         a1.cards = [Card._7, Card._7, Card._4, Card._5]
         b1.cards = [Card._4, Card._4, Card._5, Card._6]
         a2.cards = b2.cards = [Card.A, Card._4, Card._5, Card._6]
-        events = []
+        events: list[str] = []
         game.on_action = events.append
 
         game._play_all_phases()
 
         assert "Pares | A1: envida" in events
         assert "Pares | B1: quiero" in events
-        assert [event for event in events if event.startswith("Pares | A2:")] == ["Pares | A2: No pares"]
-        assert [event for event in events if event.startswith("Pares | B2:")] == ["Pares | B2: No pares"]
+        assert [event for event in events if event.startswith("Pares | A2:")] == [
+            "Pares | A2: No pares"
+        ]
+        assert [event for event in events if event.startswith("Pares | B2:")] == [
+            "Pares | B2: No pares"
+        ]
         assert events.count("Pares | Team A wins the phase") == 1
-        pares_award = next(i for i, event in enumerate(events) if event.startswith("Team A +3 |"))
+        pares_award = next(
+            i for i, event in enumerate(events) if event.startswith("Team A +3 |")
+        )
         assert pares_award > events.index("Punto begins")
         assert len([event for event in events if "| Score " in event]) == 4
 
-    def test_pares_single_eligible_defender_declines_with_deferred_pairs_award(self, game):
+    def test_pares_single_eligible_defender_declines_with_deferred_pairs_award(
+        self, game
+    ):
         replace_with_scripted(
             game,
             wager_actions=[
@@ -327,17 +350,25 @@ class TestQualifiedPhaseWagers:
         a1.cards = [Card._7, Card._7, Card._4, Card._5]
         b1.cards = [Card._4, Card._4, Card._5, Card._6]
         a2.cards = b2.cards = [Card.A, Card._4, Card._5, Card._6]
-        events = []
+        events: list[str] = []
         game.on_action = events.append
 
         game._play_all_phases()
 
         assert "Pares | B1: no quiero" in events
-        assert [event for event in events if event.startswith("Pares | B2:")] == ["Pares | B2: No pares"]
+        assert [event for event in events if event.startswith("Pares | B2:")] == [
+            "Pares | B2: No pares"
+        ]
         assert "Pares | Team A wins the wager" in events
         assert "Pares | Team A wins the phase" not in events
-        immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
-        assert events.index("Pares | B1: no quiero") < immediate_award < events.index("Juego begins")
+        immediate_award = next(
+            i for i, event in enumerate(events) if event.startswith("Team A +1 |")
+        )
+        assert (
+            events.index("Pares | B1: no quiero")
+            < immediate_award
+            < events.index("Juego begins")
+        )
         assert len([event for event in events if "| Score " in event]) == 5
 
     def test_juego_accepted_offer_counts_stake_and_juego_once(self, game):
@@ -354,17 +385,23 @@ class TestQualifiedPhaseWagers:
         a1.cards = [Card.R, Card.C, Card.S, Card.A]  # 31: three intrinsic points
         b1.cards = [Card.R, Card.C, Card.S, Card._4]
         a2.cards = b2.cards = [Card.A, Card._4, Card._5, Card._6]
-        events = []
+        events: list[str] = []
         game.on_action = events.append
 
         game._play_all_phases()
 
         assert "Juego | A1: envida" in events
         assert "Juego | B1: quiero" in events
-        assert [event for event in events if event.startswith("Juego | A2:")] == ["Juego | A2: No Juego"]
-        assert [event for event in events if event.startswith("Juego | B2:")] == ["Juego | B2: No Juego"]
+        assert [event for event in events if event.startswith("Juego | A2:")] == [
+            "Juego | A2: No Juego"
+        ]
+        assert [event for event in events if event.startswith("Juego | B2:")] == [
+            "Juego | B2: No Juego"
+        ]
         assert events.count("Juego | Team A wins the phase") == 1
-        juego_award = next(i for i, event in enumerate(events) if event.startswith("Team A +5 |"))
+        juego_award = next(
+            i for i, event in enumerate(events) if event.startswith("Team A +5 |")
+        )
         assert juego_award > events.index("Juego | Team A wins the phase")
         assert len([event for event in events if "| Score " in event]) == 3
 
@@ -383,15 +420,21 @@ class TestQualifiedPhaseWagers:
         b1.cards = [Card.R, Card.C, Card.S, Card._4]
         a2.cards = [Card.A, Card._4, Card._5, Card._6]
         b2.cards = [Card.R, Card.C, Card.S, Card._5]
-        events = []
+        events: list[str] = []
         game.on_action = events.append
 
         game._play_all_phases()
 
-        assert events.index("Juego | B1: no quiero") < events.index("Juego | B2: no quiero")
-        assert [event for event in events if event.startswith("Juego | A2:")] == ["Juego | A2: No Juego"]
+        assert events.index("Juego | B1: no quiero") < events.index(
+            "Juego | B2: no quiero"
+        )
+        assert [event for event in events if event.startswith("Juego | A2:")] == [
+            "Juego | A2: No Juego"
+        ]
         assert "Juego | Team A wins the wager" in events
         assert "Juego | Team A wins the phase" not in events
-        immediate_award = next(i for i, event in enumerate(events) if event.startswith("Team A +1 |"))
+        immediate_award = next(
+            i for i, event in enumerate(events) if event.startswith("Team A +1 |")
+        )
         assert events.index("Juego | B2: no quiero") < immediate_award
         assert len([event for event in events if "| Score " in event]) == 4

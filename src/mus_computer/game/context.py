@@ -1,8 +1,9 @@
 """Immutable public snapshots shared by all seats."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping, NamedTuple
+from typing import NamedTuple
 
 from mus_computer.game.phases import PhaseName
 
@@ -45,9 +46,15 @@ class GlobalGameContext:
         if self.phase_name is not None:
             object.__setattr__(self, "phase_name", PhaseName(self.phase_name))
         if any(action.startswith("Hands |") for action in self.public_actions):
-            raise ValueError("Hand display events cannot enter public decision history.")
-        object.__setattr__(self, "team_scores", MappingProxyType(dict(self.team_scores)))
-        object.__setattr__(self, "discard_counts", MappingProxyType(dict(self.discard_counts)))
+            raise ValueError(
+                "Hand display events cannot enter public decision history."
+            )
+        object.__setattr__(
+            self, "team_scores", MappingProxyType(dict(self.team_scores))
+        )
+        object.__setattr__(
+            self, "discard_counts", MappingProxyType(dict(self.discard_counts))
+        )
         object.__setattr__(self, "public_actions", tuple(self.public_actions))
         object.__setattr__(
             self,

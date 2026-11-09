@@ -4,12 +4,14 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from mus_computer.bots.strategies.actions import (
-    ActionDistribution, WagerAction, legal_wager_actions,
+    ActionDistribution,
+    WagerAction,
+    legal_wager_actions,
 )
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
 from mus_computer.bots.strategies.personality import BotPersonality
 from mus_computer.game.context import GlobalGameContext
-from mus_computer.game.phases import PhaseName, PHASE_ORDER
+from mus_computer.game.phases import PHASE_ORDER, PhaseName
 
 
 class WagerStrategy(Protocol):
@@ -51,18 +53,28 @@ class HandStrengthWagerStrategy(WagerStrategy):
         personality: BotPersonality,
     ) -> ActionDistribution[WagerAction]:
         """Map phase loss probability to pass/raise or fold/match actions."""
-        if global_context.phase_name != self.phase_name or player_context.phase_name != self.phase_name:
+        if (
+            global_context.phase_name != self.phase_name
+            or player_context.phase_name != self.phase_name
+        ):
             raise ValueError("Wager strategy and decision phase disagree.")
         p_loss = player_context.statistics.outcomes_by_phase[self.phase_name].p_loss
-        if global_context.wager is not None and global_context.wager.offering_team is not None:
-            return ActionDistribution({
-                WagerAction.FOLD: p_loss,
-                WagerAction.MATCH_OR_PASS: 1.0 - p_loss,
-            })
-        return ActionDistribution({
-            WagerAction.MATCH_OR_PASS: p_loss,
-            WagerAction.RAISE_2: 1.0 - p_loss,
-        })
+        if (
+            global_context.wager is not None
+            and global_context.wager.offering_team is not None
+        ):
+            return ActionDistribution(
+                {
+                    WagerAction.FOLD: p_loss,
+                    WagerAction.MATCH_OR_PASS: 1.0 - p_loss,
+                }
+            )
+        return ActionDistribution(
+            {
+                WagerAction.MATCH_OR_PASS: p_loss,
+                WagerAction.RAISE_2: 1.0 - p_loss,
+            }
+        )
 
 
 class WagerLayer(Protocol):
@@ -80,8 +92,10 @@ class WagerLayer(Protocol):
 
 
 def _move_passive_probability(
-    probabilities: dict[WagerAction, float], global_context: GlobalGameContext,
-    target: WagerAction, rate: float,
+    probabilities: dict[WagerAction, float],
+    global_context: GlobalGameContext,
+    target: WagerAction,
+    rate: float,
 ) -> None:
     """Move ``rate`` of the current pass or fold chance to a legal target.
 
@@ -90,7 +104,11 @@ def _move_passive_probability(
     """
     if target not in legal_wager_actions(global_context.wager):
         return
-    passive = WagerAction.FOLD if WagerAction.FOLD in probabilities else WagerAction.MATCH_OR_PASS
+    passive = (
+        WagerAction.FOLD
+        if WagerAction.FOLD in probabilities
+        else WagerAction.MATCH_OR_PASS
+    )
     moved = probabilities[passive] * rate
     probabilities[passive] -= moved
     probabilities[target] = probabilities.get(target, 0.0) + moved
@@ -108,7 +126,9 @@ class BluffRaiseLayer(WagerLayer):
         personality: BotPersonality,
     ) -> None:
         """Transfer ``bluff_rate`` of the passive chance to raising two."""
-        _move_passive_probability(probabilities, global_context, WagerAction.RAISE_2, personality.bluff_rate)
+        _move_passive_probability(
+            probabilities, global_context, WagerAction.RAISE_2, personality.bluff_rate
+        )
 
 
 @dataclass(frozen=True)
@@ -124,7 +144,10 @@ class ExtremeBluffLayer(WagerLayer):
     ) -> None:
         """Transfer ``extreme_bluff_rate`` of the remaining chance to ordago."""
         _move_passive_probability(
-            probabilities, global_context, WagerAction.ORDAGO, personality.extreme_bluff_rate,
+            probabilities,
+            global_context,
+            WagerAction.ORDAGO,
+            personality.extreme_bluff_rate,
         )
 
 
@@ -151,15 +174,17 @@ class ComposedWagerStrategy(WagerStrategy):
         personality: BotPersonality,
     ) -> ActionDistribution[WagerAction]:
         """Copy the base distribution, apply each layer, and validate the result."""
-        base_distribution = self.base.decide(global_context, player_context, personality)
+        base_distribution = self.base.decide(
+            global_context, player_context, personality
+        )
         if not self.layers:
             return base_distribution
         probabilities = dict(base_distribution.probabilities)
         for layer in self.layers:
             layer.apply(probabilities, global_context, player_context, personality)
-        return ActionDistribution({
-            action: chance for action, chance in probabilities.items() if chance > 0
-        })
+        return ActionDistribution(
+            {action: chance for action, chance in probabilities.items() if chance > 0}
+        )
 
 
 @dataclass(frozen=True)
@@ -182,20 +207,30 @@ class HeuristicWagerStrategy(WagerStrategy):
         personality: BotPersonality,
     ) -> ActionDistribution[WagerAction]:
         """Weight legal actions using hand estimates, score, seat, and Mus history."""
-        if global_context.phase_name != self.phase_name or player_context.phase_name != self.phase_name:
+        if (
+            global_context.phase_name != self.phase_name
+            or player_context.phase_name != self.phase_name
+        ):
             raise ValueError("Wager strategy and decision phase disagree.")
         outcome = player_context.statistics.outcomes_by_phase[self.phase_name]
         own_score = global_context.team_scores.get(player_context.team_name, 0)
         opponent_score = max(
-            (score for team, score in global_context.team_scores.items() if team != player_context.team_name),
+            (
+                score
+                for team, score in global_context.team_scores.items()
+                if team != player_context.team_name
+            ),
             default=0,
         )
         seat_count = max(1, len(global_context.seat_order) - 1)
-        position = (player_context.seat - global_context.mano_seat) % len(global_context.seat_order)
+        position = (player_context.seat - global_context.mano_seat) % len(
+            global_context.seat_order
+        )
         preference = 1.0 - abs(position / seat_count - 0.5) * 2.0
         expected = player_context.statistics.expected_points_by_phase[self.phase_name]
         confidence = (
-            outcome.p_win + 0.5 * outcome.p_tie
+            outcome.p_win
+            + 0.5 * outcome.p_tie
             + min(0.1, max(0.0, expected) * 0.02)
             + 0.1 * (opponent_score - own_score) / 40.0
             + preference * 0.08
@@ -207,10 +242,12 @@ class HeuristicWagerStrategy(WagerStrategy):
             match = max(0.01, confidence + 0.05)
             fold = max(0.01, 1.0 - confidence)
             total = match + fold
-            return ActionDistribution({
-                WagerAction.MATCH_OR_PASS: match / total,
-                WagerAction.FOLD: fold / total,
-            })
+            return ActionDistribution(
+                {
+                    WagerAction.MATCH_OR_PASS: match / total,
+                    WagerAction.FOLD: fold / total,
+                }
+            )
 
         fold = max(0.0, 0.5 - confidence) * 2.0 if WagerAction.FOLD in legal else 0.0
         raise_drive = max(0.0, confidence - 0.5) + 0.15
@@ -219,20 +256,19 @@ class HeuristicWagerStrategy(WagerStrategy):
         if WagerAction.FOLD in legal:
             weights[WagerAction.FOLD] = fold
         for increment, action in (
-            (2, WagerAction.RAISE_2), (3, WagerAction.RAISE_3),
-            (4, WagerAction.RAISE_4), (5, WagerAction.RAISE_5),
+            (2, WagerAction.RAISE_2),
+            (3, WagerAction.RAISE_3),
+            (4, WagerAction.RAISE_4),
+            (5, WagerAction.RAISE_5),
         ):
-            weights[action] = raise_drive * (
-                0.5 / 4.0
-                + 0.5 * (increment - 1) / 14.0
-            )
-        weights[WagerAction.ORDAGO] = (
-            raise_drive * 0.5 * max(0.0, confidence - 0.8)
-        )
+            weights[action] = raise_drive * (0.5 / 4.0 + 0.5 * (increment - 1) / 14.0)
+        weights[WagerAction.ORDAGO] = raise_drive * 0.5 * max(0.0, confidence - 0.8)
         total = sum(weights.values())
         if total <= 0:
             return ActionDistribution({WagerAction.MATCH_OR_PASS: 1.0})
-        return ActionDistribution({action: value / total for action, value in weights.items()})
+        return ActionDistribution(
+            {action: value / total for action, value in weights.items()}
+        )
 
 
 # Preserve imports used by callers of the first contextual-bot API.

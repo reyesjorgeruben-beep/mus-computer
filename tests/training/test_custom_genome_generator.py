@@ -1,4 +1,5 @@
 from dataclasses import fields
+
 import pytest
 
 from mus_computer.bots.bot_genome import BotGenome
@@ -70,13 +71,17 @@ def test_alpha_pairs_are_averaged_and_alpha_beta_copies_are_perturbed(monkeypatc
     )
     assert children[5:15] == population[:10]
     assert children[15:] == population[10:15]
-    assert all(child is not parent for child, parent in zip(children[5:15], population[:10]))
+    assert all(
+        child is not parent for child, parent in zip(children[5:15], population[:10])
+    )
 
 
 def test_perturbation_clamps_each_gene_to_unit_interval(monkeypatch):
     population = [genome(0.98)] * 10 + [genome(0.02)] * 10
     fitness = [1.0] * 10 + [0.0] * 10
-    monkeypatch.setattr("random.uniform", lambda low, high: high if high == 0.03 else low)
+    monkeypatch.setattr(
+        "random.uniform", lambda low, high: high if high == 0.03 else low
+    )
 
     children = CustomGeneticGenomeGenerator(
         active_genes=tuple(field.name for field in fields(BotGenome)),
@@ -98,7 +103,9 @@ def test_variation_ranges_can_be_configured_per_generator(monkeypatch):
 
     monkeypatch.setattr("random.uniform", upper_bound)
     children = CustomGeneticGenomeGenerator(
-        active_genes=("bluff_rate",), alpha_variation=0.02, beta_variation=0.07,
+        active_genes=("bluff_rate",),
+        alpha_variation=0.02,
+        beta_variation=0.07,
     ).next_generation(population, fitness)
 
     assert [child.bluff_rate for child in children[:5]] == [0.5] * 5
@@ -107,10 +114,13 @@ def test_variation_ranges_can_be_configured_per_generator(monkeypatch):
     assert bounds == [(-0.02, 0.02)] * 10 + [(-0.07, 0.07)] * 5
 
 
-@pytest.mark.parametrize("setting", [
-    {"alpha_variation": -0.01},
-    {"beta_variation": float("nan")},
-])
+@pytest.mark.parametrize(
+    "setting",
+    [
+        {"alpha_variation": -0.01},
+        {"beta_variation": float("nan")},
+    ],
+)
 def test_invalid_variation_range_is_rejected(setting):
     with pytest.raises(ValueError, match="variation"):
         CustomGeneticGenomeGenerator(**setting)

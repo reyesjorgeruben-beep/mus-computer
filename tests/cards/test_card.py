@@ -1,4 +1,3 @@
-import pytest
 from mus_computer.cards.card import Card
 
 
@@ -29,7 +28,7 @@ class TestCardOrdering:
     def test_equality(self):
         assert Card.R == Card.R
         assert Card.A == Card.A
-        assert not (Card.A == Card.R)
+        assert Card.A != Card.R
 
     def test_not_equal(self):
         assert Card.A != Card.R
@@ -41,18 +40,28 @@ class TestCardOrdering:
 class TestCardValues:
     def test_strongness_values(self):
         expected = {
-            Card.A: 1, Card._4: 4, Card._5: 5,
-            Card._6: 6, Card._7: 7,
-            Card.S: 10, Card.C: 11, Card.R: 12,
+            Card.A: 1,
+            Card._4: 4,
+            Card._5: 5,
+            Card._6: 6,
+            Card._7: 7,
+            Card.S: 10,
+            Card.C: 11,
+            Card.R: 12,
         }
         for card, val in expected.items():
             assert card.strongness == val
 
     def test_juego_values(self):
         expected = {
-            Card.A: 1, Card._4: 4, Card._5: 5,
-            Card._6: 6, Card._7: 7,
-            Card.S: 10, Card.C: 10, Card.R: 10,
+            Card.A: 1,
+            Card._4: 4,
+            Card._5: 5,
+            Card._6: 6,
+            Card._7: 7,
+            Card.S: 10,
+            Card.C: 10,
+            Card.R: 10,
         }
         for card, val in expected.items():
             assert card.juego_value == val

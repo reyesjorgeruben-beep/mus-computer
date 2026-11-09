@@ -1,74 +1,113 @@
 from mus_computer.cards.card import Card as C
+from mus_computer.game.context import SeatOrderEntry
 from mus_computer.game.game import Game
+from mus_computer.game.phases import PhaseName
 from mus_computer.game.team import Team
 from tests.conftest import ScriptedPlayer
 
 
 def test_real_mus_history_full_seats_and_private_hands_reach_each_decision():
-    seen=[]
+    seen = []
+
     class Recorder(ScriptedPlayer):
-        def vote_mus(self, shared, private):
-            seen.append(("mus",shared,private))
-            return super().vote_mus(shared,private)
-        def choose_discards(self, shared, private):
-            seen.append(("discard",shared,private))
-            return super().choose_discards(shared,private)
-        def wager_action(self, shared, private):
-            seen.append(("wager",shared,private))
-            return super().wager_action(shared,private)
-    a,b=Team("A"),Team("B")
-    players=[Recorder(str(i),a if i%2==0 else b,mus_votes=[True,False],
-                      discards=[[]],wager_actions=[0]*5) for i in range(4)]
-    hands=[[C._7,C._7,C._5,C._4],[C._6,C._5,C._4,C.A],
-           [C._7,C._5,C._4,C.A],[C._6,C._5,C._4,C._4]]
-    for p,h in zip(players,hands): p.receive_cards(h)
-    events=[]
-    game=Game.from_players(players,events.append)
+        def vote_mus(self, global_context=None, player_context=None):
+            seen.append(("mus", global_context, player_context))
+            return super().vote_mus(global_context, player_context)
+
+        def choose_discards(self, global_context=None, player_context=None):
+            seen.append(("discard", global_context, player_context))
+            return super().choose_discards(global_context, player_context)
+
+        def wager_action(self, global_context=None, player_context=None):
+            seen.append(("wager", global_context, player_context))
+            return super().wager_action(global_context, player_context)
+
+    a, b = Team("A"), Team("B")
+    players = [
+        Recorder(
+            str(i),
+            a if i % 2 == 0 else b,
+            mus_votes=[True, False],
+            discards=[[]],
+            wager_actions=[0] * 5,
+        )
+        for i in range(4)
+    ]
+    hands = [
+        [C._7, C._7, C._5, C._4],
+        [C._6, C._5, C._4, C.A],
+        [C._7, C._5, C._4, C.A],
+        [C._6, C._5, C._4, C._4],
+    ]
+    for p, h in zip(players, hands):
+        p.receive_cards(h)
+    events: list[str] = []
+    game = Game.from_players(players, events.append)
     game._emit_hands()
     game._mus_phase()
     game._play_all_phases()
     assert any(e.startswith("Hands |") for e in events)
-    for kind,shared,private in seen:
-        assert shared.seat_order==(("0","A"),("1","B"),("2","A"),("3","B"))
-        assert private.cards==tuple(hands[private.seat])
+    for kind, shared, private in seen:
+        assert shared.seat_order == (
+            SeatOrderEntry("0", "A"),
+            SeatOrderEntry("1", "B"),
+            SeatOrderEntry("2", "A"),
+            SeatOrderEntry("3", "B"),
+        )
+        assert private.cards == tuple(hands[private.seat])
         assert not any(e.startswith("Hands |") for e in shared.public_actions)
-        assert not hasattr(shared,"cards")
-        if kind=="wager":
-            assert shared.mus_exchanges==1
+        assert not hasattr(shared, "cards")
+        if kind == "wager":
+            assert shared.mus_exchanges == 1
             assert "Mus | 0: corta" in shared.public_actions
-            if shared.phase_name=="Pares":
-                assert shared.eligible_seats==(0,3)
-                assert private.seat in (0,3)
-    assert any(shared.phase_name=="Pares" for _,shared,_ in seen)
+            if shared.phase_name == PhaseName.PARES:
+                assert shared.eligible_seats == (0, 3)
+                assert private.seat in (0, 3)
+    assert any(shared.phase_name == PhaseName.PARES for _, shared, _ in seen)
 
 
 def test_duplicate_teammate_names_keep_absolute_seats_and_phase_eligibility():
-    seen=[]
+    seen = []
+
     class Recorder(ScriptedPlayer):
-        def vote_mus(self, shared, private):
-            seen.append(("mus",self,private))
-            return super().vote_mus(shared,private)
-        def choose_discards(self, shared, private):
-            seen.append(("discard",self,private))
-            return super().choose_discards(shared,private)
-        def wager_action(self, shared, private):
-            seen.append((shared.phase_name,self,private))
-            return super().wager_action(shared,private)
-    a,b=Team("A"),Team("B")
-    players=[Recorder("same" if i%2==0 else str(i), a if i%2==0 else b,
-                      mus_votes=[True,False],discards=[[]],wager_actions=[0]*5)
-             for i in range(4)]
+        def vote_mus(self, global_context=None, player_context=None):
+            seen.append(("mus", self, player_context))
+            return super().vote_mus(global_context, player_context)
+
+        def choose_discards(self, global_context=None, player_context=None):
+            seen.append(("discard", self, player_context))
+            return super().choose_discards(global_context, player_context)
+
+        def wager_action(self, global_context=None, player_context=None):
+            seen.append((global_context.phase_name, self, player_context))
+            return super().wager_action(global_context, player_context)
+
+    a, b = Team("A"), Team("B")
+    players = [
+        Recorder(
+            "same" if i % 2 == 0 else str(i),
+            a if i % 2 == 0 else b,
+            mus_votes=[True, False],
+            discards=[[]],
+            wager_actions=[0] * 5,
+        )
+        for i in range(4)
+    ]
     for player in players:
-        player.cards=[C.A,C._4,C._5,C._6]
-    players[2].cards=[C._7,C._7,C._4,C._5]
-    players[3].cards=[C._4,C._4,C._5,C._6]
-    game=Game.from_players(players)
+        player.cards = [C.A, C._4, C._5, C._6]
+    players[2].cards = [C._7, C._7, C._4, C._5]
+    players[3].cards = [C._4, C._4, C._5, C._6]
+    game = Game.from_players(players)
     game._mus_phase()
     game._play_all_phases()
-    for phase,player,private in seen:
-        assert private.seat==next(i for i,p in enumerate(players) if p is player)
+    for phase, player, private in seen:
+        assert private.seat == next(i for i, p in enumerate(players) if p is player)
         assert private.eligible
-    assert [(private.seat,private.eligible) for phase,_,private in seen if phase=="Pares"]==[(2,True),(3,True)]
+    assert [
+        (private.seat, private.eligible)
+        for phase, _, private in seen
+        if phase == PhaseName.PARES
+    ] == [(2, True), (3, True)]
 
 
 def test_pares_and_juego_eligibility_is_announced_before_wager_decisions():
@@ -76,31 +115,41 @@ def test_pares_and_juego_eligibility_is_announced_before_wager_decisions():
     seen = []
 
     class ObservingPlayer(ScriptedPlayer):
-        def wager_action(self, shared, private):
-            seen.append(shared)
-            return super().wager_action(shared, private)
+        def wager_action(self, global_context=None, player_context=None):
+            seen.append(global_context)
+            return super().wager_action(global_context, player_context)
 
     players = [
-        ObservingPlayer(str(seat), team_a if seat % 2 == 0 else team_b, wager_actions=[0] * 5)
+        ObservingPlayer(
+            str(seat), team_a if seat % 2 == 0 else team_b, wager_actions=[0] * 5
+        )
         for seat in range(4)
     ]
     players[0].cards = [C._7, C._7, C._4, C._5]
     players[1].cards = [C.A, C._4, C._5, C._6]
     players[2].cards = [C.A, C._4, C._5, C._7]
     players[3].cards = [C._4, C._4, C._5, C._6]
-    events = []
+    events: list[str] = []
     game = Game.from_players(players, events.append)
 
     game._play_all_phases()
 
     declarations = [
-        "Pares | 0: Pares", "Pares | 1: No pares",
-        "Pares | 2: No pares", "Pares | 3: Pares",
+        "Pares | 0: Pares",
+        "Pares | 1: No pares",
+        "Pares | 2: No pares",
+        "Pares | 3: Pares",
     ]
     assert [event for event in events if event in declarations] == declarations
     assert events.index(declarations[-1]) < events.index("Pares | 0: paso")
-    pares_context = next(context for context in seen if context.phase_name == "Pares")
+    pares_context = next(
+        context for context in seen if context.phase_name == PhaseName.PARES
+    )
     assert pares_context.eligible_seats == (0, 3)
-    assert all(declaration in pares_context.public_actions for declaration in declarations)
+    assert all(
+        declaration in pares_context.public_actions for declaration in declarations
+    )
     juego_declarations = [f"Juego | {seat}: No Juego" for seat in range(4)]
-    assert [event for event in events if event in juego_declarations] == juego_declarations
+    assert [
+        event for event in events if event in juego_declarations
+    ] == juego_declarations

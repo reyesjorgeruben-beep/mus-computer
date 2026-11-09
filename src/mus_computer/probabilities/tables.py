@@ -21,8 +21,10 @@ def canonical(cards) -> tuple:
 
 @lru_cache(maxsize=1)
 def _load_packaged_tables() -> dict:
-    resource = resources.files("mus_computer.probabilities").joinpath(
-        "data", "probability_tables.pkl"
+    resource = (
+        resources.files("mus_computer.probabilities")
+        .joinpath("data")
+        .joinpath("probability_tables.pkl")
     )
     with resource.open("rb") as file:
         return _TableUnpickler(file).load()
@@ -110,7 +112,6 @@ def hand_gainance(cards, phase_weights: dict) -> float:
     options = discard_options(cards)
     if not options:
         return 0.0
-    key = canonical(cards)
     total_w = sum(phase_weights.values()) or 1.0
 
     def weighted(option_dict):

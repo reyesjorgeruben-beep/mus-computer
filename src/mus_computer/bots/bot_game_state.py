@@ -1,13 +1,12 @@
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List
 
 
 class ScoreTier(Enum):
-    EARLY    = 0   # < 25% of win score
-    MID      = 1   # 25-60%
-    LATE     = 2   # 60-85%
-    CRITICAL = 3   # >= 85%
+    EARLY = 0  # < 25% of win score
+    MID = 1  # 25-60%
+    LATE = 2  # 60-85%
+    CRITICAL = 3  # >= 85%
 
 
 def get_score_tier(score: int, win_score: int) -> ScoreTier:
@@ -27,5 +26,5 @@ class BotGameState:
     opponent_score_tier: ScoreTier
     position: int
     n_players: int
-    opponent_discard_counts: List[int] = field(default_factory=list)
+    opponent_discard_counts: list[int] = field(default_factory=list)
     mus_rounds_completed: int = 0

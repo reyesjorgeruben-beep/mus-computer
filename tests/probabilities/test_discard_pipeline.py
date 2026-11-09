@@ -5,22 +5,20 @@ Mini deck: A(8), 4(4), 5(4), 6(4)  ->  20 cards, 35 canonical 4-card hands.
 Runs fully in-memory in < 5 seconds, validating the full discard pipeline
 without touching the production probability_tables.pkl.
 """
+
 import time
+
 import pytest
-from itertools import combinations_with_replacement
 
 from mus_computer.cards.card import Card
 from scripts.tables.build_tables import (
-    build_tables,
-    all_canonical_hands,
-    canonical,
-    _build_win_tables,
-    _build_discard_options_table,
-    _build_avg_opp_improvement,
-    _score_4hands,
+    EP_MANO_PHASES,
     _precompute_hand_props,
     _precompute_phase_ranks,
-    EP_MANO_PHASES,
+    _score_4hands,
+    all_canonical_hands,
+    build_tables,
+    canonical,
 )
 
 MINI_DECK = {
@@ -46,6 +44,7 @@ def mini_hands():
 # ---------------------------------------------------------------------------
 # Structural completeness
 # ---------------------------------------------------------------------------
+
 
 def test_mini_deck_yields_35_hands(mini_hands):
     assert len(mini_hands) == 35
@@ -82,12 +81,15 @@ def test_keeping_all_cards_is_always_an_option(mini_tables, mini_hands):
 # Value validity
 # ---------------------------------------------------------------------------
 
+
 def test_win_probs_are_valid_probabilities(mini_tables, mini_hands):
     for hand in mini_hands:
         for phase in PHASE_NAMES:
             entry = mini_tables[hand][phase]
             total = entry["p_win"] + entry["p_tie"] + entry["p_loss"]
-            assert abs(total - 1.0) < 1e-9, f"{hand} {phase} probs don't sum to 1: {total}"
+            assert abs(total - 1.0) < 1e-9, (
+                f"{hand} {phase} probs don't sum to 1: {total}"
+            )
             for k in ("p_win", "p_tie", "p_loss"):
                 assert 0.0 <= entry[k] <= 1.0, f"{hand} {phase} {k} out of range"
 
@@ -110,6 +112,7 @@ def test_discard_option_kept_has_4_or_fewer_cards(mini_hands, mini_tables):
 # ---------------------------------------------------------------------------
 # Correctness: best discard improves or equals current strength
 # ---------------------------------------------------------------------------
+
 
 def test_best_discard_post_mus_geq_current(mini_tables, mini_hands):
     """Weighted post-mus win prob must be >= current for at least equal-weight scoring."""
@@ -134,8 +137,10 @@ def test_avg_opp_improvements_non_negative(mini_tables):
 # Discard index correctness: kept cards are a subset of original hand
 # ---------------------------------------------------------------------------
 
+
 def test_kept_cards_are_subset_of_hand(mini_tables, mini_hands):
     from collections import Counter
+
     for hand in mini_hands:
         hand_counts = Counter(hand)
         for kept in mini_tables[hand]["discard_options"]:
@@ -150,6 +155,7 @@ def test_kept_cards_are_subset_of_hand(mini_tables, mini_hands):
 # ep_mano table (per-phase mano expected points)
 # ---------------------------------------------------------------------------
 
+
 def test_all_hands_have_ep_mano(mini_tables, mini_hands):
     for hand in mini_hands:
         assert "ep_mano" in mini_tables[hand], f"{hand} missing ep_mano"
@@ -158,29 +164,42 @@ def test_all_hands_have_ep_mano(mini_tables, mini_hands):
 
 
 def test_ep_mano_required_fields(mini_tables, mini_hands):
-    base_fields = {"prob_A_wins", "prob_B_wins", "expected_A_points",
-                   "expected_B_points", "expected_net_A", "expected_total_winner_points"}
+    base_fields = {
+        "prob_A_wins",
+        "prob_B_wins",
+        "expected_A_points",
+        "expected_B_points",
+        "expected_net_A",
+        "expected_total_winner_points",
+    }
     bonus_fields = {"prob_both_given_A_wins", "prob_both_given_B_wins"}
     for hand in mini_hands:
         ep = mini_tables[hand]["ep_mano"]
         for phase in EP_MANO_PHASES:
-            assert base_fields <= set(ep[phase].keys()), \
+            assert base_fields <= set(ep[phase].keys()), (
                 f"{hand} {phase} missing fields"
+            )
             if phase in ("Pares", "Juego"):
-                assert bonus_fields <= set(ep[phase].keys()), \
+                assert bonus_fields <= set(ep[phase].keys()), (
                     f"{hand} {phase} missing bonus fields"
+                )
 
 
 def test_ep_mano_probabilities_valid(mini_tables, mini_hands):
     import math
+
     for hand in mini_hands:
         ep = mini_tables[hand]["ep_mano"]
         for phase in EP_MANO_PHASES:
             e = ep[phase]
             for key in ("prob_A_wins", "prob_B_wins"):
                 assert 0.0 <= e[key] <= 1.0 + 1e-9, f"{hand} {phase} {key} out of range"
-            assert math.isfinite(e["expected_net_A"]), f"{hand} {phase} expected_net_A not finite"
-            assert math.isfinite(e["expected_A_points"]), f"{hand} {phase} expected_A_points not finite"
+            assert math.isfinite(e["expected_net_A"]), (
+                f"{hand} {phase} expected_net_A not finite"
+            )
+            assert math.isfinite(e["expected_A_points"]), (
+                f"{hand} {phase} expected_A_points not finite"
+            )
 
 
 def test_ep_mano_prob_sums_leq_one(mini_tables, mini_hands):
@@ -196,10 +215,12 @@ def test_ep_mano_expected_points_non_negative(mini_tables, mini_hands):
     for hand in mini_hands:
         ep = mini_tables[hand]["ep_mano"]
         for phase in EP_MANO_PHASES:
-            assert ep[phase]["expected_A_points"] >= -1e-9, \
+            assert ep[phase]["expected_A_points"] >= -1e-9, (
                 f"{hand} {phase} expected_A_points negative"
-            assert ep[phase]["expected_B_points"] >= -1e-9, \
+            )
+            assert ep[phase]["expected_B_points"] >= -1e-9, (
                 f"{hand} {phase} expected_B_points negative"
+            )
 
 
 def test_ep_mano_grande_win_rate_plausible(mini_hands, mini_tables):
@@ -207,10 +228,11 @@ def test_ep_mano_grande_win_rate_plausible(mini_hands, mini_tables):
     hands_list = sorted(mini_hands.keys())
     props = _precompute_hand_props(hands_list)
     phase_ranks = _precompute_phase_ranks(hands_list, props)
-    best_grande = max(hands_list, key=lambda h: phase_ranks['Grande'][h])
+    best_grande = max(hands_list, key=lambda h: phase_ranks["Grande"][h])
     ep = mini_tables[best_grande]["ep_mano"]["Grande"]
-    assert ep["prob_A_wins"] > 0.5, \
+    assert ep["prob_A_wins"] > 0.5, (
         f"best Grande hand should win >50% as mano, got {ep['prob_A_wins']:.3f}"
+    )
 
 
 def test_ep_mano_best_chica_wins_often(mini_hands, mini_tables):
@@ -218,10 +240,11 @@ def test_ep_mano_best_chica_wins_often(mini_hands, mini_tables):
     hands_list = sorted(mini_hands.keys())
     props = _precompute_hand_props(hands_list)
     phase_ranks = _precompute_phase_ranks(hands_list, props)
-    best_chica = max(hands_list, key=lambda h: phase_ranks['Chica'][h])
+    best_chica = max(hands_list, key=lambda h: phase_ranks["Chica"][h])
     ep = mini_tables[best_chica]["ep_mano"]["Chica"]
-    assert ep["prob_A_wins"] > 0.5, \
+    assert ep["prob_A_wins"] > 0.5, (
         f"best Chica hand should win >50% as mano, got {ep['prob_A_wins']:.3f}"
+    )
 
 
 def test_ep_mano_net_A_symmetry(mini_tables, mini_hands):
@@ -231,13 +254,15 @@ def test_ep_mano_net_A_symmetry(mini_tables, mini_hands):
         for phase in EP_MANO_PHASES:
             e = ep[phase]
             computed = e["expected_A_points"] - e["expected_B_points"]
-            assert abs(computed - e["expected_net_A"]) < 1e-9, \
+            assert abs(computed - e["expected_net_A"]) < 1e-9, (
                 f"{hand} {phase} net_A mismatch"
+            )
 
 
 # ---------------------------------------------------------------------------
 # _score_4hands sanity checks (unchanged helper)
 # ---------------------------------------------------------------------------
+
 
 def test_score_4hands_grande_always_awards_1(mini_hands):
     """Grande always contributes exactly 1 tanto total."""

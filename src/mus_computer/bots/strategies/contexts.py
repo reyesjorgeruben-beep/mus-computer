@@ -1,8 +1,8 @@
 """Private per-player decision information and statistical estimates."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping
 
 from mus_computer.bots.strategies.actions import DiscardAction
 from mus_computer.cards.card import Card
@@ -28,14 +28,20 @@ class HandStatistics:
             self,
             "outcomes_by_phase",
             MappingProxyType(
-                {PhaseName(phase): outcome for phase, outcome in self.outcomes_by_phase.items()}
+                {
+                    PhaseName(phase): outcome
+                    for phase, outcome in self.outcomes_by_phase.items()
+                }
             ),
         )
         object.__setattr__(
             self,
             "expected_points_by_phase",
             MappingProxyType(
-                {PhaseName(phase): points for phase, points in self.expected_points_by_phase.items()}
+                {
+                    PhaseName(phase): points
+                    for phase, points in self.expected_points_by_phase.items()
+                }
             ),
         )
 
@@ -81,15 +87,22 @@ class PlayerDecisionContext:
             self,
             "intrinsic_points_by_phase",
             MappingProxyType(
-                {PhaseName(phase): points for phase, points in self.intrinsic_points_by_phase.items()}
+                {
+                    PhaseName(phase): points
+                    for phase, points in self.intrinsic_points_by_phase.items()
+                }
             ),
         )
         options = tuple(self.discard_options)
-        if not options or any(not isinstance(option, DiscardOption) for option in options):
+        if not options or any(
+            not isinstance(option, DiscardOption) for option in options
+        ):
             raise ValueError("Discard options must contain at least one DiscardOption.")
         actions = [option.action for option in options]
         if len(set(actions)) != len(actions):
             raise ValueError("Discard options cannot repeat an action.")
-        if any(index >= len(self.cards) for action in actions for index in action.indices):
+        if any(
+            index >= len(self.cards) for action in actions for index in action.indices
+        ):
             raise ValueError("Discard option contains an invalid card index.")
         object.__setattr__(self, "discard_options", options)

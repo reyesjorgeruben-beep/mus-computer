@@ -6,11 +6,20 @@ from time import perf_counter
 
 import pytest
 
-from mus_computer.training.config import TrainingConfig
-from mus_computer.training.game_runner import TrainingGameRunner, play_random_game
 from mus_computer.bots.bot_genome import random_genome
-from mus_computer.training.game_runner import GenomeMatchup, build_bot_game, play_genome_game
-from mus_computer.bots.strategies.wagers import ComposedWagerStrategy, HandStrengthWagerStrategy
+from mus_computer.bots.strategies.wagers import (
+    ComposedWagerStrategy,
+    HandStrengthWagerStrategy,
+)
+from mus_computer.training.config import TrainingConfig
+from mus_computer.training.game_runner import (
+    GenomeMatchup,
+    TrainingGameRunner,
+    build_bot_game,
+    play_genome_game,
+    play_random_game,
+)
+from tests.conftest import require_bot_players
 
 
 def test_one_random_game_finishes_without_terminal_output(capsys):
@@ -45,11 +54,16 @@ def test_single_game_can_start_a_ten_worker_pool():
 def test_genome_matchup_uses_one_genome_per_team(capsys):
     team_a, team_b = random_genome(), random_genome()
     game = build_bot_game(GenomeMatchup(team_a, team_b, seed=3))
-    assert [player._personality for player in game.players_in_order] == [team_a, team_b, team_a, team_b]
+    assert [player._personality for player in require_bot_players(game)] == [
+        team_a,
+        team_b,
+        team_a,
+        team_b,
+    ]
     assert all(
         isinstance(strategy, ComposedWagerStrategy)
         and isinstance(strategy.base, HandStrengthWagerStrategy)
-        for strategy in game.players_in_order[0].strategies.wagers_by_phase.values()
+        for strategy in require_bot_players(game)[0].strategies.wagers_by_phase.values()
     )
     result = play_genome_game(GenomeMatchup(team_a, team_b, seed=3))
     assert result.winner in {"A", "B"}
@@ -80,20 +94,26 @@ def test_sixteen_concurrent_games_are_configurable():
 
 
 @pytest.mark.performance
-@pytest.mark.skipif(os.getenv("RUN_TRAINING_PERF") != "1", reason="opt-in live timing test")
+@pytest.mark.skipif(
+    os.getenv("RUN_TRAINING_PERF") != "1", reason="opt-in live timing test"
+)
 def test_one_random_game_meets_latency_threshold():
     config = TrainingConfig()
     start = perf_counter()
     result = play_random_game(seed=0)
     elapsed = perf_counter() - start
 
-    print(f"one random-bot game: {elapsed:.3f}s (limit {config.single_game_max_seconds:.3f}s)")
+    print(
+        f"one random-bot game: {elapsed:.3f}s (limit {config.single_game_max_seconds:.3f}s)"
+    )
     assert result.winner in {"A", "B"}
     assert elapsed <= config.single_game_max_seconds, f"one game took {elapsed:.3f}s"
 
 
 @pytest.mark.performance
-@pytest.mark.skipif(os.getenv("RUN_TRAINING_PERF") != "1", reason="opt-in live timing test")
+@pytest.mark.skipif(
+    os.getenv("RUN_TRAINING_PERF") != "1", reason="opt-in live timing test"
+)
 def test_ten_parallel_random_games_meet_throughput_threshold():
     config = TrainingConfig()
     with TrainingGameRunner(config) as runner:
@@ -102,6 +122,8 @@ def test_ten_parallel_random_games_meet_throughput_threshold():
         results = runner.play_games(10, seed_start=0)
         elapsed = perf_counter() - start
 
-    print(f"ten parallel random-bot games: {elapsed:.3f}s (limit {config.ten_game_max_seconds:.3f}s)")
+    print(
+        f"ten parallel random-bot games: {elapsed:.3f}s (limit {config.ten_game_max_seconds:.3f}s)"
+    )
     assert len(results) == 10
     assert elapsed <= config.ten_game_max_seconds, f"ten games took {elapsed:.3f}s"

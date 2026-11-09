@@ -1,7 +1,6 @@
-import pytest
 from mus_computer.cards.card import Card
 from mus_computer.cards.hand import Hand
-from mus_computer.game.phases import Grande, Chica, Pares, Juego, Punto
+from mus_computer.game.phases import Chica, Grande, Juego, Pares, Punto
 
 
 class TestCanPlay:
@@ -54,7 +53,9 @@ class TestCalculatePoints:
         assert Juego.calculate_points(Hand([Card.R, Card.R, Card._7, Card._5])) == 2
 
     def test_juego_other_gives_2(self):
-        assert Juego.calculate_points(Hand([Card.R, Card.R, Card._7, Card._6])) == 2  # 33
+        assert (
+            Juego.calculate_points(Hand([Card.R, Card.R, Card._7, Card._6])) == 2
+        )  # 33
 
     def test_juego_no_juego_gives_0(self):
         assert Juego.calculate_points(Hand([Card.A, Card._4, Card._5, Card._6])) == 0

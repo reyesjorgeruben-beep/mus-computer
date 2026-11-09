@@ -1,6 +1,7 @@
 import pytest
-from mus_computer.game.team import Team
+
 from mus_computer.cards.card import Card
+from mus_computer.game.team import Team
 from tests.conftest import ScriptedPlayer, make_global_context
 
 
@@ -74,6 +75,7 @@ class TestPlayerBaseCards:
 class TestPlayerBaseAbstract:
     def test_cannot_instantiate_abstract_class(self):
         from mus_computer.game.player_base import PlayerBase
+
         with pytest.raises(TypeError):
             PlayerBase("name", Team("A"))  # type: ignore
 

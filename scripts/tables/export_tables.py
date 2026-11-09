@@ -10,21 +10,21 @@ Outputs:
     tables_discard.csv   — one row per (hand, kept) discard option
     tables_report.html   — sortable, colour-coded browser report
 """
+
 import argparse
 import csv
 import json
-import pickle
 import sys
 from pathlib import Path
 
-from scripts.tables.build_tables import TABLE_PATH
 from mus_computer.constants import cards_space
-from scripts.tables.build_tables import all_canonical_hands
 from mus_computer.probabilities.tables import load_tables
+from scripts.tables.build_tables import TABLE_PATH, all_canonical_hands
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def hand_str(hand: tuple) -> str:
     return "".join(c.value for c in hand)
@@ -36,6 +36,7 @@ def hand_juego_sum(hand: tuple) -> int:
 
 def hand_has_pares(hand: tuple) -> bool:
     from collections import Counter
+
     return max(Counter(hand).values()) >= 2
 
 
@@ -60,82 +61,119 @@ def discard_pattern(full_hand: tuple, kept: tuple) -> str:
 # Build flat rows
 # ---------------------------------------------------------------------------
 
-EP_PHASES    = ["Grande", "Chica", "Pares", "Juego", "Punto"]
+EP_PHASES = ["Grande", "Chica", "Pares", "Juego", "Punto"]
 WIN1V1_PHASES = ["Grande", "Chica", "Pares", "Juego"]
 
+
 def build_summary_rows(tables: dict, multiplicities: dict) -> list[dict]:
-    rows = []
+    rows: list[dict] = []
     for hand, entry in tables.items():
         if not isinstance(hand, tuple):
             continue  # skip "_avg_opp_phase_improvements" sentinel key
 
         row = {
-            "hand":         hand_str(hand),
+            "hand": hand_str(hand),
             "multiplicity": multiplicities.get(hand, ""),
-            "has_pares":    int(hand_has_pares(hand)),
-            "has_juego":    int(hand_has_juego(hand)),
-            "juego_sum":    hand_juego_sum(hand),
+            "has_pares": int(hand_has_pares(hand)),
+            "has_juego": int(hand_has_juego(hand)),
+            "juego_sum": hand_juego_sum(hand),
         }
 
         # 1v1 win probabilities
         for phase in WIN1V1_PHASES:
             d = entry.get(phase, {})
-            row[f"{phase.lower()}_p_win"]  = round(d.get("p_win",  0.0), 6)
-            row[f"{phase.lower()}_p_tie"]  = round(d.get("p_tie",  0.0), 6)
+            row[f"{phase.lower()}_p_win"] = round(d.get("p_win", 0.0), 6)
+            row[f"{phase.lower()}_p_tie"] = round(d.get("p_tie", 0.0), 6)
             row[f"{phase.lower()}_p_loss"] = round(d.get("p_loss", 0.0), 6)
 
         # 4-player mano expected points
         ep = entry.get("ep_mano", {})
         for phase in EP_PHASES:
             pd = ep.get(phase, {})
-            row[f"ep_{phase.lower()}_prob_A_wins"]   = round(pd.get("prob_A_wins",   0.0), 6)
-            row[f"ep_{phase.lower()}_exp_A_pts"]     = round(pd.get("expected_A_points", 0.0), 6)
-            row[f"ep_{phase.lower()}_exp_B_pts"]     = round(pd.get("expected_B_points", 0.0), 6)
-            row[f"ep_{phase.lower()}_net_A"]         = round(pd.get("expected_net_A", 0.0), 6)
-            row[f"ep_{phase.lower()}_total_pts"]     = round(pd.get("expected_total_winner_points", 0.0), 6)
+            row[f"ep_{phase.lower()}_prob_A_wins"] = round(
+                pd.get("prob_A_wins", 0.0), 6
+            )
+            row[f"ep_{phase.lower()}_exp_A_pts"] = round(
+                pd.get("expected_A_points", 0.0), 6
+            )
+            row[f"ep_{phase.lower()}_exp_B_pts"] = round(
+                pd.get("expected_B_points", 0.0), 6
+            )
+            row[f"ep_{phase.lower()}_net_A"] = round(pd.get("expected_net_A", 0.0), 6)
+            row[f"ep_{phase.lower()}_total_pts"] = round(
+                pd.get("expected_total_winner_points", 0.0), 6
+            )
             if phase in ("Pares", "Juego"):
-                row[f"ep_{phase.lower()}_both_A"] = round(pd.get("prob_both_given_A_wins", 0.0), 6)
-                row[f"ep_{phase.lower()}_both_B"] = round(pd.get("prob_both_given_B_wins", 0.0), 6)
+                row[f"ep_{phase.lower()}_both_A"] = round(
+                    pd.get("prob_both_given_A_wins", 0.0), 6
+                )
+                row[f"ep_{phase.lower()}_both_B"] = round(
+                    pd.get("prob_both_given_B_wins", 0.0), 6
+                )
         row["total_net_A"] = round(
             sum(ep.get(ph, {}).get("expected_net_A", 0.0) for ph in EP_PHASES), 6
         )
         row["total_net_4phases"] = round(
-            sum(ep.get(ph, {}).get("expected_net_A", 0.0) for ph in EP_PHASES if ph != "Punto"), 6
+            sum(
+                ep.get(ph, {}).get("expected_net_A", 0.0)
+                for ph in EP_PHASES
+                if ph != "Punto"
+            ),
+            6,
         )
 
         # 4-player mano post-mus expected points
         eppm = entry.get("ep_mano_postmus", {})
         for phase in EP_PHASES:
             pd = eppm.get(phase, {})
-            row[f"eppm_{phase.lower()}_prob_A_wins"]   = round(pd.get("prob_A_wins",   0.0), 6)
-            row[f"eppm_{phase.lower()}_exp_A_pts"]     = round(pd.get("expected_A_points", 0.0), 6)
-            row[f"eppm_{phase.lower()}_exp_B_pts"]     = round(pd.get("expected_B_points", 0.0), 6)
-            row[f"eppm_{phase.lower()}_net_A"]         = round(pd.get("expected_net_A", 0.0), 6)
-            row[f"eppm_{phase.lower()}_total_pts"]     = round(pd.get("expected_total_winner_points", 0.0), 6)
+            row[f"eppm_{phase.lower()}_prob_A_wins"] = round(
+                pd.get("prob_A_wins", 0.0), 6
+            )
+            row[f"eppm_{phase.lower()}_exp_A_pts"] = round(
+                pd.get("expected_A_points", 0.0), 6
+            )
+            row[f"eppm_{phase.lower()}_exp_B_pts"] = round(
+                pd.get("expected_B_points", 0.0), 6
+            )
+            row[f"eppm_{phase.lower()}_net_A"] = round(pd.get("expected_net_A", 0.0), 6)
+            row[f"eppm_{phase.lower()}_total_pts"] = round(
+                pd.get("expected_total_winner_points", 0.0), 6
+            )
             if phase in ("Pares", "Juego"):
-                row[f"eppm_{phase.lower()}_both_A"] = round(pd.get("prob_both_given_A_wins", 0.0), 6)
-                row[f"eppm_{phase.lower()}_both_B"] = round(pd.get("prob_both_given_B_wins", 0.0), 6)
+                row[f"eppm_{phase.lower()}_both_A"] = round(
+                    pd.get("prob_both_given_A_wins", 0.0), 6
+                )
+                row[f"eppm_{phase.lower()}_both_B"] = round(
+                    pd.get("prob_both_given_B_wins", 0.0), 6
+                )
         row["total_net_A_postmus"] = round(
             sum(eppm.get(ph, {}).get("expected_net_A", 0.0) for ph in EP_PHASES), 6
         )
 
         # Expected net after best discard (always discard in mus)
-        bc_corr   = entry.get("best_discards_corrected", {})
+        bc_corr = entry.get("best_discards_corrected", {})
         opts_corr = bc_corr.get("all_options_net", []) if bc_corr else []
         if opts_corr:
             top1_npp = opts_corr[0].get("net_per_phase", {})
             for phase in EP_PHASES:
                 row[f"bestmus_{phase.lower()}_net"] = round(top1_npp.get(phase, 0.0), 6)
-            row["bestmus_total_net"]    = round(opts_corr[0]["total_net_A"], 6)
+            row["bestmus_total_net"] = round(opts_corr[0]["total_net_A"], 6)
             row["bestmus_4phases_net"] = round(
                 sum(top1_npp.get(ph, 0.0) for ph in EP_PHASES if ph != "Punto"), 6
             )
         else:
             for phase in EP_PHASES:
-                row[f"bestmus_{phase.lower()}_net"] = row.get(f"eppm_{phase.lower()}_net_A", 0.0)
-            row["bestmus_total_net"]    = row.get("total_net_A_postmus", 0.0)
+                row[f"bestmus_{phase.lower()}_net"] = row.get(
+                    f"eppm_{phase.lower()}_net_A", 0.0
+                )
+            row["bestmus_total_net"] = row.get("total_net_A_postmus", 0.0)
             row["bestmus_4phases_net"] = round(
-                sum(row.get(f"eppm_{ph.lower()}_net_A", 0.0) for ph in EP_PHASES if ph != "Punto"), 6
+                sum(
+                    row.get(f"eppm_{ph.lower()}_net_A", 0.0)
+                    for ph in EP_PHASES
+                    if ph != "Punto"
+                ),
+                6,
             )
 
         # Best discard improvement per phase (old p_win metric)
@@ -144,13 +182,13 @@ def build_summary_rows(tables: dict, multiplicities: dict) -> list[dict]:
             kept_all_key = hand
             for phase in WIN1V1_PHASES:
                 current = opts.get(kept_all_key, {}).get(phase, 0.0)
-                best    = max((v.get(phase, 0.0) for v in opts.values()), default=current)
+                best = max((v.get(phase, 0.0) for v in opts.values()), default=current)
                 row[f"discard_gain_{phase.lower()}"] = round(best - current, 6)
 
         # Best discard gain in total net_A terms (from best_discards table)
         nd = entry.get("no_discard_stats", {})
         row["discard_net_gain"] = round(nd.get("delta_total_net_vs_best", 0.0), 6)
-        row["nd_rank"]          = nd.get("rank", "")
+        row["nd_rank"] = nd.get("rank", "")
         imp = nd.get("improvement_by_phase", {})
         for ph in WIN1V1_PHASES:
             row[f"nd_imp_{ph.lower()}"] = round(imp.get(ph, 0.0), 6)
@@ -162,19 +200,16 @@ def build_summary_rows(tables: dict, multiplicities: dict) -> list[dict]:
 
 
 def build_discard_rows(tables: dict) -> list[dict]:
-    rows = []
+    rows: list[dict] = []
     for hand, entry in tables.items():
         if not isinstance(hand, tuple):
             continue
         opts = entry.get("discard_options", {})
         for kept, phase_wins in opts.items():
-            discarded = sorted(
-                set(hand) - set(kept),
-                key=lambda c: c.value
-            )
+            discarded = sorted(set(hand) - set(kept), key=lambda c: c.value)
             row = {
-                "hand":      hand_str(hand),
-                "kept":      hand_str(kept) if kept else "(none)",
+                "hand": hand_str(hand),
+                "kept": hand_str(kept) if kept else "(none)",
                 "discarded": hand_str(tuple(discarded)) if discarded else "(none)",
                 "n_discarded": len(hand) - len(kept),
             }
@@ -187,9 +222,10 @@ def build_discard_rows(tables: dict) -> list[dict]:
 
 _BEST_PHASES = ["Grande", "Chica", "Pares", "Juego"]
 
+
 def build_discard_insight_rows(tables: dict) -> list[dict]:
     """One row per hand summarising best_discards + no_discard_stats."""
-    rows = []
+    rows: list[dict] = []
     for hand, entry in tables.items():
         if not isinstance(hand, tuple):
             continue
@@ -199,15 +235,15 @@ def build_discard_insight_rows(tables: dict) -> list[dict]:
             continue
 
         row = {
-            "hand":     hand_str(hand),
+            "hand": hand_str(hand),
             "has_pares": int(hand_has_pares(hand)),
             "has_juego": int(hand_has_juego(hand)),
         }
 
         # No-discard baseline
         if nd:
-            row["nd_rank"]       = nd.get("rank", "")
-            row["nd_delta_net"]  = round(nd.get("delta_total_net_vs_best", 0.0), 6)
+            row["nd_rank"] = nd.get("rank", "")
+            row["nd_delta_net"] = round(nd.get("delta_total_net_vs_best", 0.0), 6)
             row["nd_act_vs_max"] = round(nd.get("action_vs_max", 0.0), 6)
             row["nd_act_vs_min"] = round(nd.get("action_vs_min", 0.0), 6)
             imp = nd.get("improvement_by_phase", {})
@@ -224,36 +260,58 @@ def build_discard_insight_rows(tables: dict) -> list[dict]:
             bbp = bd.get("best_by_phase", {})
             for ph in _BEST_PHASES:
                 entry_ph = bbp.get(ph, {})
-                kept     = entry_ph.get("kept")
-                row[f"best_{ph.lower()}_kept"]    = hand_str(kept) if kept else ""
-                row[f"best_{ph.lower()}_pattern"] = discard_pattern(hand, kept) if kept else ""
-                row[f"best_{ph.lower()}_net"]     = round(entry_ph.get("net_A", 0.0), 6)
+                kept = entry_ph.get("kept")
+                row[f"best_{ph.lower()}_kept"] = hand_str(kept) if kept else ""
+                row[f"best_{ph.lower()}_pattern"] = (
+                    discard_pattern(hand, kept) if kept else ""
+                )
+                row[f"best_{ph.lower()}_net"] = round(entry_ph.get("net_A", 0.0), 6)
 
             all_opts = bd.get("all_options_net", [])
             for i in range(3):
                 if i < len(all_opts):
                     kept_t = all_opts[i]["kept"]
-                    row[f"top{i+1}_kept"]    = hand_str(kept_t) if kept_t else "(none)"
-                    row[f"top{i+1}_pattern"] = discard_pattern(hand, kept_t) if kept_t else "- - - -"
-                    row[f"top{i+1}_net"]     = round(all_opts[i]["total_net_A"], 6)
+                    row[f"top{i + 1}_kept"] = hand_str(kept_t) if kept_t else "(none)"
+                    row[f"top{i + 1}_pattern"] = (
+                        discard_pattern(hand, kept_t) if kept_t else "- - - -"
+                    )
+                    row[f"top{i + 1}_net"] = round(all_opts[i]["total_net_A"], 6)
                 else:
-                    row[f"top{i+1}_kept"] = row[f"top{i+1}_pattern"] = row[f"top{i+1}_net"] = ""
+                    row[f"top{i + 1}_kept"] = row[f"top{i + 1}_pattern"] = row[
+                        f"top{i + 1}_net"
+                    ] = ""
 
             max_a = bd.get("max_action_kept", {})
             min_a = bd.get("min_action_kept", {})
-            row["max_action_kept"]    = hand_str(max_a["kept"]) if max_a.get("kept") else ""
-            row["max_action_pattern"] = discard_pattern(hand, max_a["kept"]) if max_a.get("kept") else ""
-            row["max_action_value"]   = round(max_a.get("total_action", 0.0), 6)
-            row["min_action_kept"]    = hand_str(min_a["kept"]) if min_a.get("kept") else ""
-            row["min_action_pattern"] = discard_pattern(hand, min_a["kept"]) if min_a.get("kept") else ""
-            row["min_action_value"]   = round(min_a.get("total_action", 0.0), 6)
+            row["max_action_kept"] = (
+                hand_str(max_a["kept"]) if max_a.get("kept") else ""
+            )
+            row["max_action_pattern"] = (
+                discard_pattern(hand, max_a["kept"]) if max_a.get("kept") else ""
+            )
+            row["max_action_value"] = round(max_a.get("total_action", 0.0), 6)
+            row["min_action_kept"] = (
+                hand_str(min_a["kept"]) if min_a.get("kept") else ""
+            )
+            row["min_action_pattern"] = (
+                discard_pattern(hand, min_a["kept"]) if min_a.get("kept") else ""
+            )
+            row["min_action_value"] = round(min_a.get("total_action", 0.0), 6)
         else:
             for ph in _BEST_PHASES:
-                row[f"best_{ph.lower()}_kept"] = row[f"best_{ph.lower()}_pattern"] = row[f"best_{ph.lower()}_net"] = ""
+                row[f"best_{ph.lower()}_kept"] = row[
+                    f"best_{ph.lower()}_pattern"
+                ] = row[f"best_{ph.lower()}_net"] = ""
             for i in range(3):
-                row[f"top{i+1}_kept"] = row[f"top{i+1}_pattern"] = row[f"top{i+1}_net"] = ""
-            row["max_action_kept"] = row["max_action_pattern"] = row["max_action_value"] = ""
-            row["min_action_kept"] = row["min_action_pattern"] = row["min_action_value"] = ""
+                row[f"top{i + 1}_kept"] = row[f"top{i + 1}_pattern"] = row[
+                    f"top{i + 1}_net"
+                ] = ""
+            row["max_action_kept"] = row["max_action_pattern"] = row[
+                "max_action_value"
+            ] = ""
+            row["min_action_kept"] = row["min_action_pattern"] = row[
+                "min_action_value"
+            ] = ""
 
         rows.append(row)
 
@@ -268,8 +326,8 @@ def build_discard_insight_rows_corrected(tables: dict) -> list[dict]:
     so Grande+Chica+Pares+Juego+Punto improvements sum exactly to nd_delta_net.
     top1_net_* expose the absolute per-phase EP of the best discard option.
     """
-    _ALL_PHASES = ['Grande', 'Chica', 'Pares', 'Juego', 'Punto']
-    rows = []
+    _ALL_PHASES = ["Grande", "Chica", "Pares", "Juego", "Punto"]
+    rows: list[dict] = []
     for hand, entry in tables.items():
         if not isinstance(hand, tuple):
             continue
@@ -279,7 +337,7 @@ def build_discard_insight_rows_corrected(tables: dict) -> list[dict]:
             continue
 
         row = {
-            "hand":      hand_str(hand),
+            "hand": hand_str(hand),
             "has_pares": int(hand_has_pares(hand)),
             "has_juego": int(hand_has_juego(hand)),
         }
@@ -294,10 +352,14 @@ def build_discard_insight_rows_corrected(tables: dict) -> list[dict]:
 
         # Per-phase improvements (best discard post-mus vs current hand pre-mus)
         # — same top-1 kept hand for all phases, so sum = nd_delta_net
-        nd_delta = round(sum(top1_npp.get(p, 0.0) - nd_npp[p] for p in _ALL_PHASES), 6) if top1_npp else ""
+        nd_delta = (
+            round(sum(top1_npp.get(p, 0.0) - nd_npp[p] for p in _ALL_PHASES), 6)
+            if top1_npp
+            else ""
+        )
 
         if nd:
-            row["nd_rank"]       = nd.get("rank", "")
+            row["nd_rank"] = nd.get("rank", "")
             row["nd_act_vs_max"] = round(nd.get("action_vs_max", 0.0), 6)
             row["nd_act_vs_min"] = round(nd.get("action_vs_min", 0.0), 6)
         else:
@@ -306,47 +368,73 @@ def build_discard_insight_rows_corrected(tables: dict) -> list[dict]:
 
         row["nd_delta_net"] = nd_delta
         for ph in _ALL_PHASES:
-            row[f"nd_imp_{ph.lower()}"] = round(top1_npp.get(ph, 0.0) - nd_npp[ph], 6) if top1_npp else ""
+            row[f"nd_imp_{ph.lower()}"] = (
+                round(top1_npp.get(ph, 0.0) - nd_npp[ph], 6) if top1_npp else ""
+            )
 
         if bd:
             # Absolute per-phase EP of the best discard option (verifiable from chart light bars)
             for ph in _ALL_PHASES:
-                row[f"top1_net_{ph.lower()}"] = round(top1_npp.get(ph, 0.0), 6) if top1_npp else ""
+                row[f"top1_net_{ph.lower()}"] = (
+                    round(top1_npp.get(ph, 0.0), 6) if top1_npp else ""
+                )
 
             bbp = bd.get("best_by_phase", {})
             for ph in _BEST_PHASES:
                 entry_ph = bbp.get(ph, {})
-                kept     = entry_ph.get("kept")
-                row[f"best_{ph.lower()}_kept"]    = hand_str(kept) if kept else ""
-                row[f"best_{ph.lower()}_pattern"] = discard_pattern(hand, kept) if kept else ""
-                row[f"best_{ph.lower()}_net"]     = round(entry_ph.get("net_A", 0.0), 6)
+                kept = entry_ph.get("kept")
+                row[f"best_{ph.lower()}_kept"] = hand_str(kept) if kept else ""
+                row[f"best_{ph.lower()}_pattern"] = (
+                    discard_pattern(hand, kept) if kept else ""
+                )
+                row[f"best_{ph.lower()}_net"] = round(entry_ph.get("net_A", 0.0), 6)
 
             for i in range(3):
                 if i < len(all_opts):
                     kept_t = all_opts[i]["kept"]
-                    row[f"top{i+1}_kept"]    = hand_str(kept_t) if kept_t else "(none)"
-                    row[f"top{i+1}_pattern"] = discard_pattern(hand, kept_t) if kept_t else "- - - -"
-                    row[f"top{i+1}_net"]     = round(all_opts[i]["total_net_A"], 6)
+                    row[f"top{i + 1}_kept"] = hand_str(kept_t) if kept_t else "(none)"
+                    row[f"top{i + 1}_pattern"] = (
+                        discard_pattern(hand, kept_t) if kept_t else "- - - -"
+                    )
+                    row[f"top{i + 1}_net"] = round(all_opts[i]["total_net_A"], 6)
                 else:
-                    row[f"top{i+1}_kept"] = row[f"top{i+1}_pattern"] = row[f"top{i+1}_net"] = ""
+                    row[f"top{i + 1}_kept"] = row[f"top{i + 1}_pattern"] = row[
+                        f"top{i + 1}_net"
+                    ] = ""
 
             max_a = bd.get("max_action_kept", {})
             min_a = bd.get("min_action_kept", {})
-            row["max_action_kept"]    = hand_str(max_a["kept"]) if max_a.get("kept") else ""
-            row["max_action_pattern"] = discard_pattern(hand, max_a["kept"]) if max_a.get("kept") else ""
-            row["max_action_value"]   = round(max_a.get("total_action", 0.0), 6)
-            row["min_action_kept"]    = hand_str(min_a["kept"]) if min_a.get("kept") else ""
-            row["min_action_pattern"] = discard_pattern(hand, min_a["kept"]) if min_a.get("kept") else ""
-            row["min_action_value"]   = round(min_a.get("total_action", 0.0), 6)
+            row["max_action_kept"] = (
+                hand_str(max_a["kept"]) if max_a.get("kept") else ""
+            )
+            row["max_action_pattern"] = (
+                discard_pattern(hand, max_a["kept"]) if max_a.get("kept") else ""
+            )
+            row["max_action_value"] = round(max_a.get("total_action", 0.0), 6)
+            row["min_action_kept"] = (
+                hand_str(min_a["kept"]) if min_a.get("kept") else ""
+            )
+            row["min_action_pattern"] = (
+                discard_pattern(hand, min_a["kept"]) if min_a.get("kept") else ""
+            )
+            row["min_action_value"] = round(min_a.get("total_action", 0.0), 6)
         else:
             for ph in _ALL_PHASES:
                 row[f"top1_net_{ph.lower()}"] = ""
             for ph in _BEST_PHASES:
-                row[f"best_{ph.lower()}_kept"] = row[f"best_{ph.lower()}_pattern"] = row[f"best_{ph.lower()}_net"] = ""
+                row[f"best_{ph.lower()}_kept"] = row[
+                    f"best_{ph.lower()}_pattern"
+                ] = row[f"best_{ph.lower()}_net"] = ""
             for i in range(3):
-                row[f"top{i+1}_kept"] = row[f"top{i+1}_pattern"] = row[f"top{i+1}_net"] = ""
-            row["max_action_kept"] = row["max_action_pattern"] = row["max_action_value"] = ""
-            row["min_action_kept"] = row["min_action_pattern"] = row["min_action_value"] = ""
+                row[f"top{i + 1}_kept"] = row[f"top{i + 1}_pattern"] = row[
+                    f"top{i + 1}_net"
+                ] = ""
+            row["max_action_kept"] = row["max_action_pattern"] = row[
+                "max_action_value"
+            ] = ""
+            row["min_action_kept"] = row["min_action_pattern"] = row[
+                "min_action_value"
+            ] = ""
 
         rows.append(row)
 
@@ -357,6 +445,7 @@ def build_discard_insight_rows_corrected(tables: dict) -> list[dict]:
 # ---------------------------------------------------------------------------
 # CSV export
 # ---------------------------------------------------------------------------
+
 
 def write_csv(rows: list[dict], path: Path) -> None:
     if not rows:
@@ -1180,7 +1269,9 @@ def write_html(
         data_json=json.dumps(summary_rows, ensure_ascii=False),
         agg_json=json.dumps(agg_improvements, ensure_ascii=False),
         discard_json=json.dumps(discard_insight_rows, ensure_ascii=False),
-        discard_corrected_json=json.dumps(discard_insight_rows_corrected, ensure_ascii=False),
+        discard_corrected_json=json.dumps(
+            discard_insight_rows_corrected, ensure_ascii=False
+        ),
     )
     path.write_text(html, encoding="utf-8")
     print(f"  Written: {path}")
@@ -1190,14 +1281,20 @@ def write_html(
 # Main
 # ---------------------------------------------------------------------------
 
+
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Export probability tables to CSV and HTML")
-    parser.add_argument("--input",   type=Path, default=TABLE_PATH)
+    parser = argparse.ArgumentParser(
+        description="Export probability tables to CSV and HTML"
+    )
+    parser.add_argument("--input", type=Path, default=TABLE_PATH)
     parser.add_argument("--out-dir", type=Path, default=TABLE_PATH.parent)
     args = parser.parse_args()
 
     if not args.input.exists():
-        print(f"ERROR: {args.input} not found. Run build_tables.py first.", file=sys.stderr)
+        print(
+            f"ERROR: {args.input} not found. Run build_tables.py first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     print(f"Loading {args.input}...")
@@ -1208,22 +1305,31 @@ def main() -> None:
     agg = tables.get("_avg_opp_phase_improvements", {})
 
     print("Building rows...")
-    summary_rows        = build_summary_rows(tables, multiplicities)
-    discard_rows        = build_discard_rows(tables)
+    summary_rows = build_summary_rows(tables, multiplicities)
+    discard_rows = build_discard_rows(tables)
     discard_insight_rows = build_discard_insight_rows(tables)
     discard_insight_rows_corrected = build_discard_insight_rows_corrected(tables)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
 
     print("Writing CSV files...")
-    write_csv(summary_rows,        args.out_dir / "tables_summary.csv")
-    write_csv(discard_rows,        args.out_dir / "tables_discard.csv")
+    write_csv(summary_rows, args.out_dir / "tables_summary.csv")
+    write_csv(discard_rows, args.out_dir / "tables_discard.csv")
     write_csv(discard_insight_rows, args.out_dir / "tables_discard_insights.csv")
-    write_csv(discard_insight_rows_corrected, args.out_dir / "tables_discard_insights_corrected.csv")
+    write_csv(
+        discard_insight_rows_corrected,
+        args.out_dir / "tables_discard_insights_corrected.csv",
+    )
 
     print("Writing HTML report...")
-    write_html(summary_rows, agg, discard_insight_rows, discard_insight_rows_corrected,
-               args.out_dir / "tables_report.html", n_hands)
+    write_html(
+        summary_rows,
+        agg,
+        discard_insight_rows,
+        discard_insight_rows_corrected,
+        args.out_dir / "tables_report.html",
+        n_hands,
+    )
 
     print("Done.")
 

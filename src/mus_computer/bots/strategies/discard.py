@@ -4,8 +4,12 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from mus_computer.bots.strategies.actions import ActionDistribution, DiscardAction
-from mus_computer.bots.strategies.contexts import DiscardOption, HandStatistics, PlayerDecisionContext
-from mus_computer.bots.strategies.personality import BotPersonality, FIXED_PHASE_WEIGHTS
+from mus_computer.bots.strategies.contexts import (
+    DiscardOption,
+    HandStatistics,
+    PlayerDecisionContext,
+)
+from mus_computer.bots.strategies.personality import FIXED_PHASE_WEIGHTS, BotPersonality
 from mus_computer.game.context import GlobalGameContext
 
 

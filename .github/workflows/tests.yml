@@ -21,7 +21,7 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: Install dependencies
-        run: python -m pip install -e ".[dev]"
+        run: python -m pip install -e ".[dev,reporting]"
 
       - name: Run tests
         run: python -m pytest tests/ -v

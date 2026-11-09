@@ -6,6 +6,17 @@ from .player_base import PlayerBase
 from .team import Team
 
 __all__ = [
-    "Game", "Match", "MatchResult", "Team", "PlayerBase", "HumanPlayer",
-    "Phase", "PhaseName", "Grande", "Chica", "Pares", "Juego", "Punto",
+    "Chica",
+    "Game",
+    "Grande",
+    "HumanPlayer",
+    "Juego",
+    "Match",
+    "MatchResult",
+    "Pares",
+    "Phase",
+    "PhaseName",
+    "PlayerBase",
+    "Punto",
+    "Team",
 ]

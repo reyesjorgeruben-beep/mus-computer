@@ -11,12 +11,19 @@ from uuid import uuid4
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.training.config import TrainingConfig
 from mus_computer.training.game_runner import GenomeMatchup, TrainingGameRunner
-from mus_computer.training.genome_generator import CustomGeneticGenomeGenerator, GenomeGenerator
+from mus_computer.training.genome_generator import (
+    CustomGeneticGenomeGenerator,
+    GenomeGenerator,
+)
 
-EXPERIMENTS_DIR = Path(__file__).resolve().parents[3] / "docs" / "training" / "experiments"
+EXPERIMENTS_DIR = (
+    Path(__file__).resolve().parents[3] / "docs" / "training" / "experiments"
+)
 
 
-def experiment_folder_name(description: str | None = None, now: datetime | None = None) -> str:
+def experiment_folder_name(
+    description: str | None = None, now: datetime | None = None
+) -> str:
     """Name a run by date and a human description, or a unique default label."""
     date = (now or datetime.now()).strftime("%Y-%m-%d")
     return f"{date}_{description or f'training_{uuid4().hex[:6]}'}"
@@ -39,8 +46,15 @@ class GeneticTrainer:
         run_dir: Path | None = None,
         wins_to_match: int = 1,
     ) -> None:
-        if population_size < 2 or population_size % 2 or generations < 1 or games_per_eval < 1:
-            raise ValueError("Training requires an even population of at least two, one generation, and one game")
+        if (
+            population_size < 2
+            or population_size % 2
+            or generations < 1
+            or games_per_eval < 1
+        ):
+            raise ValueError(
+                "Training requires an even population of at least two, one generation, and one game"
+            )
         if type(wins_to_match) is not int or wins_to_match < 1:
             raise ValueError("wins_to_match must be a positive integer")
         self.population_size = population_size
@@ -53,13 +67,17 @@ class GeneticTrainer:
         self.runner = runner or TrainingGameRunner()
         self._runner_open = False
         run_name = experiment_folder_name()
-        self.run_dir = Path(run_dir) if run_dir is not None else EXPERIMENTS_DIR / run_name
+        self.run_dir = (
+            Path(run_dir) if run_dir is not None else EXPERIMENTS_DIR / run_name
+        )
 
     def initial_population(self) -> list[BotGenome]:
         return self.gen_generator.initial_population(self.population_size)
 
     def evaluate_population(
-        self, population: list[BotGenome], generation: int = 0,
+        self,
+        population: list[BotGenome],
+        generation: int = 0,
     ) -> list[float]:
         """Pair every genome once per round and score match winners."""
         if len(population) != self.population_size:
@@ -78,7 +96,9 @@ class GeneticTrainer:
         return [wins / self.games_per_eval for wins in wins]
 
     def _build_matchups(
-        self, population: list[BotGenome], generation: int,
+        self,
+        population: list[BotGenome],
+        generation: int,
     ) -> tuple[list[GenomeMatchup], list[tuple[int, int]]]:
         """Seat every genome once per pairing round and assign unique match seeds."""
         matchups: list[GenomeMatchup] = []
@@ -89,15 +109,21 @@ class GeneticTrainer:
             random.shuffle(indices)
             for seat in range(0, len(indices), 2):
                 a_index, b_index = indices[seat], indices[seat + 1]
-                matchups.append(GenomeMatchup(
-                    population[a_index], population[b_index], seed=seed_start + len(matchups),
-                    wins_to_match=self.wins_to_match,
-                ))
+                matchups.append(
+                    GenomeMatchup(
+                        population[a_index],
+                        population[b_index],
+                        seed=seed_start + len(matchups),
+                        wins_to_match=self.wins_to_match,
+                    )
+                )
                 seated_indices.append((a_index, b_index))
         return matchups, seated_indices
 
     def next_generation(
-        self, population: list[BotGenome], fitness: list[float],
+        self,
+        population: list[BotGenome],
+        fitness: list[float],
     ) -> list[BotGenome]:
         return self.gen_generator.next_generation(population, fitness)
 
@@ -129,14 +155,20 @@ class GeneticTrainer:
             generation_elapsed = time.time() - generation_start
             if (generation + 1) % log_every == 0 or generation == 0:
                 self._log_generation(generation, start, generation_elapsed)
-            if (generation + 1) % snapshot_every == 0 or generation + 1 == self.generations:
+            if (
+                generation + 1
+            ) % snapshot_every == 0 or generation + 1 == self.generations:
                 self._save_snapshot(population, generation + 1)
             if generation + 1 < self.generations:
                 population = self.next_generation(population, fitness)
-        winner_indices = sorted(range(len(population)), key=lambda i: fitness[i], reverse=True)
-        return [population[i] for i in winner_indices[:len(population) // 2]]
+        winner_indices = sorted(
+            range(len(population)), key=lambda i: fitness[i], reverse=True
+        )
+        return [population[i] for i in winner_indices[: len(population) // 2]]
 
-    def _log_generation(self, generation: int, start: float, generation_elapsed: float) -> None:
+    def _log_generation(
+        self, generation: int, start: float, generation_elapsed: float
+    ) -> None:
         completed = generation + 1
         elapsed = time.time() - start
         remaining = elapsed / completed * (self.generations - completed)
@@ -150,11 +182,19 @@ class GeneticTrainer:
         snapshot_dir = self.run_dir / "snapshots"
         snapshot_dir.mkdir(parents=True, exist_ok=True)
         path = snapshot_dir / f"generation_{generation:04d}.json"
-        path.write_text(json.dumps({
-            "generation": generation,
-            "active_genes": list(getattr(self.gen_generator, "active_genes", ())),
-            "population": [asdict(genome) for genome in population],
-        }, indent=2), encoding="utf-8")
+        path.write_text(
+            json.dumps(
+                {
+                    "generation": generation,
+                    "active_genes": list(
+                        getattr(self.gen_generator, "active_genes", ())
+                    ),
+                    "population": [asdict(genome) for genome in population],
+                },
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
 
     def save_population(self, population: list[BotGenome], path) -> None:
         with open(path, "w") as output:
@@ -168,24 +208,71 @@ class GeneticTrainer:
 if __name__ == "__main__":
     import argparse
 
-    parser = argparse.ArgumentParser(description="Train Mus bot population with genetic algorithm")
-    parser.add_argument("--pop", type=int, default=20, help="Even population size (default: 20)")
-    parser.add_argument("--gen", type=int, default=300, help="Number of generations (default: 300)")
-    parser.add_argument("--games", type=int, default=1, help="Pairing rounds per generation (default: 1)")
-    parser.add_argument("--wins-to-match", type=int, default=1, help="Game wins needed to win a match (default: 1)")
-    parser.add_argument("--seed", type=int, default=0, help="Starting seed for a repeatable run (default: 0)")
-    parser.add_argument("--snapshot", type=int, default=50, help="Save snapshot every N generations (default: 50)")
-    parser.add_argument("--gene", action="append", default=None, help="Override used genes (repeat to add more)")
-    parser.add_argument("--no-genes", action="store_true", help="Run a fixed neutral baseline")
-    parser.add_argument("--workers", type=int, default=10, help="Concurrent game processes (maximum: 16)")
+    parser = argparse.ArgumentParser(
+        description="Train Mus bot population with genetic algorithm"
+    )
     parser.add_argument(
-        "--experiment-name", "--run-dir", dest="experiment_name", default=None,
+        "--pop", type=int, default=20, help="Even population size (default: 20)"
+    )
+    parser.add_argument(
+        "--gen", type=int, default=300, help="Number of generations (default: 300)"
+    )
+    parser.add_argument(
+        "--games",
+        type=int,
+        default=1,
+        help="Pairing rounds per generation (default: 1)",
+    )
+    parser.add_argument(
+        "--wins-to-match",
+        type=int,
+        default=1,
+        help="Game wins needed to win a match (default: 1)",
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=0,
+        help="Starting seed for a repeatable run (default: 0)",
+    )
+    parser.add_argument(
+        "--snapshot",
+        type=int,
+        default=50,
+        help="Save snapshot every N generations (default: 50)",
+    )
+    parser.add_argument(
+        "--gene",
+        action="append",
+        default=None,
+        help="Override used genes (repeat to add more)",
+    )
+    parser.add_argument(
+        "--no-genes", action="store_true", help="Run a fixed neutral baseline"
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=10,
+        help="Concurrent game processes (maximum: 16)",
+    )
+    parser.add_argument(
+        "--experiment-name",
+        "--run-dir",
+        dest="experiment_name",
+        default=None,
         help="Description appended to today's date for a new experiment folder",
     )
-    parser.add_argument("--out", type=Path, default=None, help="Winners JSON filename inside winning_genomes")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="Winners JSON filename inside winning_genomes",
+    )
     args = parser.parse_args()
     if args.no_genes and args.gene is not None:
         parser.error("--no-genes cannot be combined with --gene")
+    experiment_dir: Path | None
     if args.experiment_name is not None:
         name = args.experiment_name
         if not name or name in (".", "..") or Path(name).name != name:
@@ -195,21 +282,33 @@ if __name__ == "__main__":
             parser.error(f"Experiment folder already exists: {experiment_dir}")
     else:
         experiment_dir = None
-    if args.out is not None and (args.out.name != str(args.out) or args.out.name in (".", "..")):
+    if args.out is not None and (
+        args.out.name != str(args.out) or args.out.name in (".", "..")
+    ):
         parser.error("--out must be a filename inside the winning_genomes folder")
     print(
         f"Training: pop={args.pop}, gen={args.gen}, pairing_rounds={args.games}, "
         f"wins_to_match={args.wins_to_match}, workers={args.workers}"
     )
     generator = CustomGeneticGenomeGenerator(
-        active_genes=() if args.no_genes else tuple(args.gene) if args.gene is not None else None,
+        active_genes=()
+        if args.no_genes
+        else tuple(args.gene)
+        if args.gene is not None
+        else None,
     )
-    print(f"Active genes: {', '.join(generator.active_genes) if generator.active_genes else 'none (fixed baseline)'}")
+    print(
+        f"Active genes: {', '.join(generator.active_genes) if generator.active_genes else 'none (fixed baseline)'}"
+    )
     trainer = GeneticTrainer(
-        population_size=args.pop, generations=args.gen, games_per_eval=args.games, seed=args.seed,
+        population_size=args.pop,
+        generations=args.gen,
+        games_per_eval=args.games,
+        seed=args.seed,
         wins_to_match=args.wins_to_match,
         gen_generator=generator,
-        runner=TrainingGameRunner(TrainingConfig(max_concurrent_games=args.workers)), run_dir=experiment_dir,
+        runner=TrainingGameRunner(TrainingConfig(max_concurrent_games=args.workers)),
+        run_dir=experiment_dir,
     )
     try:
         trainer.run_dir.mkdir(parents=True, exist_ok=False)
@@ -219,7 +318,8 @@ if __name__ == "__main__":
     winners = trainer.evolve(snapshot_every=args.snapshot)
     elapsed = time.time() - start
     output_path = winning_genomes_path(
-        trainer.run_dir, args.out.name if args.out is not None else "genomes.json",
+        trainer.run_dir,
+        args.out.name if args.out is not None else "genomes.json",
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     trainer.save_population(winners, output_path)
@@ -228,8 +328,12 @@ if __name__ == "__main__":
 
     charts = generate_charts(trainer.run_dir)
     validation = validate_winners(
-        winners, trainer.run_dir, seed=args.seed, workers=args.workers,
-        active_genes=generator.active_genes, wins_to_match=args.wins_to_match,
+        winners,
+        trainer.run_dir,
+        seed=args.seed,
+        workers=args.workers,
+        active_genes=generator.active_genes,
+        wins_to_match=args.wins_to_match,
     )
     (trainer.run_dir / "README.md").write_text(
         f"# Training experiment\n\n"
@@ -248,9 +352,13 @@ if __name__ == "__main__":
         f"[Snapshots](snapshots/)\n",
         encoding="utf-8",
     )
-    print(f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {output_path}")
+    print(
+        f"\nDone in {elapsed:.1f}s. {len(winners)} final-generation winners saved to {output_path}"
+    )
     print(f"Snapshots: {trainer.run_dir / 'snapshots'}")
-    print(f"Charts: {trainer.run_dir / 'charts' / 'index.html'} ({len(charts)} Plotly charts)")
+    print(
+        f"Charts: {trainer.run_dir / 'charts' / 'index.html'} ({len(charts)} Plotly charts)"
+    )
     for record in validation["winners"]:
         scores = ", ".join(
             f"{kind} {benchmark['win_percentage']:.0f}%"

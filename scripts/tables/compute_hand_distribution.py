@@ -21,6 +21,7 @@ Usage:
     python compute_hand_distribution.py
     python compute_hand_distribution.py --input my_tables.pkl --output out.pkl
 """
+
 import argparse
 import csv
 import pickle
@@ -30,9 +31,14 @@ from collections import defaultdict
 from itertools import combinations_with_replacement
 from pathlib import Path
 
-from scripts.tables.build_tables import TABLE_PATH, all_canonical_hands, canonical, _multiplicity_subset
-from mus_computer.probabilities.tables import load_tables
 from mus_computer.constants import cards_space
+from mus_computer.probabilities.tables import load_tables
+from scripts.tables.build_tables import (
+    TABLE_PATH,
+    _multiplicity_subset,
+    all_canonical_hands,
+    canonical,
+)
 
 
 def _best_kept(hand: tuple, entry: dict) -> tuple:
@@ -71,10 +77,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compute post-discard hand distribution"
     )
-    parser.add_argument("--input",  type=Path, default=TABLE_PATH)
+    parser.add_argument("--input", type=Path, default=TABLE_PATH)
     parser.add_argument("--output", type=Path, default=None)
-    parser.add_argument("--csv",    type=Path, default=None,
-                        help="Optional CSV output path")
+    parser.add_argument(
+        "--csv", type=Path, default=None, help="Optional CSV output path"
+    )
     args = parser.parse_args()
     if args.output is None:
         args.output = args.input
@@ -87,9 +94,8 @@ def main():
     tables = load_tables(args.input)
 
     multiplicities = all_canonical_hands(cards_space)
-    total_deals    = sum(multiplicities.values())
-    all_hands      = sorted(multiplicities.keys())
-    n              = len(all_hands)
+    total_deals = sum(multiplicities.values())
+    all_hands = sorted(multiplicities.keys())
 
     # First pass: identify which hands would call Mus (delta > 0 → discard)
     best_kept_map: dict[tuple, tuple] = {}
@@ -111,18 +117,18 @@ def main():
     for i, hand in enumerate(mus_hands):
         p_deal = multiplicities[hand] / total_deals
         p_initial[hand] = p_deal
-        p_cond = p_deal / p_mus_total   # conditional on calling Mus
+        p_cond = p_deal / p_mus_total  # conditional on calling Mus
 
-        kept   = best_kept_map[hand]
+        kept = best_kept_map[hand]
         n_draw = 4 - len(kept)
-        dist   = _transition(kept, n_draw)
+        dist = _transition(kept, n_draw)
         total_w = sum(dist.values())
         if total_w:
             for h_f, w in dist.items():
                 p_final[h_f] += p_cond * w / total_w
 
         if (i + 1) % 66 == 0 or i + 1 == len(mus_hands):
-            print(f"  {i+1}/{len(mus_hands)}  elapsed {time.time()-start:.1f}s")
+            print(f"  {i + 1}/{len(mus_hands)}  elapsed {time.time() - start:.1f}s")
 
     total_mass = sum(p_final.values())
     print(f"Total probability mass: {total_mass:.8f}  (should be 1.0)")
@@ -135,7 +141,7 @@ def main():
     print(f"Saving pickle to {args.output}...")
     with open(args.output, "wb") as f:
         pickle.dump(tables, f)
-    print(f"Done. {time.time()-start:.1f}s total.")
+    print(f"Done. {time.time() - start:.1f}s total.")
 
 
 def _hand_str(hand: tuple) -> str:
@@ -146,11 +152,13 @@ def _write_csv(all_hands, p_final, path: Path) -> None:
     rows = []
     for hand in all_hands:
         p = p_final.get(hand, 0.0)
-        rows.append({
-            "hand":    _hand_str(hand),
-            "p_final": round(p, 8),
-            "p_pct":   round(p * 100, 4),
-        })
+        rows.append(
+            {
+                "hand": _hand_str(hand),
+                "p_final": round(p, 8),
+                "p_pct": round(p * 100, 4),
+            }
+        )
     rows.sort(key=lambda r: -r["p_final"])
     with open(path, "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
