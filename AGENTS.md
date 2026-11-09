@@ -6,6 +6,10 @@ Create a dedicated branch for each task before changing tracked files. Keep unre
 
 ## Code Review Rules
 
+Use standalone, offline HTML as the default human-facing format for training/evaluation results and PR evidence summaries. Retain canonical JSON alongside it; keep Markdown for documentation and plans. Experiment runs emit HTML automatically. Regenerate presentation from saved JSON with `python -m mus_computer.training.experiments report --input <report.json>` instead of rerunning training just to change report format.
+
+For substantive changes to bot-training behavior, use the opt-in experiment workflow in `docs/training/EXPERIMENTS.md`: run a budgeted real training/comparison cycle, inspect its results, perform at least one recorded follow-up with an evidence-based rationale, and separately confirm the selected frozen candidate. Report both attempts, configured budgets and failed selection gates. Keep raw runs/models under ignored `training_runs/` and retain artifacts needed for continuation or reanalysis. This model-experiment iteration does not reset the single code-review repair allowance below. Slow training experiments remain separate from the default test suite.
+
 Read relevant entries in root `log.md` before implementing or reviewing a change. Look for previous fixes and user decisions that touch the same code or behavior. Cite a matching entry when a finding or design decision relies on it.
 
 For substantive code changes made by Codex, use `optimise-review-process` before handoff when available. Otherwise follow this sequence directly. Require the configured lint, format, static type and secret checks to pass before reviewing or committing. Review the scoped diff, apply one batch of verified and in-scope Important fixes, then rerun the checks and review the repair delta read-only once they pass. Run the required checks again on the staged changes before committing. Report failed or unavailable gates as blockers. Stop after that. If the first review needs no changes, report its result and stop. For review-only requests and GitHub PR review jobs, inspect and report only.
