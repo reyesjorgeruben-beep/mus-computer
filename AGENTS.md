@@ -6,6 +6,8 @@ Create a dedicated branch for each task before changing tracked files. Keep unre
 
 ## Code Review Rules
 
+Use standalone, offline HTML as the default human-facing format for training/evaluation results and PR evidence summaries. Retain canonical JSON alongside it; keep Markdown for documentation and plans. Experiment runs emit HTML automatically. Regenerate presentation from saved JSON with `python -m mus_computer.training.experiments report --input <report.json>` instead of rerunning training just to change report format.
+
 For substantive changes to bot-training behavior, use the opt-in experiment workflow in `docs/training/EXPERIMENTS.md`: run a budgeted real training/comparison cycle, inspect its results, perform at least one recorded follow-up with an evidence-based rationale, and separately confirm the selected frozen candidate. Report both attempts, configured budgets and failed selection gates. Keep raw runs/models under ignored `training_runs/` and retain artifacts needed for continuation or reanalysis. This model-experiment iteration does not reset the single code-review repair allowance below. Slow training experiments remain separate from the default test suite.
 
 Read relevant entries in root `log.md` before implementing or reviewing a change. Look for previous fixes and user decisions that touch the same code or behavior. Cite a matching entry when a finding or design decision relies on it.

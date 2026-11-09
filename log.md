@@ -1,5 +1,9 @@
 # Review history
 
+- 2026-11-09 [review] **HTML must retain historical screening evidence** — Include each attempt's evaluation budget, static comparisons and failed observed-rate thresholds, label development screening separately from held-out promotion, and preserve related historical confirmations as separate samples. (PR #7)
+
+- 2026-11-09 [user] **HTML results by default** — Deliver standalone offline HTML for human-facing training/evaluation results, with JSON as canonical evidence. Generate it automatically for new experiments and regenerate saved reports without retraining; retain Markdown for documentation/plans. (PR #7)
+
 - 2026-11-09 [review] **Freeze inference inputs and complete checkpoint payloads** — Include game constants and bundled probability-table bytes in built-in inference identity, record bundled-data hashes, and reject added/missing native payload files or escaping links before loading. Preserve old runs and rerun validation after fingerprint changes. (PR #7)
 
 - 2026-11-09 [user] **Repeatable champion/challenger training experiments** — Put training/checkpoint/player construction behind versioned design adapters. Preserve a frozen champion, compare trained candidates against the same static suite and each other, record an evidence-based follow-up, then use separate confirmation and explicit guarded promotion. Keep generated runs ignored and preserve inference compatibility/provenance. (PR #7)

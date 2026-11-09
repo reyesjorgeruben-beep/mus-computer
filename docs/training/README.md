@@ -2,6 +2,7 @@
 
 Use the opt-in [training experiment framework](EXPERIMENTS.md) for champion/
 challenger comparisons and recorded follow-up attempts across model designs.
+Its human-facing reports are standalone offline HTML; [open the latest results](EXPERIMENT_RESULTS_2026-11-09.html).
 
 The opt-in [phase-specific CFR betting GLM](CFR_GLM.md) uses the separate
 `python -m mus_computer.training.cfr --policy glm` entry point. Tabular CFR

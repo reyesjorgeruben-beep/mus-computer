@@ -6,6 +6,7 @@ from pathlib import Path
 
 from .contracts import DesignSpec, read_json
 from .pipeline import SelectionRule, bootstrap, confirm, promote, trial
+from .reports import write_report
 
 
 def main() -> int:
@@ -43,6 +44,18 @@ def main() -> int:
     confirmation.add_argument("--pairs", type=int, default=32)
     promotion = commands.add_parser("promote", parents=[common])
     promotion.add_argument("--confirmation", type=Path, required=True)
+    reporting = commands.add_parser(
+        "report", help="Regenerate offline HTML from saved JSON; no training"
+    )
+    reporting.add_argument("--input", type=Path, required=True)
+    reporting.add_argument("--output", type=Path)
+    reporting.add_argument(
+        "--related",
+        type=Path,
+        action="append",
+        default=[],
+        help="Include separate historical JSON comparisons",
+    )
     args = parser.parse_args()
     if args.command == "bootstrap":
         result = bootstrap(
@@ -71,11 +84,15 @@ def main() -> int:
         )
     elif args.command == "confirm":
         result = confirm(args.champion, args.development, pairs=args.pairs)
+    elif args.command == "report":
+        result = write_report(args.input, args.output, related=args.related)
     else:
         decision = promote(args.champion, args.confirmation)
         print(json.dumps(decision, indent=2))
         return 0 if decision["promoted"] else 2
-    print(result)
+    print(
+        result.with_suffix(".html") if args.command in {"trial", "confirm"} else result
+    )
     return 0
 
 

@@ -336,6 +336,8 @@ def test_custom_baseline_design_needs_no_coordinator_model_branch(tmp_path):
         baseline_specs={"own-design": native},
     )
     report = json.loads(report_path.read_text())
+    assert report_path.with_suffix(".html").is_file()
+    assert not report_path.with_suffix(".md").exists()
     assert set(report["comparisons"]["baselines"]) == {"own-design"}
     data, _ = load_artifact(report["baselines"]["own-design"])
     assert data["spec"]["config"] == {"message": "new-baseline"}

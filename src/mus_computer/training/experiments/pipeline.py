@@ -22,6 +22,7 @@ from .contracts import (
     write_json,
 )
 from .evaluation import compare, seed_for, validate_evidence
+from .reports import write_report
 
 STATIC_ADAPTER = "mus_computer.training.experiments.adapters:StaticAdapter"
 
@@ -117,31 +118,7 @@ def _lineage(report: dict) -> int:
 
 def _report(path: Path, data: dict) -> Path:
     write_json(path, data)
-    head = data["comparisons"]["head_to_head"]
-    lines = [
-        f"# {data['stage'].title()} comparison",
-        "",
-        f"Attempt: {data['attempt']}. Seed pairs: {data['pairs']}. Games to win each match: {data['wins_to_match']}.",
-        f"Challenger vs champion: {head['wins']}/{head['matches']} ({head['win_rate']:.1%}).",
-        f"Pair-level standard error: {head['pair_standard_error']}.",
-        "",
-        "| Static opponent | Champion win rate | Challenger win rate | Difference |",
-        "|---|---:|---:|---:|",
-    ]
-    for name, result in data["comparisons"]["baselines"].items():
-        lines.append(
-            f"| {name} | {result['champion']['win_rate']:.1%} | {result['challenger']['win_rate']:.1%} | {result['delta']:+.1%} |"
-        )
-    lines += [
-        "",
-        f"Rationale: {data.get('rationale', '')}",
-        "",
-        "Screening thresholds are observed-rate rules, not proof of superiority. Side swaps are paired observations.",
-        "See JSON for immutable artifact references, budgets, source provenance and raw match records.",
-        "",
-    ]
-    with path.with_suffix(".md").open("x", encoding="utf-8") as output:
-        output.write("\n".join(lines))
+    write_report(path)
     return path
 
 

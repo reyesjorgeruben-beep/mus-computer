@@ -32,7 +32,8 @@ python -m mus_computer.training.experiments trial --champion training_runs/champ
 
 Bootstrap is explicit and refuses an existing champion. Later trials load that
 frozen artifact; they never retrain or replace it. Each output directory must
-be new. Read `attempt1/development.md` and its detailed JSON before proceeding.
+be new. Open `attempt1/development.html` to review the comparison and its
+attempt history. JSON remains the authoritative evidence.
 
 Make an evidence-based design/config change, or explain why a replication is
 needed, then run the follow-up:
@@ -88,6 +89,31 @@ matches are not counted as independent statistical observations. Reported
 standard errors are descriptive, especially at small sample sizes. Training
 regret/reward diagnostics remain in native checkpoints; full-game win rates are
 the selection evidence.
+
+### HTML is the standard results format
+
+New development and confirmation runs automatically produce a standalone
+`.html` report next to the canonical `.json`; the CLI prints the HTML path.
+Reports work offline, including comparison bars, configured selection gates,
+attempt history, provenance and expandable raw matches. No web hosting,
+JavaScript library or reporting dependency is needed. Markdown remains for
+project documentation and plans.
+
+Regenerate presentation from existing JSON without changing evidence or
+rerunning training:
+
+```powershell
+python -m mus_computer.training.experiments report --input training_runs/attempt2/confirmation.json
+```
+
+Use `--output path/to/results.html` for a portable copy. Existing output files
+are not overwritten. Reports follow hash-checked history and artifact manifests,
+so keep those files available for regeneration. Native model payloads need not
+be loaded. Local absolute artifact paths are not included in the HTML.
+Every attempt retains its evaluation budget, static comparisons and observed
+screening failures. Development screening is clearly separate from held-out
+promotion. Use `--related earlier/confirmation.json` to retain a separate
+historical comparison, without pooling its sample into the current result.
 
 ## Add another design without changing orchestration
 
@@ -155,5 +181,5 @@ the selected candidate separately and report failed gates honestly. Include a
 compact evidence summary in the PR; retain raw runs locally for reanalysis.
 Slow experiments are opt-in and are not part of default unit-test execution.
 
-See the [initial local evidence](EXPERIMENT_RESULTS_2026-11-09.md) for the
+See the [initial local results](EXPERIMENT_RESULTS_2026-11-09.html) for the
 100-iteration training cycle, follow-up, exact replication and rejected promotion.
