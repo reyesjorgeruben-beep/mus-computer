@@ -1,0 +1,5 @@
+# Human review copies are generated; keep PR source diffs focused on authoring/code.
+/README.html linguist-generated=true
+/AGENTS.html linguist-generated=true
+/log.html linguist-generated=true
+docs/**/*.html linguist-generated=true

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 730 460">
+  <title>Human review order</title>
+  <g font-family="Segoe UI,Arial,sans-serif" font-size="18">
+    <rect x="25" y="15" width="680" height="65" rx="8" fill="#fbeff0" stroke="#a83235"/><text x="48" y="43" fill="#8d282c">1. Merge blockers</text><text x="48" y="65" font-size="14">Important findings that prevent a safe merge</text>
+    <rect x="25" y="100" width="680" height="65" rx="8" fill="#fbf5e9" stroke="#b58b43"/><text x="48" y="128">2. Important findings</text><text x="48" y="150" font-size="14">Concrete regressions and material risks</text>
+    <rect x="25" y="185" width="680" height="65" rx="8" fill="#eaf6f2" stroke="#117869"/><text x="48" y="213">3. Decisions</text><text x="48" y="235" font-size="14">Design choices needing human judgment, separate from findings</text>
+    <rect x="25" y="270" width="680" height="65" rx="8" fill="#edf4f8" stroke="#9bb5c6"/><text x="48" y="298">4. Nits</text><text x="48" y="320" font-size="14">Small actionable improvements</text>
+    <rect x="25" y="355" width="680" height="65" rx="8" fill="#f0f3f5" stroke="#9baab5"/><text x="48" y="383">5. Pre-existing issues</text><text x="48" y="405" font-size="14">Baseline context, clearly separated from this change</text>
+  </g>
+</svg>

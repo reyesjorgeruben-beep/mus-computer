@@ -1,0 +1,127 @@
+<!doctype html><html lang="en" data-source="713bfed80e038d44b7dc4ce603458722dd30366f2fc3db98211eb1fbd25474b1"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gene introduction tracker · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#gene-introduction-tracker">Gene introduction tracker</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="gene-introduction-tracker">Gene introduction tracker</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><article><p><code>USED_GENES</code> in <code>src/mus_computer/training/constants.py</code> contains <code>bluff_rate</code> and <code>extreme_bluff_rate</code>. Genome matchups compose <code>AlwaysCutMusStrategy</code>, the existing discard strategy, and <code>ComposedWagerStrategy</code>. The composed wager policy always starts with the gene-free <code>HandStrengthWagerStrategy</code> and applies the raise-2 and ordago layers in that order. An ordinary <code>BotPlayer</code> without an injected portfolio still uses its default Mus and wager policies. Inactive genome fields remain at 0.5 in new default training populations.</p>
+<p>The first wager layer uses the hand table's <code>p_loss</code>. On an opening turn it passes with probability <code>p_loss</code> and offers 2 with probability <code>1 - p_loss</code>. When answering an opponent's offer, it folds with probability <code>p_loss</code> and matches with probability <code>1 - p_loss</code>. The non-loss branch includes ties. These table estimates describe the bot's own hand, not its teammate's hand.</p>
+<p>The bluff layer moves <code>p_loss * bluff_rate</code> from passing or folding to raising 2. The extreme-bluff layer moves <code>(p_loss - bluff_raise) * extreme_bluff_rate</code> from the remaining passing or folding probability to offering ordago. Thus both genes can reach 1 without making the action distribution exceed 1. When answering an offered ordago, only fold and match are legal, so the base distribution applies without either bluff layer.</p>
+<p>The cut probability is <code>cut_prone</code> when this bot has neither Pares nor Juego. Otherwise it is <code>juego * cut_prone_with_juego + (1 - juego * cut_prone_with_juego) * pares * cut_prone_with_pares</code>, where <code>juego</code> and <code>pares</code> are 1 when this bot's hand has that feature and 0 otherwise. The policy uses the hand's intrinsic phase points to determine those flags. It does not use phase win estimates, teammate points, score, or prior Mus exchanges.</p>
+<table>
+<thead>
+<tr>
+<th>Gene</th>
+<th>Status</th>
+<th>Intended effect to verify when reintroduced</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cut_prone</code></td>
+<td>Inactive; used by <code>GeneCutMusStrategy</code> when selected</td>
+<td>Cut probability with neither Pares nor Juego.</td>
+</tr>
+<tr>
+<td><code>cut_prone_with_pares</code></td>
+<td>Inactive; used by <code>GeneCutMusStrategy</code> when selected</td>
+<td>Cut probability contribution when the hand has Pares.</td>
+</tr>
+<tr>
+<td><code>cut_prone_with_juego</code></td>
+<td>Inactive; used by <code>GeneCutMusStrategy</code> when selected</td>
+<td>Cut probability contribution when the hand has Juego.</td>
+</tr>
+<tr>
+<td><code>mus_eagerness</code></td>
+<td>Inactive</td>
+<td>Higher value raises the probability of voting Mus on the same hand.</td>
+</tr>
+<tr>
+<td><code>mus_risk_sensitivity</code></td>
+<td>Inactive</td>
+<td>Higher value favors Mus when estimated improvement after discarding is positive.</td>
+</tr>
+<tr>
+<td><code>w_grande</code></td>
+<td>Inactive</td>
+<td>Changes Grande's relative importance when judging a hand or discard.</td>
+</tr>
+<tr>
+<td><code>w_chica</code></td>
+<td>Inactive</td>
+<td>Changes Chica's relative importance.</td>
+</tr>
+<tr>
+<td><code>w_pares</code></td>
+<td>Inactive</td>
+<td>Changes Pares' relative importance.</td>
+</tr>
+<tr>
+<td><code>w_juego</code></td>
+<td>Inactive</td>
+<td>Changes Juego's relative importance.</td>
+</tr>
+<tr>
+<td><code>discard_aggressiveness</code></td>
+<td>Inactive</td>
+<td>Changes discard choices when estimated values tie.</td>
+</tr>
+<tr>
+<td><code>bluff_rate</code></td>
+<td>Active in training wager policy</td>
+<td>Moves losing-hand probability to raise 2.</td>
+</tr>
+<tr>
+<td><code>extreme_bluff_rate</code></td>
+<td>Active in training wager policy</td>
+<td>Moves remaining losing-hand probability to ordago.</td>
+</tr>
+<tr>
+<td><code>risk_factor</code></td>
+<td>Inactive</td>
+<td>Changes the mix of raise sizes and ordago offers.</td>
+</tr>
+<tr>
+<td><code>fold_threshold</code></td>
+<td>Inactive</td>
+<td>Changes folding below a confidence threshold.</td>
+</tr>
+<tr>
+<td><code>raise_threshold</code></td>
+<td>Inactive</td>
+<td>Changes confidence-driven raising.</td>
+</tr>
+<tr>
+<td><code>score_urgency_sensitivity</code></td>
+<td>Inactive</td>
+<td>Changes the response to a score gap.</td>
+</tr>
+<tr>
+<td><code>position_preference</code></td>
+<td>Inactive</td>
+<td>Changes how seat position affects decisions.</td>
+</tr>
+</tbody>
+</table>
+<p>The fixed default Mus and discard policies use equal phase weights. Discard ties prefer fewer discarded cards. Score, seat, hand estimates, and current wager state still affect the fixed default policies. In genome matchups, Mus always ends immediately, and the wager strategy uses the current phase's loss estimate, the two bluff genes, and the current offer state.</p>
+</article><footer>Source: docs/training/GENES.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 713bfed80e038d44b7dc4ce603458722dd30366f2fc3db98211eb1fbd25474b1</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

@@ -1,0 +1,286 @@
+<!doctype html><html lang="en" data-source="7eae605da28ee0ecd79598505be8d88d238e9cc1bfe0596c0a96a9cfe4471653"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Training workspace · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#training-workspace">Training workspace</a><a class="depth-2" href="#context-specific-coefficient-training-default-version-2">Context-specific coefficient training (default, version 2)</a><a class="depth-3" href="#twelve-named-coefficients-with-separate-purposes">Twelve named coefficients with separate purposes</a><a class="depth-3" href="#exact-hand-evaluation-and-coefficient-updates">Exact hand evaluation and coefficient updates</a><a class="depth-3" href="#full-match-validation-and-charts">Full-match validation and charts</a><a class="depth-3" href="#limitations-and-layout">Limitations and layout</a><a class="depth-2" href="#earlier-shared-strategy-monte-carlo-cfr">Earlier shared-strategy Monte Carlo CFR</a><a class="depth-2" href="#earlier-genome-training-and-throughput-notes">Earlier genome training and throughput notes</a><a class="depth-2" href="#layout">Layout</a><a class="depth-2" href="#genome-training-flow">Genome training flow</a><a class="depth-2" href="#snapshots-and-charts">Snapshots and charts</a><a class="depth-2" href="#target-and-measurement">Target and measurement</a><a class="depth-2" href="#next-training-steps">Next training steps</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="training-workspace">Training workspace</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 400" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Training workspace</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#context-specific-coefficient-training-default-version-2"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Context-specific coefficient training</tspan><tspan x="195" dy="17">(default, version 2)</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#earlier-shared-strategy-monte-carlo-cfr"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Earlier shared-strategy Monte Carlo CFR</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#earlier-genome-training-and-throughput-notes"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Earlier genome training and throughput</tspan><tspan x="195" dy="17">notes</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#layout"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Layout</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#genome-training-flow"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Genome training flow</tspan></text></a><path d="M390 65 V235 H585 V245" fill="none" stroke="#b2c7d5"/><a href="#snapshots-and-charts"><rect x="410" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="267" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Snapshots and charts</tspan></text></a><path d="M390 65 V310 H195 V320" fill="none" stroke="#b2c7d5"/><a href="#target-and-measurement"><rect x="20" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="342" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Target and measurement</tspan></text></a><path d="M390 65 V310 H585 V320" fill="none" stroke="#b2c7d5"/><a href="#next-training-steps"><rect x="410" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="342" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Next training steps</tspan></text></a></svg></details><article><h2 id="context-specific-coefficient-training-default-version-2">Context-specific coefficient training (default, version 2)</h2>
+<pre><code class="language-sh">python -m mus_computer.training --rounds 1000 --batch-size 16 --workers 16 --seed 7 --run-dir training_runs/coefficient_cfr_v2_seed7
+</code></pre>
+<p>This evaluates <strong>16,000 fixed no-Mus hands</strong>, performs 1,000 updates, writes
+coefficient evolution charts, and then plays <strong>100 full matches per baseline</strong>.
+A match is first to four game wins; each normal game starts at 0 and continues
+through fresh hands until 40 points or an accepted ordago. Use <code>--workers 1</code> for
+serial execution, <code>--validation-matches</code> for an even per-baseline match count,
+<code>--wins-to-match</code> to change the match target, or <code>--skip-validation</code> to train only.
+No plotting or machine-learning dependency is required.</p>
+<h3 id="twelve-named-coefficients-with-separate-purposes">Twelve named coefficients with separate purposes</h3>
+<p>Each winning/losing case has six stored probabilities:</p>
+<table>
+<thead>
+<tr>
+<th>Coefficients</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>pass / bet</td>
+<td>Opening probability pair; sums to one</td>
+</tr>
+<tr>
+<td>fold / match</td>
+<td>Response probability pair when not re-bidding; sums to one</td>
+</tr>
+<tr>
+<td>rebid</td>
+<td>Independent chance of raising an opponent's ordinary bet</td>
+</tr>
+<tr>
+<td>ordago</td>
+<td>Independent chance that an intended bet or re-bid becomes ordago</td>
+</tr>
+</tbody>
+</table>
+<p>There is no six-way normalization. Updating <code>ordago</code> or <code>rebid</code> does not rescale
+the opening or calling pairs. Complementary pairs leave four independent
+probability choices per winning/losing case. Initially, pairs are 0.5/0.5,
+re-bid is 0.5, and ordago is 0.1. All twelve values are recorded each batch.</p>
+<p>A hand's probability of winning combines the two endpoint predictions:
+<code>c = (1 - p_win) * c_losing + p_win * c_winning</code>, as in the original proposal.
+This does not change the stored coefficients or make them functions of hand
+strength. It evaluates the policy for an uncertain hand. The existing tables
+use only that player's private cards; ties favor the first eligible seat.</p>
+<p>For the mixed probabilities <code>f, p, m, b, r, o</code>, action probabilities are:</p>
+<table>
+<thead>
+<tr>
+<th>Public wager situation</th>
+<th>Action distribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No bet yet</td>
+<td>pass <code>p</code>, bet two <code>b*(1-o)</code>, ordago <code>b*o</code></td>
+</tr>
+<tr>
+<td>Facing the opening bet</td>
+<td>fold <code>(1-r)*f</code>, match <code>(1-r)*m</code>, raise two <code>r*(1-o)</code>, ordago <code>r*o</code></td>
+</tr>
+<tr>
+<td>Facing a numeric counter-raise</td>
+<td>fold <code>1-r*o</code>, ordago <code>r*o</code></td>
+</tr>
+<tr>
+<td>Facing ordago</td>
+<td>fold <code>f</code>, match <code>m</code></td>
+</tr>
+</tbody>
+</table>
+<p>These distributions sum to one by construction. The final counter-raise
+response excludes matching and further numeric raises, per the simplified
+rule. Non-ordago probability goes to folding there. These restrictions belong
+to the decision logic, not the coefficients. Both eligible teammates can
+respond, so one fold does not automatically fold the team.</p>
+<h3 id="exact-hand-evaluation-and-coefficient-updates">Exact hand evaluation and coefficient updates</h3>
+<p>Every training hand draws physical cards without replacement and independent
+starting scores uniformly from 10 through 28. It covers Grande, Chica, eligible
+Pares, and Juego or Punto with the same hands and no Mus or exchanges. Actual
+cards determine settlement; policy input never contains opponents' cards.</p>
+<p>The evaluator enumerates wager responses and propagates a distribution of
+surviving score pairs into each later lance. Accepted ordago or reaching 40
+ends that branch. It settles each lance immediately in this simplified model;
+the playable game retains its normal deferred showdown accounting.</p>
+<p>Utility is the change in your team's score minus the other team's change
+during the hand. Scores are capped at 40; ordago fills the winner's remaining
+distance to 40. This remains a points-based training proxy, not match-win
+probability. Each action's value includes surviving future lances. Reports
+compare it with the best legal action against the frozen policy using
+<code>penalty[a] = max(Q) - Q[a]</code>. Reach-weighted local penalty sums are diagnostics,
+not exploitability or a bound on whole-game regret.</p>
+<p>All sixteen workers receive identical frozen coefficients. Each actor's exact
+local gradient holds other decisions fixed and is weighted by its full path
+reach. The main process waits for every hand, averages over the sixteen hands
+and both teams, scales by 40, and takes one gradient step. Pair updates use
+log odds; re-bid and ordago use independent logits. Small probability bounds
+keep exploration available. This is CFR-inspired parameterized policy
+improvement, not tabular CFR, regression CFR, or a convergence guarantee.</p>
+<h3 id="full-match-validation-and-charts">Full-match validation and charts</h3>
+<p>Validation uses the existing <code>Game</code> and <code>Match</code> classes, with normal scoring
+and repeated deals. Candidate bots always cut Mus, preserving the no-Mus
+scope. The opponents are:</p>
+<ul>
+<li>The existing <code>RandomDecisionBot</code>, sampling uniformly over all legal actions.</li>
+<li>New random coefficient sets using this same version-2 wager policy. Each set
+stays fixed for both opponents and every game in its match, and is reused
+in the paired comparison with sides swapped.</li>
+<li>The existing <code>MusMaestroBot</code> baseline: pass/fold wagering and always vote Mus.
+This is the repository's existing conservative baseline, not an external engine.</li>
+</ul>
+<p>Each opponent gets 100 matches: 50 from each team side using paired seeds.
+<code>validation.json</code> records every match's seed, candidate side, game-win score,
+random opponent coefficients, and match win rate. Side-swapped matches share
+a seed, so they are not treated as independent samples for a confidence interval.
+<code>validation.md</code> is the readable summary. This replaces the former isolated-hand
+piedra-margin comparison as the CLI validation result.</p>
+<p>Generated files under the Git-ignored run directory:</p>
+<ul>
+<li><code>training.json</code>: configuration, policy version, final coefficients, all batch
+metrics, and all 1,001 coefficient snapshots (including initialization).</li>
+<li><code>coefficients.svg</code>: two charts, losing and winning, with six named curves each.</li>
+<li><code>coefficients.csv</code>: all twelve curves as numerical data.</li>
+<li><code>example_hand.json</code>: a final-policy hand's initial scores, survival by lance,
+terminal outcome probabilities, and decision histories, strength estimates,
+reach, action values, and best-action penalties.</li>
+<li><code>validation.json</code> / <code>validation.md</code>: full-match results against all three baselines.</li>
+</ul>
+<h3 id="limitations-and-layout">Limitations and layout</h3>
+<p>The hand-strength table describes one unknown opponent, not the opposing team,
+and does not update from observed wagers. The policy cannot explicitly adapt
+to score, phase, seat, or teammate strength. Training's immediate scoring and
+point-based ordago value differ from the normal game's scoring and match-win
+objective; full-match validation measures transfer rather than assuming it.
+Shared self-play may cycle, and 100 matches per baseline leaves uncertainty.</p>
+<p>Implementation lives in <code>training/coefficient_cfr/</code>: <code>policy.py</code> owns contextual
+probabilities and gradients; <code>tree.py</code> legal negotiations; <code>round.py</code> scoring
+and survival; <code>trainer.py</code> frozen batches; <code>bot.py</code> the normal-game adapter;
+<code>validation.py</code> full matches; and <code>charts.py</code> coefficient history exports.
+Earlier version-1 results remain in their separate run folder; their ten
+shared action weights are not interchangeable with version-2 coefficients.</p>
+<h2 id="earlier-shared-strategy-monte-carlo-cfr">Earlier shared-strategy Monte Carlo CFR</h2>
+<p>The earlier trainer remains available as <code>python -m mus_computer.training.cfr</code>. It trains
+one tabular action-probability policy through four-seat self-play. All seats use
+the same frozen policy during an iteration; the trainer applies their regret
+updates together after counterfactual evaluations. It reuses the existing
+<code>Game</code>, <code>Deck</code>, decision contexts, strategy portfolio, legal actions, and
+scoring. The fixed neutral <code>BotGenome</code> instance only satisfies the existing
+bot personality interface; no genes are selected, crossed, or mutated.</p>
+<p>Run a small experiment with:</p>
+<pre><code class="language-sh">python -m mus_computer.training.cfr --iterations 10 --seed 7 --snapshot-every 5 --run-dir docs/training/cfr_runs/example
+</code></pre>
+<p>Install the package first with <code>python -m pip install -e .</code>, or set
+<code>PYTHONPATH=src</code>. Snapshot JSON files contain every visited information state,
+its legal actions, cumulative regrets, current action probabilities, and
+reach-weighted average probabilities. They also contain iteration count,
+sampled game count (including action rollouts), each team's running average
+utility, and the average policy's paired win fraction against the preceding
+checkpoint. Generated CFR runs are Git ignored.</p>
+<p>The trainer samples each deal using the existing random shuffle. It samples
+one complete exploratory trajectory, selects one visited decision per player,
+then replays the same history once per legal action and samples a continuation
+from the frozen current policy. The target action's value is the mean utility
+of that continuation sample, so estimates are noisy. The regret increment is
+the action value minus the current mixed-policy value, multiplied by the
+opponents' target reach divided by the trajectory behavior reach. Selecting
+one of a player's visited decisions adds a multiplier equal to the number of
+their visited decisions. These factors correct the sampled trajectory to a
+counterfactual regret estimate. Average-strategy contributions use own reach
+divided by behavior reach. The engine can see all hands to resolve outcomes;
+the policy key contains only the acting player's hand and public state.</p>
+<p>The table uses full public history within a hand, but the game clears that
+history between hands, so this abstraction can merge histories that a player
+could remember. The game also has four players in two teams. Do not infer the
+usual two-player zero-sum CFR convergence guarantee from these results.</p>
+<p>The earlier genetic trainer and its tests remain callable for compatibility
+with saved genome experiments. The default training command now uses the
+bounded-hand coefficient trainer described above.</p>
+<h2 id="earlier-genome-training-and-throughput-notes">Earlier genome training and throughput notes</h2>
+<p>This branch starts with a throughput baseline before changing bot policies or fitness. The first workload is a complete <code>Game</code> with four <code>RandomBotPlayer</code> seats. <code>Game</code> still creates public and private decision contexts at each prompt. The runner supplies no action callback, so bot actions do not print to the terminal; only the benchmark test prints timing summaries.</p>
+<h2 id="layout">Layout</h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/mus_computer/training/config.py</code></td>
+<td>Initial concurrency cap and timing targets</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/training/game_runner.py</code></td>
+<td>Silent random baseline and genome matchup games, plus reusable process pool</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/game/match.py</code></td>
+<td>Play fresh games until one team reaches the configured game-win target</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/training/genome_generator.py</code></td>
+<td>Replaceable population creation and winner driven genome variation</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/training/constants.py</code></td>
+<td>Maximum concurrent game count</td>
+</tr>
+<tr>
+<td><code>tests/training/test_game_runner.py</code></td>
+<td>Real game, process, silence, cap, and opt-in timing checks</td>
+</tr>
+<tr>
+<td><code>docs/training/experiments/</code></td>
+<td>One Git-ignored folder per run, with plots, winners, snapshots, and validation</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/training/genetic_trainer.py</code></td>
+<td>Schedules matchups, scores wins, and asks the generator for the next population</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/training/reporting/</code></td>
+<td>Snapshot summaries and offline Plotly charts</td>
+</tr>
+</tbody>
+</table>
+<h2 id="genome-training-flow">Genome training flow</h2>
+<p>See <a href="GENES.html">GENES.md</a> for the staged gene tracker.</p>
+<p>Pass <code>gen_generator=</code> to <code>GeneticTrainer</code> to replace the default <code>CustomGeneticGenomeGenerator</code>. The generator provides <code>initial_population(size)</code> and <code>next_generation(population, fitness)</code>. <code>USED_GENES</code> in <code>src/mus_computer/training/constants.py</code> contains <code>bluff_rate</code> and <code>extreme_bluff_rate</code>. Genome matchups compose <code>AlwaysCutMusStrategy</code> with the unchanged discard policy and <code>ComposedWagerStrategy</code>, which applies bluff layers after the gene-free <code>HandStrengthWagerStrategy</code> baseline. Ordinary bots without an injected strategy portfolio retain the fixed Mus and wager policies. See <a href="GENES.html">GENES.md</a> for the exact behavior.</p>
+<p>Configure a bot by constructing one complete <code>StrategyPortfolio(mus_strategy=..., discard_strategy=..., wagers_by_phase=...)</code> and passing it as <code>strategies=</code> to <code>BotPlayer</code>. <code>build_bot_game</code> shows the three concrete policies used for genome matchups. Every policy is required at construction; there is no replacement step.</p>
+<p>When genes are active, the trainer pairs the population into matches. <code>games_per_eval</code> adds pairing rounds before generating the next population, and <code>wins_to_match</code> sets how many games a team must win to take each match. The trainer scores match wins, so fitness remains the fraction of pairing rounds won. The top 50% by win rate are alpha. The generator shuffles them into pairs and averages each active gene to create one child per pair, then creates a varied copy of every alpha with an independent additive change from -0.03 to +0.03 per active gene. It fills the remaining slots with randomly selected beta genomes, varied from -0.05 to +0.05 per active gene. These defaults live in <code>training/constants.py</code>; pass <code>alpha_variation=</code> and <code>beta_variation=</code> to <code>CustomGeneticGenomeGenerator</code> to override them for one run. Values are clamped to [0, 1]. A single match still gives only binary fitness; compare candidates over multiple matches and against a fixed baseline before interpreting trends.</p>
+<p>The trainer owns one runner object from initialization. <code>evolve()</code> opens its process pool, warms the configured workers once, then reuses them for every generation. The genomes change between generations, but the worker processes and their loaded lookup tables remain alive. An individual call to <code>evaluate_population()</code> opens and closes that same runner if it is not already open. Pass <code>runner=</code> to the constructor to supply another runner.</p>
+<p>A 100-generation run of 20 genomes with eight pairing rounds per generation and first to three game wins per match can use <code>python -m mus_computer.training.genetic_trainer --pop 20 --gen 100 --games 8 --wins-to-match 3 --seed 0</code>. The two bluff genes then affect wagers in genome matchups. The same pool runs all rounds and generations.</p>
+<p><code>evolve()</code> returns the top half of the final population by win rate. The CLI writes them to <code>winning_genomes/genomes.json</code> inside the experiment (or another filename supplied with <code>--out</code> in that folder). With no active genes, those genomes are identical and are only a fixed-policy baseline. A single-round average win rate is always 0.5 because each game has one winner and one loser; it is not an improvement measure across generations.</p>
+<p>Each <code>GenomeMatchup(team_a, team_b, seed, wins_to_match)</code> seats one genome in both A seats and the other in both B seats. <code>Match</code> requests a fresh game for every contest, and <code>build_bot_game</code> creates four fresh contextual <code>BotPlayer</code> instances each time. <code>TrainingGameRunner.play_matchups</code> runs those matches without printing actions. The trainer derives a distinct match seed from <code>--seed</code>, generation number, and matchup number; the default starting seed is 0. Each new game has distinct bot random streams derived from its match seed and game index. The runner restores the caller's global random state after a local match, and <code>evolve()</code> restores it after a full seeded run. <code>MatchRunResult.wins_a</code> and <code>wins_b</code> report the game score, such as 2–3. A match has no <code>victory_reason</code>; that field belongs to single-game results only.</p>
+<p>Within a game, the first seat rotates after every completed hand (after Juego or Punto), so each player becomes mano in turn. All four seats retain their original team membership. The game stops before rotating if the hand produces a winner.</p>
+<h2 id="snapshots-and-charts">Snapshots and charts</h2>
+<p>For older experiments with active cut genes, <code>mus_decisions.html</code> evaluates <code>GeneCutMusStrategy</code> for every genome in each snapshot under four hand conditions. Current bluff-gene runs use <code>AlwaysCutMusStrategy</code> and omit that chart; they include a chart for each bluff gene instead.</p>
+<p>Install reporting support with <code>python -m pip install -e &quot;.[reporting]&quot;</code>. A CLI run creates a new folder under <code>docs/training/experiments/</code> with a short <code>README.md</code>, full population snapshots every <code>--snapshot</code> generations, final winning genomes in <code>winning_genomes/</code>, interactive Plotly charts, and a compact validation table in <code>validation/results.md</code>. Validation uses 100 matches per winner and opponent, each first to the training run's <code>wins_to_match</code> game target. Open that experiment's <code>charts/index.html</code> to inspect the evolution. The charts use a local Plotly JavaScript file and work offline. Rebuild charts from saved snapshots with <code>generate_charts(run_dir)</code> from <code>mus_computer.training.reporting</code>.</p>
+<p>For a fixed baseline, use <code>python -m mus_computer.training.genetic_trainer --pop 64 --gen 1 --games 8 --workers 16 --no-genes --experiment-name baseline</code>. The description follows the date in the folder name (<code>YYYY-MM-DD_baseline</code>); choose a new description for another run on the same day. Add a gene to <code>USED_GENES</code> only after restoring its decision effect and adding a behavior check. Generated experiment folders, legacy <code>training_runs/</code>, standalone <code>winning_genomes*.json</code>, and legacy <code>population_gen*.json</code> are Git ignored.</p>
+<p><code>GameResult.victory_reason</code> records whether the deciding game ended by points or ordago. <code>worker_pid</code> is the operating system process ID returned by <code>os.getpid()</code>; it helps verify whether a batch used multiple worker processes. <code>_prepare_worker</code> loads the lookup table once in each worker before its first game. <code>warm_up()</code> explicitly starts every configured worker before a timed full-pool benchmark. Small batches can run directly without waiting for the whole pool.</p>
+<h2 id="target-and-measurement">Target and measurement</h2>
+<p>The maximum concurrency cap is 16 games; the CLI defaults to ten workers. A single random-bot game has a 0.6-second latency ceiling. A batch of ten games on an already started, warmed process pool has a 0.6-second target. At a sustained rate, ten games per 0.6 seconds corresponds to 100 games per 6 seconds or 1,000 games per minute. Pool startup and table loading are excluded from the batch measurement because a training run reuses the pool; they still matter to short one-off commands.</p>
+<p>Run the functional tests:</p>
+<pre><code class="language-sh">python -m pytest tests/training/test_game_runner.py -q
+</code></pre>
+<p>Run the live timing checks and show measured values:</p>
+<pre><code class="language-sh">RUN_TRAINING_PERF=1 python -m pytest tests/training/test_game_runner.py -q -m performance -s
+</code></pre>
+<p>In PowerShell, set <code>$env:RUN_TRAINING_PERF = '1'</code> before the pytest command. The timing tests are opt-in because shared CI machines and background load can vary. They use fixed game seeds, real contexts, and real games; a failed threshold is a performance finding, not a reason to loosen the target. Random bots often offer ordago early, so this baseline can be much faster than games involving trained policies. Measure those separately before claiming the target for training.</p>
+<h2 id="next-training-steps">Next training steps</h2>
+<ol>
+<li>Record experiment parameters and outcomes under <code>docs/training/experiments/</code>.</li>
+<li>Define fitness and opponent selection for contextual <code>BotPlayer</code> genomes.</li>
+<li>Benchmark a representative trained-policy game mix, including games that reach 40 points.</li>
+</ol>
+</article><footer>Source: docs/training/README.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 7eae605da28ee0ecd79598505be8d88d238e9cc1bfe0596c0a96a9cfe4471653</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

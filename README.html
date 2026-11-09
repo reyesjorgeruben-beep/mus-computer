@@ -1,0 +1,95 @@
+<!doctype html><html lang="en" data-source="941109c44dbfbb4d575564c248810003e3cb50739e877d54b31f130bf1990cef"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mus Computer · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="docs/review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#mus-computer">Mus Computer</a><a class="depth-2" href="#install-and-play">Install and play</a><a class="depth-2" href="#how-a-match-works">How a match works</a><a class="depth-2" href="#repository-layout">Repository layout</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="mus-computer">Mus Computer</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 250" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Mus Computer</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#install-and-play"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Install and play</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#how-a-match-works"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">How a match works</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#repository-layout"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Repository layout</tspan></text></a></svg></details><article><p>A terminal Mus game for four bots in two teams. Bot 1 and Bot 3 play for Team A; Bot 2 and Bot 4 play for Team B. The default game prints each bot's cards, Mus votes, discards, wagers, score changes, and winner. The four seats currently use <code>RandomBotPlayer</code>.</p>
+<h2 id="install-and-play">Install and play</h2>
+<p>Python 3.10 or newer is required. Editable installs use PEP 660 and need pip 21.3+ and setuptools 64+. If your environment has older packaging tools, update them first. From the repository root:</p>
+<pre><code class="language-sh">python -m pip install -e &quot;.[dev]&quot;
+python -m mus_computer
+</code></pre>
+<p><code>python api.py</code> remains a compatibility entry point for the same four-bot game. The installed <code>mus-computer</code> command also runs it. Run the tests with:</p>
+<pre><code class="language-sh">python -m pytest tests/
+</code></pre>
+<p>Format Python files with <code>make format</code>, or check formatting with
+<code>make format-check</code>. Install the tools first with
+<code>python -m pip install -e &quot;.[dev,review]&quot;</code>. These commands use <code>.venv</code> when
+present; override the interpreter with <code>make format PYTHON=python3</code>.
+GNU Make must be installed. On Windows run
+<code>winget install --id ezwinports.make --exact --source winget --scope user</code>,
+then reopen the terminal to load its PATH. Without Make, use
+<code>python -m ruff format src scripts tests api.py setup.py</code> in the project environment.</p>
+<h2 id="how-a-match-works">How a match works</h2>
+<p>Each bot receives four cards. In seat order, players say <code>mus</code> or <code>corta</code>. If everyone says <code>mus</code>, each may exchange zero to four cards and the Mus vote repeats. A <code>corta</code> starts play with the current hands. The discard pile replenishes the draw deck when needed.</p>
+<p>The hand proceeds through Grande, Chica (Pequeña), Pares, and Juego, or Punto when no one has Juego. Wagers are made for a team. One eligible defender's <code>quiero</code> accepts a wager; every eligible defender must say <code>no quiero</code> to reject it. An opening <code>envida</code> sets the total stake (bare <code>envida</code> means two points); a later <code>envida N</code> adds N to the current offer. A refused offer gives the offering team the previously accepted stake immediately. Other phase awards are settled after Juego or Punto, in phase order. The first team to reach 40 wins. An accepted <code>ordago</code> settles the match immediately by the phase's cards; refusing it awards only the previous stake.</p>
+<p>The default terminal runner uses random bots. The contextual <code>BotPlayer</code> receives a <code>BotPersonality</code> containing trainable parameters and an optional <code>StrategyPortfolio</code> defining how to use them. <code>MusStrategy</code>, <code>DiscardStrategy</code>, and <code>WagerStrategy</code> are the replaceable decision interfaces. The built-in implementations are <code>EstimateMusStrategy</code>, <code>PersonalityWeightedDiscardStrategy</code>, and <code>HeuristicWagerStrategy</code>; <code>StrategyPortfolio.default()</code> assembles them.</p>
+<p>Supplying a portfolio to <code>BotPlayer(..., personality=..., strategies=...)</code> can replace any policy without changing the personality or game rules. The built-in policies are heuristic and untrained; table calibration remains open.</p>
+<h2 id="repository-layout">Repository layout</h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>src/mus_computer/cards/</code></td>
+<td>Cards, deck, and hands</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/game/</code></td>
+<td>Match lifecycle, phases, teams, and wagers</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/bots/</code></td>
+<td>Random and contextual bot players and strategies</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/probabilities/</code></td>
+<td>Packaged lookup data and hand estimates</td>
+</tr>
+<tr>
+<td><code>src/mus_computer/training/</code></td>
+<td>Exact wager coefficient training and earlier CFR/genome experiments</td>
+</tr>
+<tr>
+<td><code>scripts/tables/</code></td>
+<td>Offline table builders and exports</td>
+</tr>
+<tr>
+<td><code>tests/</code></td>
+<td>Unit and game tests</td>
+</tr>
+</tbody>
+</table>
+<p>The bundled probability table is read-only package data. Table generation and reports are separate offline work. The post-Mus analytical model covers one exchange, while the playable game repeats Mus until someone cuts. Several table assumptions still need validation; see the <a href="docs/mus-computer/README.html">technical reference</a> and <a href="docs/mus-computer/lookup-tables/README.html">lookup table guide</a>.</p>
+<p>Offline table builders use NumPy. Install their optional dependencies with <code>python -m pip install -e &quot;.[tables]&quot;</code> if you are running them outside the development setup above.</p>
+<p>See the <a href="docs/mus-computer/TODO.html">roadmap</a> for milestone status and the <a href="docs/superpowers/specs/2026-09-27-contextual-bot-strategies-design.html">contextual strategy design</a> for decision interfaces and scoring rules.</p>
+<p>The <a href="docs/training/README.html">training workspace</a> documents bounded-hand coefficient self-play, metrics, and the earlier CFR and genome experiments.</p>
+<p>For human review, open the offline <a href="docs/review/index.html">project review desk</a>.
+Specs, brainstorms, plans and reviews have navigable HTML copies; active reviews
+put merge blockers and Important findings before decisions and smaller follow-ups.
+Authoring conventions and templates are in the <a href="docs/review/README.html">HTML review guide</a>.</p>
+</article><footer>Source: README.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 941109c44dbfbb4d575564c248810003e3cb50739e877d54b31f130bf1990cef</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

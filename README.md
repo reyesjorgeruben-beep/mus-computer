@@ -55,3 +55,8 @@ Offline table builders use NumPy. Install their optional dependencies with `pyth
 See the [roadmap](docs/mus-computer/TODO.md) for milestone status and the [contextual strategy design](docs/superpowers/specs/2026-09-27-contextual-bot-strategies-design.md) for decision interfaces and scoring rules.
 
 The [training workspace](docs/training/README.md) documents bounded-hand coefficient self-play, metrics, and the earlier CFR and genome experiments.
+
+For human review, open the offline [project review desk](docs/review/index.html).
+Specs, brainstorms, plans and reviews have navigable HTML copies; active reviews
+put merge blockers and Important findings before decisions and smaller follow-ups.
+Authoring conventions and templates are in the [HTML review guide](docs/review/README.html).

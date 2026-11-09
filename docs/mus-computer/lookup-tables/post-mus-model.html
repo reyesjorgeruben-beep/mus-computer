@@ -1,0 +1,81 @@
+<!doctype html><html lang="en" data-source="b2a110b7cae4229a04dfe09d5e851de85b6470a825c991c66ad4e0ca6139f5c7"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Post-mus hand distribution and expected points · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#post-mus-hand-distribution-and-expected-points">Post-mus hand distribution and expected points</a><a class="depth-2" href="#what-they-expose">What they expose</a><a class="depth-2" href="#agreed-model">Agreed model</a><a class="depth-2" href="#distribution-construction">Distribution construction</a><a class="depth-2" href="#expected-points-after-mus">Expected points after Mus</a><a class="depth-2" href="#current-qualitative-check">Current qualitative check</a><a class="depth-2" href="#one-pass-correction">One-pass correction</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="post-mus-hand-distribution-and-expected-points">Post-mus hand distribution and expected points</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 325" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Post-mus hand distribution and expected points</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#what-they-expose"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">What they expose</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#agreed-model"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Agreed model</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#distribution-construction"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Distribution construction</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#expected-points-after-mus"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Expected points after Mus</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#current-qualitative-check"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Current qualitative check</tspan></text></a><path d="M390 65 V235 H585 V245" fill="none" stroke="#b2c7d5"/><a href="#one-pass-correction"><rect x="410" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="267" text-anchor="middle" font-size="13"><tspan x="585" dy="0">One-pass correction</tspan></text></a></svg></details><article><h2 id="what-they-expose">What they expose</h2>
+<ul>
+<li>hand_distribution_post_mus: a probability mass over canonical final hands after the deterministic best-discard Mus proxy.</li>
+<li>ep_mano_postmus: expected phase points for a fixed mano hand against the post-mus marginal hand model.</li>
+</ul>
+<p>The distribution is stored at the top level of the bundled <code>src/mus_computer/probabilities/data/probability_tables.pkl</code>. The expected-points table is stored per hand.</p>
+<h2 id="agreed-model">Agreed model</h2>
+<p>The current iteration models one Mus exchange only. Sixteen cards are dealt initially, leaving 24 cards in the stock. Even if all four players discard all four cards, at most 16 replacements are needed. The first exchange therefore does not exhaust the stock, so discards do not need to be recycled during this modeled exchange.</p>
+<p>Each starting hand uses the best-discard choice exposed by the discard-value table. This creates a post-mus distribution that favors hands retained or completed by that strategy. The distribution is a proxy: it does not model the probability that each initial hand votes Mus, the chance all four players agree, or variations in player policy.</p>
+<h2 id="distribution-construction">Distribution construction</h2>
+<p><code>scripts/tables/compute_hand_distribution.py</code>:</p>
+<ol>
+<li>Computes the initial deal probability of each canonical hand from its physical multiplicity.</li>
+<li>Reads the best-discard option and compares its expected net points with keeping all four cards.</li>
+<li>Treats a hand with positive discard gain as a Mus hand and applies its best discard. Other hands do not enter the conditional post-mus distribution.</li>
+<li>Renormalizes the initial deal probabilities over the hands classified as taking Mus.</li>
+<li>Enumerates possible completed hands and sums their weighted probabilities into hand_distribution_post_mus.</li>
+</ol>
+<p>Thus the result is conditional on the proxy's deterministic Mus selection. It is not the unconditional distribution of all hands after every deal, nor a joint distribution for all four seats. The source-to-final relation is:</p>
+<pre><code>q(h_final) = sum over source hands h0 of
+    P(h0 | proxy takes Mus) * P(h_final | h0, best discard)
+</code></pre>
+<p>The source hand is used to choose the discard and its draw pool, then marginalized when q is stored. A dense source/final table would have at most 330 * 330 = 108,900 entries (about 0.83 MiB for float64 values), so that one-player table is practical if a later policy needs it. Modeling correlated source hands and replacement draws across all four seats is the much larger problem. For this iteration, assume seats can be represented by the final marginal q without retaining their source hands.</p>
+<p>The current transition pool is full deck minus the kept subset. Under the agreed one-exchange marginal, use full deck minus the original four-card hand: another physical card of a discarded rank may be drawn, but the exact physical card dealt initially cannot return during this exchange.</p>
+<h2 id="expected-points-after-mus">Expected points after Mus</h2>
+<p><code>scripts/tables/compute_ep_postmus.py</code> fixes the mano hand and applies the post-mus hand mass to the partner and opponent hand types, while checking that impossible rank multiplicities are excluded. The same phase ranking and point scorer as ep_mano are used.</p>
+<p>The stored post-mus marginal q(h) is aggregate probability mass for canonical hand type h; it is not the probability of each individual physical realization of h. The current q was generated using the overinclusive draw pool described above. The formula below documents the current working assumption used when combining q with physical card multiplicity.</p>
+<p>Define the physical multiplicity of type h in deck counts D as:</p>
+<pre><code>M(h | D) = product over ranks r of choose(D_r, n_r(h))
+</code></pre>
+<p>If the model's goal were to preserve q(h) as the marginal type probability while enforcing card compatibility, the fraction of realizations of h compatible with remaining deck D would be:</p>
+<pre><code>c(h | D) = M(h | D) / M(h | full deck)
+</code></pre>
+<p>That alternative would give this sequential weight for partner and opponents h3, hx, hy:</p>
+<pre><code>q(h3) * c(h3 | D1)
+* q(hx) * c(hx | D2)
+* q(hy) * c(hy | D3)
+</code></pre>
+<p>where D1 excludes the fixed mano hand, D2 also excludes h3, and D3 also excludes hx.</p>
+<p>The current worker instead uses this formula:</p>
+<pre><code>w_current = q(h3) * M(h3 | D1)
+          * q(hx) * M(hx | D2)
+          * q(hy) * M(hy | D3)
+</code></pre>
+<p>This is an explicit reweighting assumption: it favors types with more compatible physical realizations in the remaining deck. Equivalently, it behaves like a type prior proportional to q(h) * M(h | full deck), followed by physical-card exclusion. It does not preserve q as the resulting marginal. The ratio formula above is the alternative if preserving q is the goal. Both remain product-of-marginals models and omit correlations created by the shared initial deal, discard choices, and replacement stock; compare them before deciding which is the better approximation.</p>
+<h2 id="current-qualitative-check">Current qualitative check</h2>
+<p>The current stored post-mus marginal has total mass approximately 1. Under that artifact:</p>
+<ul>
+<li>Initial deal: probability of at least one R (king rank) is about 0.607; expected R count is 0.80.</li>
+<li>Post-mus conditional distribution: probability of at least one R is about 0.770; expected R count is about 1.18.</li>
+</ul>
+<p>This agrees with the expected qualitative effect: best-discard selection makes kings more common among hands that continue through Mus. It is only a directional sanity check. The current transition restores the exact discarded copies to the draw pool, so these numbers do not validate the agreed one-exchange marginal draw model.</p>
+<h2 id="one-pass-correction">One-pass correction</h2>
+<p>The current sequence builds hand_distribution_post_mus from best_discards using ep_mano, then builds ep_mano_postmus, then writes best_discards_corrected from that post-mus expected-points table. The corrected discard table is stored separately; the distribution is not rebuilt from it.</p>
+<p>This is a coherent one-pass approximation. A fixed-point iteration is possible later, but it is not required for the first policy that consumes these tables.</p>
+</article><footer>Source: docs/mus-computer/lookup-tables/post-mus-model.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: b2a110b7cae4229a04dfe09d5e851de85b6470a825c991c66ad4e0ca6139f5c7</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

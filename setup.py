@@ -12,7 +12,8 @@ setup(
     include_package_data=True,
     install_requires=[],
     extras_require={
-        "dev": ["pytest==9.0.2", "numpy==1.26.4"],
+        "dev": ["pytest==9.0.2", "numpy==1.26.4", "markdown-it-py==4.0.0"],
+        "docs": ["markdown-it-py==4.0.0"],
         "review": [
             "ruff==0.17.4",
             "mypy==2.4.1",

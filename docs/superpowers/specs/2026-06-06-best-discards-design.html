@@ -1,0 +1,156 @@
+<!doctype html><html lang="en" data-source="0d11ca4e9ac870d58255a53e002ed42949e548d3136902de7b8e97b393a6bfb4"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Best Discards Computation — Design Spec · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Spec / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#best-discards-computation-design-spec">Best Discards Computation — Design Spec</a><a class="depth-2" href="#goal">Goal</a><a class="depth-2" href="#inputs-and-outputs">Inputs and outputs</a><a class="depth-2" href="#core-computation-per-hand">Core computation per hand</a><a class="depth-2" href="#data-written-per-hand">Data written per hand</a><a class="depth-3" href="#tableshandbest_discards">tables[hand][&quot;best_discards&quot;]</a><a class="depth-3" href="#tableshandno_discard_stats">tables[hand][&quot;no_discard_stats&quot;]</a><a class="depth-2" href="#script-structure">Script structure</a><a class="depth-2" href="#edge-cases">Edge cases</a><a class="depth-2" href="#what-this-replaces-does-not-replace">What this replaces / does not replace</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="best-discards-computation-design-spec">Best Discards Computation — Design Spec</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 400" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Best Discards Computation — Design Spec</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#goal"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Goal</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#inputs-and-outputs"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Inputs and outputs</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#core-computation-per-hand"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Core computation per hand</tspan></text></a><path d="M390 65 V160 H585 V170" fill="none" stroke="#b2c7d5"/><a href="#data-written-per-hand"><rect x="410" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="192" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Data written per hand</tspan></text></a><path d="M390 65 V235 H195 V245" fill="none" stroke="#b2c7d5"/><a href="#script-structure"><rect x="20" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="267" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Script structure</tspan></text></a><path d="M390 65 V235 H585 V245" fill="none" stroke="#b2c7d5"/><a href="#edge-cases"><rect x="410" y="245" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="267" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Edge cases</tspan></text></a><path d="M390 65 V310 H195 V320" fill="none" stroke="#b2c7d5"/><a href="#what-this-replaces-does-not-replace"><rect x="20" y="320" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="342" text-anchor="middle" font-size="13"><tspan x="195" dy="0">What this replaces / does not replace</tspan></text></a></svg></details><article><p><strong>Date:</strong> 2026-06-06
+<strong>Script:</strong> <code>compute_best_discards.py</code>
+<strong>Depends on:</strong> <code>probability_tables.pkl</code> with <code>ep_mano</code> populated (run <code>compute_expected_points.py</code> first)</p>
+<hr />
+<h2 id="goal">Goal</h2>
+<p>Produce a rich per-hand discard summary stored back into <code>probability_tables.pkl</code>, replacing the current <code>discard_options</code> structure (which uses 1v1 <code>p_win</code> as its metric) with expected tantos derived from the 4-player <code>ep_mano</code> table.</p>
+<hr />
+<h2 id="inputs-and-outputs">Inputs and outputs</h2>
+<p><strong>Input:</strong> <code>probability_tables.pkl</code></p>
+<ul>
+<li>Must contain <code>tables[hand][&quot;ep_mano&quot;]</code> for every hand.</li>
+<li>Script skips any hand where <code>ep_mano</code> is missing and warns to stderr.</li>
+</ul>
+<p><strong>Output:</strong> same <code>probability_tables.pkl</code> with two new keys per hand:</p>
+<ul>
+<li><code>tables[hand][&quot;best_discards&quot;]</code></li>
+<li><code>tables[hand][&quot;no_discard_stats&quot;]</code></li>
+</ul>
+<hr />
+<h2 id="core-computation-per-hand">Core computation per hand</h2>
+<p>For each of the 330 canonical hands:</p>
+<ol>
+<li>
+<p><strong>Enumerate all kept subsets</strong> — all 32 subsets of the 4 cards (keeping 0–4 cards), deduplicated by canonical form. This is the same enumeration as the existing <code>_compute_discard_options</code>.</p>
+</li>
+<li>
+<p><strong>For each kept subset, compute weighted-average ep_mano after drawing:</strong></p>
+<ul>
+<li><code>n_draw = 4 - len(kept)</code></li>
+<li>Enumerate all <code>combinations_with_replacement</code> over the remaining deck (deck minus <code>hand</code> minus any cards re-added by the discard)</li>
+<li>Weight each draw outcome by <code>_mult_from_counts(draw_combo, remaining_deck)</code></li>
+<li>Look up <code>tables[new_hand][&quot;ep_mano&quot;]</code> for the completed hand</li>
+<li>Compute weighted averages of all ep_mano fields across draw outcomes</li>
+</ul>
+</li>
+<li>
+<p><strong>Derive summary scalars</strong> from the averaged ep_mano:</p>
+<ul>
+<li><code>total_net_A</code> = <code>sum(expected_net_A[phase] for phase in [Grande, Chica, Pares, Juego, Punto])</code></li>
+<li><code>total_action</code> = <code>sum(expected_A_points[phase] + expected_B_points[phase] for phase in all 5 phases)</code></li>
+<li><code>juego_punto_net_A</code> = <code>expected_net_A[Juego] + expected_net_A[Punto]</code></li>
+<li>per-phase <code>net_A[phase]</code> for Grande, Chica, Pares</li>
+</ul>
+</li>
+</ol>
+<hr />
+<h2 id="data-written-per-hand">Data written per hand</h2>
+<h3 id="tableshandbest_discards"><code>tables[hand][&quot;best_discards&quot;]</code></h3>
+<pre><code class="language-python">{
+    &quot;top10_net&quot;: [
+        {
+            &quot;kept&quot;: &lt;canonical tuple&gt;,
+            &quot;total_net_A&quot;: float,
+            &quot;net_per_phase&quot;: {
+                &quot;Grande&quot;: float, &quot;Chica&quot;: float, &quot;Pares&quot;: float,
+                &quot;Juego&quot;: float, &quot;Punto&quot;: float
+            }
+        },
+        # … up to 10 entries, sorted descending by total_net_A
+        # &quot;keep all 4&quot; is EXCLUDED from this list
+    ],
+
+    &quot;best_by_phase&quot;: {
+        # Each value is the kept hand that maximises that phase's metric
+        &quot;Grande&quot;: {&quot;kept&quot;: &lt;tuple&gt;, &quot;net_A&quot;: float},
+        &quot;Chica&quot;:  {&quot;kept&quot;: &lt;tuple&gt;, &quot;net_A&quot;: float},
+        &quot;Pares&quot;:  {&quot;kept&quot;: &lt;tuple&gt;, &quot;net_A&quot;: float},
+        &quot;Juego&quot;:  {&quot;kept&quot;: &lt;tuple&gt;, &quot;net_A&quot;: float},
+        # Juego metric = net_A[Juego] + net_A[Punto]; label stays &quot;Juego&quot;
+        # Punto is NOT a separate best_by_phase entry
+    },
+
+    &quot;max_action_kept&quot;: {&quot;kept&quot;: &lt;tuple&gt;, &quot;total_action&quot;: float},
+    &quot;min_action_kept&quot;: {&quot;kept&quot;: &lt;tuple&gt;, &quot;total_action&quot;: float},
+}
+</code></pre>
+<h3 id="tableshandno_discard_stats"><code>tables[hand][&quot;no_discard_stats&quot;]</code></h3>
+<p>Baseline for the option of keeping all 4 cards (no discard).</p>
+<pre><code class="language-python">{
+    &quot;rank&quot;: int,          # position of &quot;keep all&quot; among ALL options sorted by total_net_A (1 = best)
+
+    &quot;improvement_by_phase&quot;: {
+        # For each phase: best_by_phase[phase].net_A  –  no_discard.net_A (for that phase's metric)
+        &quot;Grande&quot;: float,
+        &quot;Chica&quot;:  float,
+        &quot;Pares&quot;:  float,
+        &quot;Juego&quot;:  float,  # uses juego_punto_net_A for both sides of the delta
+    },
+
+    &quot;delta_total_net_vs_best&quot;: float,
+    # top10_net[0].total_net_A – no_discard.total_net_A
+    # (0.0 if &quot;keep all&quot; is already the best option)
+
+    &quot;action_vs_max&quot;: float,
+    # max_action_kept.total_net_A – no_discard.total_net_A
+    # positive = high-variance discard is better for your team in net terms
+
+    &quot;action_vs_min&quot;: float,
+    # no_discard.total_net_A – min_action_kept.total_net_A
+    # positive = you are already doing better in net than the low-variance play
+}
+</code></pre>
+<hr />
+<h2 id="script-structure">Script structure</h2>
+<pre><code>compute_best_discards.py
+├── load pickle
+├── guard: warn if ep_mano missing for any hand
+├── for each hand (progress log per hand):
+│   ├── enumerate kept subsets
+│   ├── for each kept: weighted-average ep_mano after draw → summary scalars
+│   ├── build best_discards entry
+│   └── build no_discard_stats entry
+└── save pickle
+</code></pre>
+<p>No multiprocessing needed — the computation is O(330 × 32 × small draw combos) with pure dict lookups. Expected runtime: seconds.</p>
+<hr />
+<h2 id="edge-cases">Edge cases</h2>
+<ul>
+<li><strong><code>ep_mano</code> missing for a hand:</strong> skip that hand, print warning, continue. Do not abort.</li>
+<li><strong>Fewer than 10 valid discard options</strong> (e.g., mono-deck in tests): <code>top10_net</code> has fewer than 10 entries — this is fine.</li>
+<li><strong>&quot;Keep all&quot; is already the best option:</strong> <code>rank = 1</code>, <code>delta_total_net_vs_best = 0.0</code>.</li>
+<li><strong>Ties in ranking:</strong> stable sort; &quot;keep all&quot; is excluded from <code>top10_net</code> regardless of rank.</li>
+<li><strong><code>n_draw = 0</code> (keep all 4):</strong> no draw enumeration; <code>new_hand = canonical(kept)</code>, ep_mano looked up directly.</li>
+</ul>
+<hr />
+<h2 id="what-this-replaces-does-not-replace">What this replaces / does not replace</h2>
+<ul>
+<li><strong>Does not touch</strong> <code>discard_options</code> (the existing p_win-based structure). That key stays in the pickle for backward compatibility with the current <code>BotPlayer</code>.</li>
+<li><code>BotPlayer.choose_discards()</code> currently uses Monte Carlo sampling, not the table at all. Wiring the new table into the bot is a separate task.</li>
+</ul>
+</article><footer>Source: docs/superpowers/specs/2026-06-06-best-discards-design.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 0d11ca4e9ac870d58255a53e002ed42949e548d3136902de7b8e97b393a6bfb4</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

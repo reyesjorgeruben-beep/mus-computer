@@ -1,0 +1,83 @@
+<!doctype html><html lang="en" data-source="38cae3c845a8dc8b65834d72c6af027ff0151b774784d75270d60fc54182a21b"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Execution Ledger: Contextual Bots and src Layout · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../../review/index.html">Project review desk</a><p class="meta">Plan / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#execution-ledger-contextual-bots-and-src-layout">Execution Ledger: Contextual Bots and src Layout</a><a class="depth-2" href="#task-records">Task Records</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="execution-ledger-contextual-bots-and-src-layout">Execution Ledger: Contextual Bots and src Layout</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 175" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Execution Ledger: Contextual Bots and src Layout</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#task-records"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Task Records</tspan></text></a></svg></details><article><p>Plan: <code>2026-09-28-contextual-bot-src-layout.md</code></p>
+<ul>
+<li>Starting commit: <code>3e2ab54</code> (<code>docs: define contextual bot package structure</code>)</li>
+<li>Working branch: <code>feat/contextual-bot-strategies</code></li>
+<li>Existing user-owned local outputs at start: modified <code>probability_tables.pkl</code>, <code>tables_report.html</code>, <code>tables_summary.csv</code>; untracked <code>.claude/</code> and <code>tables_discard_insights_corrected.csv</code>.</li>
+<li>Preserve those files and do not stage them. Never inspect <code>.env</code> or <code>.claude/settings.local.json</code>.</li>
+<li>Ruling: Continue in the existing feature branch because it is already separate from <code>master</code> and contains the approved spec; retain the current checkout so the generated local files remain visible for protection. Cost if wrong: weaker filesystem isolation than a linked worktree, mitigated by scoped task ownership and exact staging.</li>
+<li>Ruling: Place the migrated legacy context at <code>src/mus_computer/game/context.py</code>, matching the approved package tree and Task 2 interface. Cost if wrong: a path rename and import adjustment, with no data or behavior loss.</li>
+<li>Ruling: Declare NumPy only in the optional table-tooling and development extras because existing builder tests import it; keep runtime dependencies empty. Cost if wrong: a small additional development install dependency, with no impact on normal package users.</li>
+<li>Ruling: Keep standard modern <code>pyproject.toml</code> packaging and accept the local pip 21.2/PyPI certificate failure as an environment limitation; the legacy editable fallback was verified, and clean installs use modern pip/setuptools. Cost if wrong: users on similarly old environments need to update packaging tools before the documented editable install works.</li>
+<li>Ruling: Retain the small <code>setup.py</code> legacy install fallback despite duplicated packaging metadata, because it provides a verified path for this workspace's old pip; keep both metadata blocks synchronized. Cost if wrong: metadata drift until the old-tooling fallback is removed.</li>
+</ul>
+<h2 id="task-records">Task Records</h2>
+<ul>
+<li>
+<p>Ruling: Pass each player's absolute seat to private-context construction instead of rejecting duplicate player names. This preserves valid rosters and keeps eligibility tied to seat identity. Cost if wrong: the context-construction method now requires callers to supply seat identity; all Game and WagerSession call sites and tests were updated.</p>
+</li>
+<li>
+<p>Ruling: Expose the implicit one-point accepted stake in opening WagerState snapshots, including Pares/Juego where their nominal phase base is zero. This keeps public context and the human prompt aligned with the amount awarded when an opening wager is declined. Cost if wrong: opening context consumers see <code>previous_accepted_total=1</code> before any player has wagered; this matches the engine's existing fallback stake.</p>
+</li>
+<li>
+<p>Task 5: complete in <code>84450fb</code>; root README and technical docs describe the package and initial active milestone. Follow-up roadmap completion recorded in <code>dbe50fe</code>.</p>
+</li>
+<li>
+<p>Task 1: complete in <code>d6e75e7</code>; task review approved. Full non-slow suite: 275 passed, 1 slow test deselected. Reviewer noted only the parked metadata duplication above.</p>
+</li>
+<li>
+<p>Task 2: committed as <code>450df3c</code>, with ordago legality fix <code>a5bda23</code>; review approved. Focused tests: 18 passed, then 13 passed for the fix. The full suite did not finish after several minutes in the existing exhaustive <code>test_ep_mano</code> calculation, with no failures reported. Task 4 must replace temporary <code>WagerPrompt</code> snapshot placeholders with the Game's complete seat order and current Mus count.</p>
+</li>
+<li>
+<p>Task 2 review found pending-ordago legality too broad. Ruling: while an ordago is outstanding, only accept (<code>MATCH_OR_PASS</code>) and refuse (<code>FOLD</code>) are legal. Cost if wrong: the strategy contract would reject a counterraise that the rules allow; the approved rule defines ordago as accept/refuse only. Fixed in <code>a5bda23</code>.</p>
+</li>
+<li>
+<p>Packaging follow-up committed as <code>61be8b5</code>: setuptools build requirement is now 64+ for editable PEP 660 support, matching the README's pip/setuptools prerequisites.</p>
+</li>
+<li>
+<p>Task 3: complete in <code>c15eeb9</code>; task review approved after changing discard aggressiveness to a tie-breaker only. Bot suite: 53 passed; scoped re-review: 19 contextual strategy tests passed.</p>
+</li>
+<li>
+<p>Task 4: complete in <code>f203a53</code>; task review and scoped re-review approved after fixing duplicate-name seat resolution, human stake prompts, the Pequeña event label, and wager documentation. Game suite: 161 passed; scoped re-review: 103 passed.</p>
+</li>
+<li>
+<p>Integration fix: the CLI regression test exposed an import cycle from <code>actions.py</code> through eager <code>game</code> package exports. A type-only <code>WagerState</code> import removed the runtime cycle; <code>tests/test_cli.py</code> and combined game/bot tests passed.</p>
+</li>
+<li>
+<p>Final non-slow suite: 343 passed, 1 slow test deselected. <code>python -m mus_computer --help</code> passed; a complete random-bot match logged all four hands and public actions and ended with an ordago winner. The excluded exhaustive probability test was not run.</p>
+</li>
+<li>
+<p>Generated/local outputs (<code>tables_report.html</code>, <code>tables_summary.csv</code>, <code>tables_discard_insights_corrected.csv</code>, <code>.claude/</code>, and the root probability pickle) remain outside task commits.</p>
+</li>
+<li>
+<p>Ruling: Build discard-option estimates only for players that consume them; random bots still receive their private hand context but can use empty discard alternatives. Cost if wrong: a strategy that forgets to declare this capability would miss post-draw estimates; tests will cover the strategic-player path while the default random runner avoids unnecessary enumeration.</p>
+</li>
+<li>
+<p>Ruling: A fold awards the previously accepted stake immediately and does not separately queue that phase's ordinary base point; only eligible winning-team Pares/Juego intrinsic points are deferred. Cost if wrong: a mistaken interpretation would shift a folded phase by one duplicate point; this follows the user's “points already in play” rule.</p>
+</li>
+</ul>
+</article><footer>Source: docs/superpowers/plans/2026-09-28-contextual-bot-src-layout-ledger.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 38cae3c845a8dc8b65834d72c6af027ff0151b774784d75270d60fc54182a21b</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];if(!checks.length)return;
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{saved=JSON.parse(localStorage.getItem(key)||'{}')}catch{}
+const update=()=>{const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();})();
+</script></body></html>

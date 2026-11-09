@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PYTHON_PATHS = ["src", "scripts", "tests", "api.py", "setup.py"]
 CHECKS = {
+    "docs": ["-m", "mus_computer.documentation", "check", "--staged"],
     "lint": ["-m", "ruff", "check", *PYTHON_PATHS],
     "format": ["-m", "ruff", "format", "--check", *PYTHON_PATHS],
     "types": ["-m", "mypy"],
