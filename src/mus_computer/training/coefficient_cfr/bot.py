@@ -33,7 +33,9 @@ class CoefficientBot(PlayerBase):
         else:
             stage = Stage.OFFER
         estimate = private.statistics.outcomes_by_phase[public.phase_name]
-        p_win = estimate.p_win + (estimate.p_tie if seat == public.eligible_seats[0] else 0)
+        p_win = estimate.p_win + (
+            estimate.p_tie if seat == public.eligible_seats[0] else 0
+        )
         actions = {
             Action.FOLD: WagerAction.FOLD,
             Action.PASS: WagerAction.MATCH_OR_PASS,
@@ -42,9 +44,15 @@ class CoefficientBot(PlayerBase):
             Action.RAISE: WagerAction.RAISE_2,
             Action.ORDAGO: WagerAction.ORDAGO,
         }
-        return {actions[a]: p for a, p in self.coefficients.distribution(p_win, stage).items()}
+        return {
+            actions[a]: p
+            for a, p in self.coefficients.distribution(p_win, stage).items()
+        }
 
     def wager_action(self, global_context, player_context):
-        probabilities = self.wager_distribution(global_context, player_context, player_context.seat)
-        return self.rng.choices(tuple(probabilities), weights=tuple(probabilities.values()), k=1)[0]
-
+        probabilities = self.wager_distribution(
+            global_context, player_context, player_context.seat
+        )
+        return self.rng.choices(
+            tuple(probabilities), weights=tuple(probabilities.values()), k=1
+        )[0]

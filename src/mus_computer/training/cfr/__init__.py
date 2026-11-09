@@ -44,7 +44,16 @@ from .state import Action, DecisionRecord, action_name, information_key
 from .trainer import CFRTrainer
 
 __all__ = [
-    "Action", "CFRBotPlayer", "CFRConfig", "CFRPolicy", "CFRTrainer",
-    "DecisionController", "DecisionRecord", "RegretNode", "action_name",
-    "information_key", "main", "regret_match",
+    "Action",
+    "CFRBotPlayer",
+    "CFRConfig",
+    "CFRPolicy",
+    "CFRTrainer",
+    "DecisionController",
+    "DecisionRecord",
+    "RegretNode",
+    "action_name",
+    "information_key",
+    "main",
+    "regret_match",
 ]
