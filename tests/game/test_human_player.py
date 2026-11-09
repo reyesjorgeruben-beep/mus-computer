@@ -1,11 +1,13 @@
-import pytest
+from dataclasses import replace
 from unittest.mock import patch
-from mus_computer.game.team import Team
+
+import pytest
+
+from mus_computer.bots.strategies.actions import MusAction, WagerAction
 from mus_computer.cards.card import Card
 from mus_computer.game.player import HumanPlayer
+from mus_computer.game.team import Team
 from tests.conftest import make_global_context
-from mus_computer.bots.strategies.actions import MusAction, WagerAction
-from dataclasses import replace
 
 
 @pytest.fixture
@@ -86,10 +88,10 @@ class TestHumanPlayerWagerAction:
             assert player.wager_action(ctx) is WagerAction.FOLD
 
 
-def test_wager_prompt_explains_phase_stakes_and_counterraise(player,ctx):
+def test_wager_prompt_explains_phase_stakes_and_counterraise(player, ctx):
     with patch("builtins.input", return_value="0") as read:
         player.wager_action(ctx)
-    prompt=read.call_args.args[0]
+    prompt = read.call_args.args[0]
     assert "Grande" in prompt
     assert "current offer=2" in prompt
     assert "previously accepted=1" in prompt
@@ -106,11 +108,15 @@ def test_unopened_pares_prompt_shows_implicit_stake_awarded_on_refusal(player):
     player.cards = [Card.R, Card.R, Card._5, Card._6]
     with patch("builtins.input", return_value="2") as read:
         shared = replace(
-            make_global_context("Pares"), wager=None,
+            make_global_context("Pares"),
+            wager=None,
             seat_order=((player.name, "A"), (opponent.name, "B")),
         )
         result = WagerSession(
-            [player, opponent], 0, shared, (player.team, opponent.team),
+            [player, opponent],
+            0,
+            shared,
+            (player.team, opponent.team),
         ).run()
     prompt = read.call_args.args[0]
     assert "Pares" in prompt

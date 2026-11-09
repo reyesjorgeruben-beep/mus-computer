@@ -11,6 +11,14 @@ dependencies = []
 
 [project.optional-dependencies]
 dev = ["pytest==9.0.2", "numpy==1.26.4"]
+review = [
+    "ruff==0.17.4",
+    "mypy==2.4.1",
+    "pre-commit==4.6.2",
+    "types-setuptools==84.2.0.20261104",
+    "plotly-stubs==0.0.6",
+    "plotly>=5,<8",
+]
 tables = ["numpy==1.26.4"]
 reporting = ["plotly>=5,<8"]
 
@@ -29,3 +37,12 @@ markers = [
     "slow: exhaustive table validation",
     "performance: opt-in live training throughput checks",
 ]
+
+[tool.ruff]
+target-version = "py310"
+extend-exclude = [".deps", "training_runs", "docs/training/experiments", "docs/training/cfr_runs"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src", "scripts", "tests", "api.py", "setup.py"]
+check_untyped_defs = true

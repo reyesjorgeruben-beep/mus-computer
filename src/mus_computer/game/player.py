@@ -1,7 +1,9 @@
-from typing import List
-from mus_computer.game.team import Team
+from mus_computer.bots.strategies.actions import (
+    MusAction,
+    WagerAction,
+    legal_wager_actions,
+)
 from mus_computer.game.player_base import PlayerBase
-from mus_computer.bots.strategies.actions import MusAction, WagerAction, legal_wager_actions
 
 
 class HumanPlayer(PlayerBase):
@@ -35,18 +37,27 @@ class HumanPlayer(PlayerBase):
             if wager is not None and wager.ordago_offered:
                 options = "0=quiero (accept ordago), -1=fold"
             elif has_offer:
-                options = (f"2-5=add to current offer, 0=quiero (accept {current}), "
-                           "-1=fold, ordago")
+                options = (
+                    f"2-5=add to current offer, 0=quiero (accept {current}), "
+                    "-1=fold, ordago"
+                )
             else:
                 options = "2-5=opening total, 0=pass, ordago"
-            raw = input(
-                f"{global_context.phase_name} | {self.name} (Team {self.team.name}): "
-                f"current offer={'ordago' if wager and wager.ordago_offered else current if has_offer else 'none'}, "
-                f"previously accepted={accepted}. {options}: "
-            ).strip().lower()
-            actions = {"0": WagerAction.MATCH_OR_PASS, "-1": WagerAction.FOLD,
-                       "ordago": WagerAction.ORDAGO,
-                       **{str(n): WagerAction[f"RAISE_{n}"] for n in range(2,6)}}
+            raw = (
+                input(
+                    f"{global_context.phase_name} | {self.name} (Team {self.team.name}): "
+                    f"current offer={'ordago' if wager and wager.ordago_offered else current if has_offer else 'none'}, "
+                    f"previously accepted={accepted}. {options}: "
+                )
+                .strip()
+                .lower()
+            )
+            actions = {
+                "0": WagerAction.MATCH_OR_PASS,
+                "-1": WagerAction.FOLD,
+                "ordago": WagerAction.ORDAGO,
+                **{str(n): WagerAction[f"RAISE_{n}"] for n in range(2, 6)},
+            }
             action = actions.get(raw)
             if action in legal_wager_actions(global_context.wager):
                 return action

@@ -1,4 +1,3 @@
-import pytest
 from mus_computer.game.team import Team
 
 

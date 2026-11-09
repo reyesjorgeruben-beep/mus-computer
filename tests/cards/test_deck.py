@@ -1,7 +1,7 @@
-import pytest
 from collections import Counter
-from mus_computer.cards.deck import Deck
+
 from mus_computer.cards.card import Card
+from mus_computer.cards.deck import Deck
 
 
 class TestDeckInit:

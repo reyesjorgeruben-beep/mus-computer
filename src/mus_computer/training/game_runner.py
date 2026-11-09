@@ -3,11 +3,12 @@
 import multiprocessing
 import os
 import random
+from collections.abc import Callable, Iterable
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from itertools import repeat
 from time import perf_counter
-from typing import Callable, Iterable, TypeVar
+from typing import TypeVar
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.bot_player import BotPlayer
@@ -15,7 +16,10 @@ from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrat
 from mus_computer.bots.strategies.mus import AlwaysCutMusStrategy
 from mus_computer.bots.strategies.portfolio import StrategyPortfolio
 from mus_computer.bots.strategies.wagers import (
-    BluffRaiseLayer, ComposedWagerStrategy, ExtremeBluffLayer, HandStrengthWagerStrategy,
+    BluffRaiseLayer,
+    ComposedWagerStrategy,
+    ExtremeBluffLayer,
+    HandStrengthWagerStrategy,
 )
 from mus_computer.cli import build_default_game
 from mus_computer.game.game import Game
@@ -26,6 +30,7 @@ from mus_computer.training.config import TrainingConfig
 
 TaskT = TypeVar("TaskT")
 ResultT = TypeVar("ResultT")
+RunnerT = TypeVar("RunnerT", bound="TrainingGameRunner")
 
 
 @dataclass(frozen=True)
@@ -64,7 +69,8 @@ def build_genome_strategies() -> StrategyPortfolio:
         discard_strategy=PersonalityWeightedDiscardStrategy(),
         wagers_by_phase={
             phase: ComposedWagerStrategy(
-                HandStrengthWagerStrategy(phase), (BluffRaiseLayer(), ExtremeBluffLayer()),
+                HandStrengthWagerStrategy(phase),
+                (BluffRaiseLayer(), ExtremeBluffLayer()),
             )
             for phase in PHASE_ORDER
         },
@@ -77,10 +83,18 @@ def build_bot_game(matchup: GenomeMatchup, seed: int | None = None) -> Game:
     team_a, team_b = Team("A"), Team("B")
     strategies = build_genome_strategies()
     players = [
-        BotPlayer("A1", team_a, matchup.team_a, strategies, random.Random(game_seed + 1)),
-        BotPlayer("B1", team_b, matchup.team_b, strategies, random.Random(game_seed + 2)),
-        BotPlayer("A2", team_a, matchup.team_a, strategies, random.Random(game_seed + 3)),
-        BotPlayer("B2", team_b, matchup.team_b, strategies, random.Random(game_seed + 4)),
+        BotPlayer(
+            "A1", team_a, matchup.team_a, strategies, random.Random(game_seed + 1)
+        ),
+        BotPlayer(
+            "B1", team_b, matchup.team_b, strategies, random.Random(game_seed + 2)
+        ),
+        BotPlayer(
+            "A2", team_a, matchup.team_a, strategies, random.Random(game_seed + 3)
+        ),
+        BotPlayer(
+            "B2", team_b, matchup.team_b, strategies, random.Random(game_seed + 4)
+        ),
     ]
     return Game.from_players(players)
 
@@ -98,7 +112,12 @@ def _play_game(factory, seed: int) -> GameResult:
         start = perf_counter()
         game = factory()
         winner = game.play()
-        return GameResult(winner.name, game.victory_reason or "points", perf_counter() - start, os.getpid())
+        return GameResult(
+            winner.name,
+            game.victory_reason or "points",
+            perf_counter() - start,
+            os.getpid(),
+        )
     finally:
         random.setstate(previous_state)
 
@@ -124,7 +143,11 @@ def play_genome_match(matchup: GenomeMatchup) -> MatchRunResult:
         start = perf_counter()
         result = Match(next_game, matchup.wins_to_match).play()
         return MatchRunResult(
-            result.winner, result.wins_a, result.wins_b, perf_counter() - start, os.getpid(),
+            result.winner,
+            result.wins_a,
+            result.wins_b,
+            perf_counter() - start,
+            os.getpid(),
         )
     finally:
         random.setstate(previous_state)
@@ -154,7 +177,8 @@ class TrainingGameRunner:
         self.config = config or TrainingConfig()
         self._executor: ProcessPoolExecutor | None = None
 
-    def __enter__(self) -> "TrainingGameRunner":
+    # Python 3.10 supports this without a typing_extensions runtime dependency.
+    def __enter__(self: RunnerT) -> RunnerT:  # noqa: PYI019
         self._executor = ProcessPoolExecutor(
             max_workers=self.config.max_concurrent_games,
             mp_context=multiprocessing.get_context(),
@@ -173,9 +197,12 @@ class TrainingGameRunner:
             raise RuntimeError("TrainingGameRunner must be used as a context manager")
         with multiprocessing.Manager() as manager:
             barrier = manager.Barrier(self.config.max_concurrent_games)
-            list(self._executor.map(
-                _wait_for_pool, repeat(barrier, self.config.max_concurrent_games),
-            ))
+            list(
+                self._executor.map(
+                    _wait_for_pool,
+                    repeat(barrier, self.config.max_concurrent_games),
+                )
+            )
 
     def play_games(self, count: int, seed_start: int = 0) -> list[GameResult]:
         if count < 0:
@@ -185,7 +212,9 @@ class TrainingGameRunner:
     def play_matchups(self, matchups: list[GenomeMatchup]) -> list[MatchRunResult]:
         return self.map_tasks(play_genome_match, matchups)
 
-    def map_tasks(self, worker: Callable[[TaskT], ResultT], tasks: Iterable[TaskT]) -> list[ResultT]:
+    def map_tasks(
+        self, worker: Callable[[TaskT], ResultT], tasks: Iterable[TaskT]
+    ) -> list[ResultT]:
         """Run independent validation or training tasks in the existing pool."""
         if self._executor is None:
             raise RuntimeError("TrainingGameRunner must be used as a context manager")

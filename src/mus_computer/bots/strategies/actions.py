@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 import random
+from collections.abc import Collection, Hashable, Mapping
 from dataclasses import dataclass
 from enum import Enum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Collection, Generic, Hashable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
     from mus_computer.game.context import WagerState
@@ -70,13 +71,20 @@ class ActionDistribution(Generic[ActionT]):
                 raise ValueError("A distribution must contain one action type.")
         if (
             not probabilities
-            or any(not math.isfinite(value) or value < 0 for value in probabilities.values())
+            or any(
+                not math.isfinite(value) or value < 0
+                for value in probabilities.values()
+            )
             or abs(math.fsum(probabilities.values()) - 1.0) > 1e-9
         ):
-            raise ValueError("Action probabilities must be finite, nonnegative, and sum to one.")
+            raise ValueError(
+                "Action probabilities must be finite, nonnegative, and sum to one."
+            )
         object.__setattr__(self, "probabilities", MappingProxyType(probabilities))
 
-    def sample(self, random_generator: random.Random, legal_actions: Collection[ActionT]) -> ActionT:
+    def sample(
+        self, random_generator: random.Random, legal_actions: Collection[ActionT]
+    ) -> ActionT:
         legal = set(legal_actions)
         if not legal or any(
             action not in legal and probability > 0
@@ -84,7 +92,8 @@ class ActionDistribution(Generic[ActionT]):
         ):
             raise ValueError("Distribution assigns probability to an illegal action.")
         actions = tuple(
-            action for action, probability in self.probabilities.items()
+            action
+            for action, probability in self.probabilities.items()
             if action in legal and probability > 0
         )
         return random_generator.choices(

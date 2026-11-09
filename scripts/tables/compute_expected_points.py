@@ -9,25 +9,39 @@ Usage:
 
 Progress is logged to the terminal for each of the 330 h1 tasks.
 """
+
 import argparse
 import pickle
 import sys
 import time
 from pathlib import Path
 
-from scripts.tables.build_tables import TABLE_PATH, all_canonical_hands, _build_ep_mano_table
-from mus_computer.probabilities.tables import load_tables
 from mus_computer.constants import cards_space
+from mus_computer.probabilities.tables import load_tables
+from scripts.tables.build_tables import (
+    TABLE_PATH,
+    _build_ep_mano_table,
+    all_canonical_hands,
+)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Compute per-phase mano expected-points table")
-    parser.add_argument("--output", type=Path, default=TABLE_PATH,
-                        help="Pickle to update (default: probability_tables.pkl)")
+    parser = argparse.ArgumentParser(
+        description="Compute per-phase mano expected-points table"
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=TABLE_PATH,
+        help="Pickle to update (default: probability_tables.pkl)",
+    )
     args = parser.parse_args()
 
     if not args.output.exists():
-        print(f"ERROR: {args.output} not found. Run build_tables.py first.", file=sys.stderr)
+        print(
+            f"ERROR: {args.output} not found. Run build_tables.py first.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     print("Loading existing tables...")
@@ -48,7 +62,9 @@ def main():
         last_pct = pct
         elapsed = time.time() - start
         eta = (elapsed / done * (total - done)) if done else 0
-        print(f"  {pct:3d}%  [{done}/{total} hands]  elapsed {elapsed:.0f}s  ETA {eta:.0f}s")
+        print(
+            f"  {pct:3d}%  [{done}/{total} hands]  elapsed {elapsed:.0f}s  ETA {eta:.0f}s"
+        )
 
     print("Computing per-phase mano expected-points table...")
     result = _build_ep_mano_table(all_hands, cards_space, progress_cb=progress_cb)

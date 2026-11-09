@@ -1,4 +1,3 @@
-import pytest
 from mus_computer.cards.card import Card
 from mus_computer.cards.hand import Hand
 
@@ -88,15 +87,10 @@ class TestHandJuego:
         assert not Hand([Card.A, Card._5, Card._6, Card._7]).has_juego  # 19
 
     def test_has_juego_boundary_30(self):
-        # Exactly 30 is NOT juego (must be > 30)
-        h = Hand([Card.R, Card.R, Card._7, Card._3]) if hasattr(Card, '_3') \
-            else Hand([Card.S, Card.C, Card._7, Card._6])
-        # S(10)+C(10)+_7(7)+_6(6) = 33 — test boundary with exact 31
-        h31 = Hand([Card.R, Card.R, Card.R, Card.A])  # 31 → has_juego
-        h30 = Hand([Card.R, Card.C, Card._7, Card._6])  # 10+10+7+6 = 33? no
-        # Build a 30: R(10)+S(10)+_7(7)+_A(1)... = 28. R(10)+S(10)+_6(6)+_4(4)=30
-        h_30 = Hand([Card.R, Card.S, Card._6, Card._4])  # 10+10+6+4=30
-        assert not h_30.has_juego
+        h30 = Hand([Card.R, Card.S, Card._6, Card._4])
+        h31 = Hand([Card.R, Card.R, Card.R, Card.A])
+        assert h30.juego == 30
+        assert not h30.has_juego
         assert h31.has_juego
 
     def test_juego_score_31(self):
@@ -122,15 +116,18 @@ class TestHandJuego:
 
     def test_juego_calculate_points_31(self):
         from mus_computer.game.phases import Juego
+
         h = Hand([Card.R, Card.R, Card.R, Card.A])
         assert Juego.calculate_points(h) == 3
 
     def test_juego_calculate_points_other(self):
         from mus_computer.game.phases import Juego
+
         h = Hand([Card.R, Card.R, Card._7, Card._5])  # 32
         assert Juego.calculate_points(h) == 2
 
     def test_juego_calculate_points_no_juego(self):
         from mus_computer.game.phases import Juego
+
         h = Hand([Card.A, Card._4, Card._5, Card._6])
         assert Juego.calculate_points(h) == 0

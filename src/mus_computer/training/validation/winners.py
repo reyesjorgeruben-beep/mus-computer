@@ -4,7 +4,7 @@ import json
 import random
 from dataclasses import asdict, dataclass, replace
 from pathlib import Path
-from typing import Literal
+from typing import Literal, TypedDict
 
 from mus_computer.bots.bot_genome import BotGenome
 from mus_computer.bots.bot_player import BotPlayer
@@ -14,15 +14,43 @@ from mus_computer.game.game import Game
 from mus_computer.game.match import Match
 from mus_computer.game.team import Team
 from mus_computer.training.config import TrainingConfig
-from mus_computer.training.game_runner import TrainingGameRunner, build_genome_strategies
+from mus_computer.training.game_runner import (
+    TrainingGameRunner,
+    build_genome_strategies,
+)
 from mus_computer.training.genome_generator import CustomGeneticGenomeGenerator
-
 
 MATCHES_PER_OPPONENT = 100
 OpponentKind = Literal["random_genes", "random_decisions", "mus_maestro"]
 OPPONENT_KINDS: tuple[OpponentKind, ...] = (
-    "random_genes", "random_decisions", "mus_maestro",
+    "random_genes",
+    "random_decisions",
+    "mus_maestro",
 )
+
+
+class _MatchRecordRequired(TypedDict):
+    match: int
+    candidate_team: Literal["A", "B"]
+    seed: int
+    won: bool
+
+
+class ValidationMatchRecord(_MatchRecordRequired, total=False):
+    opponent_genome: dict[str, float]
+
+
+class BenchmarkRecord(TypedDict):
+    wins: int
+    matches: int
+    win_percentage: float
+    matchups: list[ValidationMatchRecord]
+
+
+class WinnerRecord(TypedDict):
+    index: int
+    genome: dict[str, float]
+    benchmarks: dict[OpponentKind, BenchmarkRecord]
 
 
 @dataclass(frozen=True)
@@ -56,28 +84,38 @@ def build_validation_game(assignment: ValidationAssignment) -> Game:
     def make_player(name: str, team: Team, random_offset: int):
         if team.name == assignment.candidate_team:
             return BotPlayer(
-                name, team, assignment.candidate, strategies,
+                name,
+                team,
+                assignment.candidate,
+                strategies,
                 random.Random(assignment.seed + random_offset),
             )
         if assignment.opponent_kind == "random_genes":
             if assignment.opponent_genome is None:
                 raise ValueError("Random-gene opponent requires a genome")
             return BotPlayer(
-                name, team, assignment.opponent_genome, strategies,
+                name,
+                team,
+                assignment.opponent_genome,
+                strategies,
                 random.Random(assignment.seed + random_offset),
             )
         if assignment.opponent_kind == "random_decisions":
-            return RandomDecisionBot(name, team, random.Random(assignment.seed + random_offset))
+            return RandomDecisionBot(
+                name, team, random.Random(assignment.seed + random_offset)
+            )
         if assignment.opponent_kind == "mus_maestro":
             return MusMaestroBot(name, team)
         raise ValueError(f"Unknown validation opponent: {assignment.opponent_kind}")
 
-    return Game.from_players([
-        make_player("A1", team_a, 1),
-        make_player("B1", team_b, 2),
-        make_player("A2", team_a, 3),
-        make_player("B2", team_b, 4),
-    ])
+    return Game.from_players(
+        [
+            make_player("A1", team_a, 1),
+            make_player("B1", team_b, 2),
+            make_player("A2", team_a, 3),
+            make_player("B2", team_b, 4),
+        ]
+    )
 
 
 def _play_validation_match(assignment: ValidationAssignment) -> str:
@@ -98,7 +136,7 @@ def _play_validation_match(assignment: ValidationAssignment) -> str:
         random.setstate(previous_state)
 
 
-def _results_table(records: list[dict]) -> str:
+def _results_table(records: list[WinnerRecord]) -> str:
     """Render only per-winner and average win percentages for the three baselines."""
     labels = ("Random genes", "Random decisions", "Mus maestro")
     lines = [
@@ -113,23 +151,31 @@ def _results_table(records: list[dict]) -> str:
         )
         lines.append(
             f"| {record['index'] + 1} | "
-            + " | ".join(f"{percentage:g}%" for percentage in percentages) + " |"
+            + " | ".join(f"{percentage:g}%" for percentage in percentages)
+            + " |"
         )
     averages = (
-        sum(record["benchmarks"][kind]["win_percentage"] for record in records) / len(records)
+        sum(record["benchmarks"][kind]["win_percentage"] for record in records)
+        / len(records)
         for kind in OPPONENT_KINDS
     )
     lines.append(
         "| Average | "
-        + " | ".join(f"{average:.1f}".rstrip("0").rstrip(".") + "%" for average in averages)
+        + " | ".join(
+            f"{average:.1f}".rstrip("0").rstrip(".") + "%" for average in averages
+        )
         + " |"
     )
     return "\n".join(lines) + "\n"
 
 
 def validate_winners(
-    winners: list[BotGenome], run_dir: Path, seed: int = 0, workers: int = 10,
-    output_path: Path | None = None, active_genes: tuple[str, ...] | None = None,
+    winners: list[BotGenome],
+    run_dir: Path,
+    seed: int = 0,
+    workers: int = 10,
+    output_path: Path | None = None,
+    active_genes: tuple[str, ...] | None = None,
     wins_to_match: int = 4,
 ) -> dict:
     """Play 100 matches per winner and opponent, split evenly across seats."""
@@ -146,7 +192,9 @@ def validate_winners(
         for _ in range(len(winners) * MATCHES_PER_OPPONENT):
             while True:
                 opponent = generator.initial_population(1)[0]
-                gene_values = tuple(getattr(opponent, name) for name in generator.active_genes)
+                gene_values = tuple(
+                    getattr(opponent, name) for name in generator.active_genes
+                )
                 if not gene_values or gene_values not in seen_genes:
                     break
             seen_genes.add(gene_values)
@@ -161,28 +209,41 @@ def validate_winners(
             for match_index in range(MATCHES_PER_OPPONENT):
                 opponent_genome = (
                     random_genomes[candidate_index * MATCHES_PER_OPPONENT + match_index]
-                    if opponent_kind == "random_genes" else None
+                    if opponent_kind == "random_genes"
+                    else None
                 )
                 candidate_team: Literal["A", "B"] = (
                     "A" if match_index < MATCHES_PER_OPPONENT // 2 else "B"
                 )
-                assignments.append(ValidationAssignment(
-                    candidate_index, candidate_team, opponent_kind, candidate,
-                    opponent_genome, match_index + 1,
-                    seed + len(assignments) * seed_stride, wins_to_match,
-                ))
+                assignments.append(
+                    ValidationAssignment(
+                        candidate_index,
+                        candidate_team,
+                        opponent_kind,
+                        candidate,
+                        opponent_genome,
+                        match_index + 1,
+                        seed + len(assignments) * seed_stride,
+                        wins_to_match,
+                    )
+                )
 
     with TrainingGameRunner(TrainingConfig(max_concurrent_games=workers)) as runner:
         winners_by_match = runner.map_tasks(_play_validation_match, assignments)
     if len(winners_by_match) != len(assignments):
         raise ValueError("Runner returned the wrong number of validation results")
 
-    records = [
+    records: list[WinnerRecord] = [
         {
             "index": index,
             "genome": asdict(winner),
             "benchmarks": {
-                kind: {"wins": 0, "matches": MATCHES_PER_OPPONENT, "win_percentage": 0.0, "matchups": []}
+                kind: {
+                    "wins": 0,
+                    "matches": MATCHES_PER_OPPONENT,
+                    "win_percentage": 0.0,
+                    "matchups": [],
+                }
                 for kind in OPPONENT_KINDS
             },
         }
@@ -191,10 +252,12 @@ def validate_winners(
     for assignment, winning_team in zip(assignments, winners_by_match):
         if winning_team not in ("A", "B"):
             raise ValueError(f"Unexpected validation winner: {winning_team!r}")
-        benchmark = records[assignment.candidate_index]["benchmarks"][assignment.opponent_kind]
+        benchmark = records[assignment.candidate_index]["benchmarks"][
+            assignment.opponent_kind
+        ]
         won = winning_team == assignment.candidate_team
         benchmark["wins"] += int(won)
-        match_record = {
+        match_record: ValidationMatchRecord = {
             "match": assignment.match_number,
             "candidate_team": assignment.candidate_team,
             "seed": assignment.seed,
@@ -205,7 +268,9 @@ def validate_winners(
         benchmark["matchups"].append(match_record)
     for record in records:
         for benchmark in record["benchmarks"].values():
-            benchmark["win_percentage"] = 100.0 * benchmark["wins"] / MATCHES_PER_OPPONENT
+            benchmark["win_percentage"] = (
+                100.0 * benchmark["wins"] / MATCHES_PER_OPPONENT
+            )
 
     report = {
         "seed": seed,
@@ -214,7 +279,11 @@ def validate_winners(
         "wins_to_match": wins_to_match,
         "winners": records,
     }
-    destination = Path(output_path) if output_path is not None else Path(run_dir) / "validation" / "results.md"
+    destination = (
+        Path(output_path)
+        if output_path is not None
+        else Path(run_dir) / "validation" / "results.md"
+    )
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_text(_results_table(records), encoding="utf-8")
     return report

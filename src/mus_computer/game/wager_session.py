@@ -1,11 +1,13 @@
 """Team wager negotiation shared by every phase."""
+
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
 from enum import Enum
-from typing import Callable, Sequence
+
+from mus_computer.bots.strategies.actions import WagerAction, legal_wager_actions
 from mus_computer.game.context import GlobalGameContext, SeatOrderEntry, WagerState
 from mus_computer.game.player_base import PlayerBase
 from mus_computer.game.team import Team
-from mus_computer.bots.strategies.actions import WagerAction, legal_wager_actions
 
 
 class WagerOutcome(str, Enum):
@@ -59,14 +61,19 @@ class WagerSession:
         self.base_bet = base_bet
         if public_context.phase_name is None:
             raise ValueError("WagerSession requires a phase in the public context.")
-        self.players_in_order = list(players_in_order if players_in_order is not None else players)
+        self.players_in_order = list(
+            players_in_order if players_in_order is not None else players
+        )
         expected_seats = tuple(
-            seat for seat, player in enumerate(self.players_in_order) if player in self.players
+            seat
+            for seat, player in enumerate(self.players_in_order)
+            if player in self.players
         )
         if public_context.eligible_seats != expected_seats:
             raise ValueError("Public eligibility must match the wagering players.")
         expected_order = tuple(
-            SeatOrderEntry(player.name, player.team.name) for player in self.players_in_order
+            SeatOrderEntry(player.name, player.team.name)
+            for player in self.players_in_order
         )
         if public_context.seat_order != expected_order:
             raise ValueError("Public seat order must match the wagering seats.")
@@ -89,7 +96,7 @@ class WagerSession:
         accepted = max(self.base_bet, 1)
         offering_team = None
         ordago = False
-        responders = []
+        responders: list[PlayerBase] = []
         next_player = 0
         while True:
             if offering_team is None:
@@ -99,22 +106,34 @@ class WagerSession:
                 next_player += 1
             else:
                 player = responders.pop(0)
-            wager = WagerState(current, accepted,
-                               offering_team.name if offering_team else None, ordago)
+            wager = WagerState(
+                current, accepted, offering_team.name if offering_team else None, ordago
+            )
             shared = replace(
                 self.public_context,
                 wager=wager,
                 public_actions=tuple(self.public_actions),
             )
-            seat = next(i for i, seated in enumerate(self.players_in_order) if seated is player)
+            seat = next(
+                i for i, seated in enumerate(self.players_in_order) if seated is player
+            )
             action = player.wager_action(shared, player.decision_context(shared, seat))
-            if not isinstance(action, WagerAction) or action not in legal_wager_actions(wager):
-                raise ValueError(f"{player.name} chose an illegal wager action: {action!r}.")
+            if not isinstance(action, WagerAction) or action not in legal_wager_actions(
+                wager
+            ):
+                raise ValueError(
+                    f"{player.name} chose an illegal wager action: {action!r}."
+                )
             if action is WagerAction.MATCH_OR_PASS:
                 self._emit(f"{player.name}: {'quiero' if offering_team else 'paso'}")
                 if offering_team is not None:
-                    return WagerResult(WagerOutcome.ORDAGO_ACCEPTED if ordago else WagerOutcome.SHOWDOWN,
-                                       offering_team, None if ordago else current)
+                    return WagerResult(
+                        WagerOutcome.ORDAGO_ACCEPTED
+                        if ordago
+                        else WagerOutcome.SHOWDOWN,
+                        offering_team,
+                        None if ordago else current,
+                    )
                 continue
             if action is WagerAction.FOLD:
                 self._emit(f"{player.name}: no quiero")
@@ -131,8 +150,13 @@ class WagerSession:
             else:
                 amount = int(action.value.rsplit("_", 1)[1])
                 current = current + amount if was_offered else amount
-                label = (f"envida {amount} (total {current})" if was_offered else
-                         "envida" if amount == 2 else f"envida {amount}")
+                label = (
+                    f"envida {amount} (total {current})"
+                    if was_offered
+                    else "envida"
+                    if amount == 2
+                    else f"envida {amount}"
+                )
                 self._emit(f"{player.name}: {label}")
             responders = [p for p in self.players if p.team is not offering_team]
             if not responders:

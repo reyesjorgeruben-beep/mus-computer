@@ -14,6 +14,9 @@ class MusMaestroBot(PlayerBase):
         return tuple(range(len(self.cards)))
 
     def wager_action(self, global_context, player_context):
-        if global_context.wager is not None and global_context.wager.offering_team is not None:
+        if (
+            global_context.wager is not None
+            and global_context.wager.offering_team is not None
+        ):
             return WagerAction.FOLD
         return WagerAction.MATCH_OR_PASS

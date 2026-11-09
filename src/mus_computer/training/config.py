@@ -15,6 +15,8 @@ class TrainingConfig:
 
     def __post_init__(self) -> None:
         if not 1 <= self.max_concurrent_games <= MAX_CONCURRENT_GAMES:
-            raise ValueError(f"max_concurrent_games must be between 1 and {MAX_CONCURRENT_GAMES}")
+            raise ValueError(
+                f"max_concurrent_games must be between 1 and {MAX_CONCURRENT_GAMES}"
+            )
         if self.single_game_max_seconds <= 0 or self.ten_game_max_seconds <= 0:
             raise ValueError("Training time thresholds must be positive")

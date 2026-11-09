@@ -1,8 +1,8 @@
 """Assembly point for a bot's replaceable phase-specific strategies."""
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Mapping
 
 from mus_computer.bots.strategies.discard import DiscardStrategy
 from mus_computer.bots.strategies.mus import MusStrategy
@@ -35,7 +35,10 @@ class StrategyPortfolio:
         }
         if set(strategies) != set(PHASE_ORDER):
             raise ValueError("A wager strategy is required for every phase.")
-        if any(not callable(getattr(strategy, "decide", None)) for strategy in strategies.values()):
+        if any(
+            not callable(getattr(strategy, "decide", None))
+            for strategy in strategies.values()
+        ):
             raise TypeError("Every wager strategy must provide decide().")
         if len({id(strategy) for strategy in strategies.values()}) != len(PHASE_ORDER):
             raise ValueError("Every wager phase needs a distinct strategy instance.")
@@ -44,12 +47,16 @@ class StrategyPortfolio:
     @classmethod
     def default(cls) -> "StrategyPortfolio":
         """Build the default Mus, discard, and wager strategies."""
-        from mus_computer.bots.strategies.discard import PersonalityWeightedDiscardStrategy
+        from mus_computer.bots.strategies.discard import (
+            PersonalityWeightedDiscardStrategy,
+        )
         from mus_computer.bots.strategies.mus import EstimateMusStrategy
         from mus_computer.bots.strategies.wagers import HeuristicWagerStrategy
 
         return cls(
             mus_strategy=EstimateMusStrategy(),
             discard_strategy=PersonalityWeightedDiscardStrategy(),
-            wagers_by_phase={phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER},
+            wagers_by_phase={
+                phase: HeuristicWagerStrategy(phase) for phase in PHASE_ORDER
+            },
         )

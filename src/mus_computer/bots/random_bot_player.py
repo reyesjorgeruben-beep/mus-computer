@@ -1,6 +1,7 @@
 import random
-from mus_computer.game.player_base import PlayerBase
+
 from mus_computer.bots.strategies.actions import MusAction, legal_wager_actions
+from mus_computer.game.player_base import PlayerBase
 
 
 class RandomBotPlayer(PlayerBase):
@@ -14,4 +15,11 @@ class RandomBotPlayer(PlayerBase):
         return tuple(sorted(random.sample(range(len(self.cards)), discard_count)))
 
     def wager_action(self, global_context, player_context):
-        return random.choice(tuple(sorted(legal_wager_actions(global_context.wager), key=lambda action: action.value)))
+        return random.choice(
+            tuple(
+                sorted(
+                    legal_wager_actions(global_context.wager),
+                    key=lambda action: action.value,
+                )
+            )
+        )

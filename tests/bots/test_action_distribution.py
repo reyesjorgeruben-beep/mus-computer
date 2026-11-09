@@ -3,7 +3,11 @@ import random
 import pytest
 
 from mus_computer.bots.strategies.actions import (
-    ActionDistribution, DiscardAction, MusAction, WagerAction, legal_wager_actions,
+    ActionDistribution,
+    DiscardAction,
+    MusAction,
+    WagerAction,
+    legal_wager_actions,
 )
 from mus_computer.game.context import WagerState
 
@@ -14,7 +18,7 @@ def test_distribution_copies_input_and_samples_only_legal_action():
     source[MusAction.MUS] = 0.0
     assert distribution.sample(random.Random(0), {MusAction.MUS}) is MusAction.MUS
     with pytest.raises(TypeError):
-        distribution.probabilities[MusAction.MUS] = 0.0
+        distribution.probabilities[MusAction.MUS] = 0.0  # type: ignore[index]  # Test immutability.
 
 
 def test_discard_action_is_a_typed_distribution_key():
@@ -22,7 +26,10 @@ def test_discard_action_is_a_typed_distribution_key():
     discard_first = DiscardAction((0,))
     distribution = ActionDistribution({keep_cards: 0.25, discard_first: 0.75})
 
-    assert distribution.sample(random.Random(0), {keep_cards, discard_first}) == discard_first
+    assert (
+        distribution.sample(random.Random(0), {keep_cards, discard_first})
+        == discard_first
+    )
     assert DiscardAction((2, 0)) == DiscardAction((0, 2))
     with pytest.raises(ValueError, match="duplicate"):
         DiscardAction((0, 0))
@@ -33,13 +40,16 @@ def test_distribution_rejects_mixed_action_types():
         ActionDistribution({MusAction.MUS: 0.5, WagerAction.FOLD: 0.5})
 
 
-@pytest.mark.parametrize("values", [
-    {MusAction.MUS: -0.1, MusAction.CORTA: 1.1},
-    {MusAction.MUS: float("nan"), MusAction.CORTA: 0.0},
-    {MusAction.MUS: float("inf"), MusAction.CORTA: 0.0},
-    {MusAction.MUS: 0.9, MusAction.CORTA: 0.0},
-    {},
-])
+@pytest.mark.parametrize(
+    "values",
+    [
+        {MusAction.MUS: -0.1, MusAction.CORTA: 1.1},
+        {MusAction.MUS: float("nan"), MusAction.CORTA: 0.0},
+        {MusAction.MUS: float("inf"), MusAction.CORTA: 0.0},
+        {MusAction.MUS: 0.9, MusAction.CORTA: 0.0},
+        {},
+    ],
+)
 def test_invalid_distribution_is_rejected(values):
     with pytest.raises(ValueError):
         ActionDistribution(values)
@@ -63,8 +73,11 @@ def test_outstanding_ordago_can_only_be_accepted_or_refused():
     actions = legal_wager_actions(WagerState(2, 1, "A", True))
     assert actions == frozenset({WagerAction.MATCH_OR_PASS, WagerAction.FOLD})
     for illegal in (
-        WagerAction.ORDAGO, WagerAction.RAISE_2, WagerAction.RAISE_3,
-        WagerAction.RAISE_4, WagerAction.RAISE_5,
+        WagerAction.ORDAGO,
+        WagerAction.RAISE_2,
+        WagerAction.RAISE_3,
+        WagerAction.RAISE_4,
+        WagerAction.RAISE_5,
     ):
         with pytest.raises(ValueError):
             ActionDistribution({illegal: 1.0}).sample(random.Random(0), actions)

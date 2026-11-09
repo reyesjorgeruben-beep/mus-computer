@@ -13,7 +13,9 @@ class GenomeGenerator(Protocol):
     def initial_population(self, size: int) -> list[BotGenome]: ...
 
     def next_generation(
-        self, population: list[BotGenome], fitness: list[float],
+        self,
+        population: list[BotGenome],
+        fitness: list[float],
     ) -> list[BotGenome]: ...
 
 
@@ -36,11 +38,15 @@ class GeneticGenomeGenerator:
         return [random_genome() for _ in range(size)]
 
     def _select(self, population: list[BotGenome], fitness: list[float]) -> BotGenome:
-        candidates = random.sample(range(len(population)), min(self.tournament_k, len(population)))
+        candidates = random.sample(
+            range(len(population)), min(self.tournament_k, len(population))
+        )
         return population[max(candidates, key=lambda i: fitness[i])]
 
     def next_generation(
-        self, population: list[BotGenome], fitness: list[float],
+        self,
+        population: list[BotGenome],
+        fitness: list[float],
     ) -> list[BotGenome]:
         if len(population) != len(fitness) or not population:
             raise ValueError("Population and fitness must have the same nonzero length")
@@ -51,7 +57,11 @@ class GeneticGenomeGenerator:
         while len(next_population) < count:
             first = self._select(population, fitness)
             second = self._select(population, fitness)
-            next_population.append(mutate(crossover(first, second), self.mutation_rate, self.mutation_sigma))
+            next_population.append(
+                mutate(
+                    crossover(first, second), self.mutation_rate, self.mutation_sigma
+                )
+            )
         return next_population
 
 
@@ -65,7 +75,9 @@ class CustomGeneticGenomeGenerator:
     """
 
     def __init__(
-        self, alpha_fraction: float = 0.5, active_genes: tuple[str, ...] | None = None,
+        self,
+        alpha_fraction: float = 0.5,
+        active_genes: tuple[str, ...] | None = None,
         alpha_variation: float = ALPHA_VARIATION,
         beta_variation: float = BETA_VARIATION,
     ) -> None:
@@ -75,8 +87,12 @@ class CustomGeneticGenomeGenerator:
             not math.isfinite(value) or not 0 <= value <= 1
             for value in (alpha_variation, beta_variation)
         ):
-            raise ValueError("variation ranges must be finite values between zero and one")
-        active_genes = tuple(USED_GENES) if active_genes is None else tuple(active_genes)
+            raise ValueError(
+                "variation ranges must be finite values between zero and one"
+            )
+        active_genes = (
+            tuple(USED_GENES) if active_genes is None else tuple(active_genes)
+        )
         known = {field.name for field in fields(BotGenome)}
         if any(name not in known for name in active_genes):
             raise ValueError("Unknown gene in active_genes")
@@ -88,30 +104,51 @@ class CustomGeneticGenomeGenerator:
         self.beta_variation = beta_variation
 
     def initial_population(self, size: int) -> list[BotGenome]:
-        return [BotGenome(*(
-            random.random() if field.name in self.active_genes else 0.5
-            for field in fields(BotGenome)
-        )) for _ in range(size)]
+        return [
+            BotGenome(
+                *(
+                    random.random() if field.name in self.active_genes else 0.5
+                    for field in fields(BotGenome)
+                )
+            )
+            for _ in range(size)
+        ]
 
     def _vary(self, genome: BotGenome, amount: float) -> BotGenome:
-        return BotGenome(*(
-            max(0.0, min(1.0, getattr(genome, field.name) + random.uniform(-amount, amount)))
-            if field.name in self.active_genes else 0.5
-            for field in fields(BotGenome)
-        ))
+        return BotGenome(
+            *(
+                max(
+                    0.0,
+                    min(
+                        1.0,
+                        getattr(genome, field.name) + random.uniform(-amount, amount),
+                    ),
+                )
+                if field.name in self.active_genes
+                else 0.5
+                for field in fields(BotGenome)
+            )
+        )
 
     def _average(self, first: BotGenome, second: BotGenome) -> BotGenome:
-        return BotGenome(*(
-            (getattr(first, field.name) + getattr(second, field.name)) / 2
-            if field.name in self.active_genes else 0.5
-            for field in fields(BotGenome)
-        ))
+        return BotGenome(
+            *(
+                (getattr(first, field.name) + getattr(second, field.name)) / 2
+                if field.name in self.active_genes
+                else 0.5
+                for field in fields(BotGenome)
+            )
+        )
 
     def next_generation(
-        self, population: list[BotGenome], fitness: list[float],
+        self,
+        population: list[BotGenome],
+        fitness: list[float],
     ) -> list[BotGenome]:
         if len(population) != len(fitness) or len(population) < 2:
-            raise ValueError("Population and fitness must have the same length of at least two")
+            raise ValueError(
+                "Population and fitness must have the same length of at least two"
+            )
         count = len(population)
         alpha_count = max(1, int(count * self.alpha_fraction))
         ranked = sorted(range(count), key=lambda index: fitness[index], reverse=True)
@@ -126,5 +163,8 @@ class CustomGeneticGenomeGenerator:
         ]
         varied_alpha = [self._vary(genome, self.alpha_variation) for genome in alpha]
         beta_count = count - len(averaged) - len(varied_alpha)
-        varied_beta = [self._vary(genome, self.beta_variation) for genome in random.sample(beta, beta_count)]
+        varied_beta = [
+            self._vary(genome, self.beta_variation)
+            for genome in random.sample(beta, beta_count)
+        ]
         return averaged + varied_alpha + varied_beta
