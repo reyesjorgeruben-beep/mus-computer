@@ -14,6 +14,39 @@ self-play, scoring, legal actions and paired evaluation are reused.
 
 ## Predictors and public events
 
+### Reusable scoring and fitting
+
+`linear_softmax.py` is independent of Mus phases and action enums. Its caller
+supplies block names, action names and input names. It initializes fresh weights,
+computes linear scores and legal-action probabilities, and fits explicit weighted
+target distributions. For example:
+
+```python
+from mus_computer.training.cfr.linear_softmax import (
+    BlockSpec, initialize_coefficients, predict_distribution,
+)
+
+spec = BlockSpec(("left", "right"), ("bias",))
+weights = initialize_coefficients({"route": spec})
+# {"route": {"left": {"bias": 0.0}, "right": {"bias": 0.0}}}
+probabilities = predict_distribution(weights["route"], {"bias": 1.0}, spec.actions)
+# {"left": 0.5, "right": 0.5}
+```
+
+Each initialization creates independent dictionaries; parameters are not shared
+mutable globals. The old helper read global game catalogues but also created
+fresh dictionaries. Its replacement receives the schema explicitly instead of
+knowing about betting. `_betting_schema(phases, stages, actions)` is the adapter
+that declares the Mus-specific inputs and coefficient blocks.
+
+`ProjectionExample` carries a block, named input values, legal action names,
+target probabilities and a positive fitting mass. The generic fitter does not
+choose CFR targets or add sampling corrections. `GLMCFRPolicy` owns those choices
+and supplies separate examples for current and accumulated-average targets.
+Outputs are ordinary probability maps; callers can feed them into another model
+as named inputs without changing the scoring engine. No pipeline scheduler or
+new training objective is introduced. Checkpoint layout `phase_glm_v1` is unchanged.
+
 For each legal action `a`, in phase `p` and betting stage `s`:
 
 ```text

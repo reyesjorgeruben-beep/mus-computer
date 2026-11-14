@@ -3,45 +3,64 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from copy import deepcopy
 
 from mus_computer.bots.strategies.actions import WagerAction
+from mus_computer.game.phases import PhaseName
 
 from .features import BETTING_STAGES, PREVIOUS_LANCES, BettingFeatures, feature_names
+from .linear_softmax import (
+    BlockSpec,
+    Coefficients,
+    ProjectionExample,
+    fit_targets,
+    initialize_coefficients,
+    predict_distribution,
+)
 from .policy import CFRPolicy
 from .state import DecisionRecord, action_name
 
-Coefficients = dict[str, dict[str, dict[str, float]]]
 
+def _betting_schema(
+    phases: Sequence[PhaseName], stages: Sequence[str], actions: tuple[str, ...]
+) -> dict[str, BlockSpec]:
+    """Translate explicit game definitions into generic action/input blocks.
 
-def _coefficients() -> Coefficients:
+    For Chica/opening, each supplied action gets baseline, hand_strength and
+    opponent_wager_Grande inputs. Other phases declare their own earlier lances.
+    This adapter, rather than the numerical model, owns those betting semantics.
+    """
     return {
-        f"{phase.value}/{stage}": {
-            action_name(action): dict.fromkeys(feature_names(phase), 0.0)
-            for action in WagerAction
-        }
-        for phase in PREVIOUS_LANCES
-        for stage in BETTING_STAGES
+        f"{phase.value}/{stage}": BlockSpec(actions, feature_names(phase))
+        for phase in phases
+        for stage in stages
     }
 
 
 class GLMCFRPolicy(CFRPolicy):
-    """Train wagers only, keeping separate current and average projections.
+    """Adapt generic linear-softmax models to the existing CFR betting targets.
 
-    Tables retain the existing unbiased sampled regret increments and exact
-    reach-weighted strategy sums. A normalized weighted cross-entropy step
-    fits each phase/stage block to regret-matching and average-table targets.
-    This is function approximation, not exact tabular regret matching.
+    The adapter declares betting blocks and inputs, retains cumulative regrets
+    and strategy sums, and chooses fitting targets. The action-independent
+    numerical helpers perform scoring, normalization and weighted fitting.
+    Separate current/average coefficients approximate the two table targets;
+    non-betting decisions keep their portfolio prior. This is not exact CFR.
     """
 
     def __init__(self, learning_rate: float = 0.1) -> None:
+        """Allocate independent current/average weights and the betting schema."""
         super().__init__()
         if not math.isfinite(learning_rate) or not 0 < learning_rate <= 1:
             raise ValueError("Projection learning rate must be in (0, 1]")
         self.learning_rate = learning_rate
-        self.current_coefficients = _coefficients()
-        self.average_coefficients = _coefficients()
+        schema = _betting_schema(
+            tuple(PREVIOUS_LANCES),
+            BETTING_STAGES,
+            tuple(action_name(action) for action in WagerAction),
+        )
+        self.current_coefficients = initialize_coefficients(schema)
+        self.average_coefficients = initialize_coefficients(schema)
         self.features: dict[str, BettingFeatures] = {}
 
     def probabilities(
@@ -53,6 +72,7 @@ class GLMCFRPolicy(CFRPolicy):
         average: bool = False,
         features: BettingFeatures | None = None,
     ) -> dict[str, float]:
+        """Predict legal wager probabilities, or keep the prior without features."""
         features = features or self.features.get(key)
         if features is None:
             return {action: prior[action] for action in actions}
@@ -65,21 +85,13 @@ class GLMCFRPolicy(CFRPolicy):
     def _predict(
         coefficients: Coefficients, features: BettingFeatures, actions: tuple[str, ...]
     ) -> dict[str, float]:
-        block = coefficients[features.block]
-        logits = {
-            action: math.fsum(
-                block[action][name] * value for name, value in features.values.items()
-            )
-            for action in actions
-        }
-        maximum = max(logits.values())
-        weights = {
-            action: math.exp(value - maximum) for action, value in logits.items()
-        }
-        total = math.fsum(weights.values())
-        return {action: value / total for action, value in weights.items()}
+        """Select a betting block and delegate action-agnostic score inference."""
+        return predict_distribution(
+            coefficients[features.block], features.values, actions
+        )
 
     def frozen(self) -> GLMCFRPolicy:
+        """Copy all coefficients and retained tables for stable iteration rollouts."""
         return deepcopy(self)
 
     def apply(
@@ -87,6 +99,7 @@ class GLMCFRPolicy(CFRPolicy):
         records: list[DecisionRecord],
         increments: Mapping[str, Mapping[str, float]],
     ) -> None:
+        """Accumulate wager statistics, then fit current and average models once."""
         wagers = [record for record in records if record.features is not None]
         for record in wagers:
             assert record.features is not None
@@ -99,8 +112,8 @@ class GLMCFRPolicy(CFRPolicy):
         self._project(self.average_coefficients, average=True)
 
     def _project(self, coefficients: Coefficients, *, average: bool) -> None:
-        # Accumulate before mutation so every target sees the same frozen model.
-        examples: dict[str, list[tuple[str, float]]] = {}
+        """Build CFR-specific targets and pass them to the generic weighted fit."""
+        examples = []
         for key, node in self.nodes.items():
             mass = (
                 math.fsum(node.strategy_sum.values())
@@ -110,30 +123,20 @@ class GLMCFRPolicy(CFRPolicy):
             if not average and mass <= 0:
                 mass = 1.0  # Regret matching's prior fallback remains trainable.
             if mass > 0:
-                examples.setdefault(self.features[key].block, []).append((key, mass))
-        for block, entries in examples.items():
-            # Rescale before summing to avoid overflowing large sampling weights.
-            scale = max(mass for _, mass in entries)
-            total = math.fsum(mass / scale for _, mass in entries)
-            gradients = {
-                action: dict.fromkeys(values, 0.0)
-                for action, values in coefficients[block].items()
-            }
-            for key, mass in entries:
-                node = self.nodes[key]
                 features = self.features[key]
-                target = node.average() if average else node.current()
-                predicted = self._predict(coefficients, features, node.actions)
-                weight = (mass / scale) / total
-                for action in node.actions:
-                    error = weight * (target[action] - predicted[action])
-                    for name, value in features.values.items():
-                        gradients[action][name] += error * value
-            for action, values in gradients.items():
-                for name, gradient in values.items():
-                    coefficients[block][action][name] += self.learning_rate * gradient
+                examples.append(
+                    ProjectionExample(
+                        features.block,
+                        features.values,
+                        node.actions,
+                        node.average() if average else node.current(),
+                        mass,
+                    )
+                )
+        fit_targets(coefficients, examples, self.learning_rate)
 
     def snapshot(self) -> dict:
+        """Copy the unchanged phase_glm_v1 checkpoint layout for serialization."""
         return deepcopy(
             {
                 "type": "phase_glm_v1",
@@ -150,6 +153,7 @@ class GLMCFRPolicy(CFRPolicy):
 
     @classmethod
     def from_snapshot(cls, snapshot: Mapping) -> GLMCFRPolicy:
+        """Restore both generic weight sets and betting-specific retained state."""
         data = snapshot["information_states"]
         policy = cls(data["learning_rate"])
         policy.current_coefficients = deepcopy(data["current_coefficients"])

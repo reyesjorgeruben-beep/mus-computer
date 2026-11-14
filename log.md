@@ -1,5 +1,7 @@
 # Review history
 
+- 2026-11-14 [user] **Reusable GLM core and clear contracts** — Pass action/input schemas explicitly to generic softmax scoring/fitting; keep betting/CFR adapters separate and document new or changed methods with concrete examples.
+
 - 2026-11-09 [user] **Phase-specific CFR betting generalization** — Keep additive GLM coefficients separate by lance, betting stage and action. Use only earlier opposing-team envida/ordago events plus private hand strength; project counterfactual regret-matching and reach-weighted average targets separately. Preserve tabular CFR and leave coefficient CFR/genetic trainers untouched.
 
 - 2026-11-09 [user] **Dedicated branches and disposable snapshots** — Put each task on a dedicated branch. Remove iteration snapshots only after checking whether resuming or rebuilding analysis needs them.
