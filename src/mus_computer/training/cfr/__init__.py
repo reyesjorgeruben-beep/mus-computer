@@ -27,6 +27,7 @@ Module responsibilities:
 - config: training settings and validation.
 - state: observable information keys, action names, and decision records.
 - policy: regret tables, action probabilities, averages, and serialization.
+- features/glm_policy: optional phase-specific additive betting projection.
 - sampling: exploratory sampling, forced replay, and reach tracking.
 - player: the adapter between the game bot and the sampled policy.
 - trainer: self-play, counterfactual evaluations, metrics, and snapshots.
@@ -37,6 +38,7 @@ Public names remain available from mus_computer.training.cfr.
 
 from .cli import main
 from .config import CFRConfig
+from .glm_policy import GLMCFRPolicy
 from .player import CFRBotPlayer
 from .policy import CFRPolicy, RegretNode, regret_match
 from .sampling import DecisionController
@@ -51,6 +53,7 @@ __all__ = [
     "CFRTrainer",
     "DecisionController",
     "DecisionRecord",
+    "GLMCFRPolicy",
     "RegretNode",
     "action_name",
     "information_key",

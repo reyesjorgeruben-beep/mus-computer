@@ -1,0 +1,181 @@
+<!doctype html><html lang="en" data-source="2a88c259920b62264d63168037dcf78310c75ef10f5d36870897dfb0608a983d"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase-specific CFR betting models · Mus project review</title><style>
+:root{color-scheme:light;--ink:#193449;--muted:#586c7b;--line:#d4e0e7;--blue:#225e83;--teal:#117869;--amber:#8c5915;--red:#a83235}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:20px}body{margin:0;color:var(--ink);background:#eff4f7;font:16px/1.65 'Segoe UI',Arial,sans-serif}
+.layout{display:grid;grid-template-columns:270px minmax(0,1fr);max-width:1460px;margin:auto}.sidebar{position:sticky;top:0;height:100vh;overflow:auto;padding:30px 22px;border-right:1px solid var(--line)}
+main{padding:40px 48px 72px;min-width:0;background:white}h1{font:500 clamp(2rem,4vw,3rem)/1.2 Georgia,serif;margin:14px 0 20px}h2{font-size:1.5rem;margin-top:42px;border-bottom:1px solid var(--line);padding-bottom:8px}h3{font-size:1.15rem;margin-top:28px}h4,h5,h6{font-size:1rem}
+p{max-width:82ch}a{color:var(--blue);text-underline-offset:4px;overflow-wrap:anywhere}code{overflow-wrap:anywhere}a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.brand{font-weight:650;font-size:1.1rem}.meta,.note,footer{color:var(--muted);font-size:.88rem}.badge{display:inline-block;padding:3px 10px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;background:#f2f7fa}
+.toc nav{display:grid;gap:8px;margin:16px 0}.toc a{font-size:.9rem;text-decoration:none}.toc .depth-3{padding-left:15px}.toc .depth-4{padding-left:28px}
+summary{cursor:pointer;font-weight:600}details{margin:18px 0}code{font: .88em Consolas,monospace;background:#f0f4f7;padding:2px 4px;border-radius:3px}pre{overflow:auto;background:#eef3f7;border:1px solid var(--line);padding:20px;border-radius:7px;line-height:1.5}pre code{padding:0;background:none}
+table{display:block;overflow:auto;max-width:100%;border-collapse:collapse;font-size:.92rem}th,td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}th{background:#edf4f8}blockquote{margin-left:0;padding:4px 20px;border-left:4px solid var(--blue);background:#f4f8fa}
+li{margin:5px 0}.diagram{display:block;margin:24px 0}.diagram svg{width:100%;height:auto;max-height:550px}.diagram-caption{display:block;font-size:.87rem;color:var(--muted);margin-top:10px}.document-map svg{width:100%;max-height:340px}
+.queue{border:1px solid var(--line);background:#f5f9fb;padding:22px;border-radius:10px;margin:28px 0}.queue h2{border:0;margin:0 0 10px}.review-items{padding:0;list-style:none}.review-item{border-left:5px solid var(--blue);padding:12px 16px;margin:12px 0;background:white;border-radius:4px}.review-item.blocker{border-color:var(--red)}.review-item.important{border-color:var(--amber)}.review-item.decision{border-color:var(--teal)}.review-item.nit,.review-item.pre-existing{border-color:#81919d}
+.priority{font-size:.82rem;font-weight:650;display:block}.review-item p{margin:8px 0;font-size:.92rem}.review-item label{font-size:.85rem;color:var(--muted);display:block;margin-top:8px}.review-check{width:17px;height:17px;vertical-align:middle;margin-right:7px}progress{width:100%;height:10px;accent-color:var(--teal)}
+.catalogue{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(290px,1fr))}.catalogue article{border:1px solid var(--line);padding:20px;border-radius:8px}.catalogue h2{font-size:1.2rem;margin:0 0 10px;border:0}.catalogue ul{padding-left:20px}.catalogue li{margin:12px 0}.source-check{accent-color:var(--blue)}footer{margin-top:40px;border-top:1px solid var(--line);padding-top:18px;overflow-wrap:anywhere}
+.related-code{border:1px solid var(--line);border-radius:8px;padding:16px 20px;margin:20px 0;background:#f5f9fb;overflow-wrap:anywhere}.related-code h4{margin:0}.related-code li{margin:16px 0}.related-code label{display:block;margin-top:8px}.code-review-check{accent-color:var(--teal);width:17px;height:17px;vertical-align:middle}
+.code-symbols{font-size:.9rem;margin:8px 0 16px}.code-symbols dt{font-weight:600;margin-top:8px}.code-symbols dd{margin:2px 0 8px 16px;max-width:78ch}.related-code li+li{border-top:1px solid var(--line);padding-top:18px}
+@media(max-width:900px){.layout{display:block}.sidebar{position:static;height:auto;border:0;padding:18px 20px}.toc nav{max-height:210px;overflow:auto}main{padding:25px 20px 48px}.queue{padding:16px}}
+@media print{body,main{background:white}.layout{display:block}.sidebar{display:none}main{padding:0}.queue{break-inside:avoid}.review-item label{display:none}pre{white-space:pre-wrap;overflow-wrap:anywhere}details{break-inside:avoid}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head>
+<body><div class="layout"><aside class="sidebar"><a class="brand" href="../review/index.html">Project review desk</a><p class="meta">Guide / Reference</p><details class="toc" open><summary>Sections</summary><nav aria-label="Document sections"><a class="depth-1" href="#phase-specific-cfr-betting-models">Phase-specific CFR betting models</a><a class="depth-2" href="#predictors-and-public-events">Predictors and public events</a><a class="depth-3" href="#reusable-scoring-and-fitting">Reusable scoring and fitting</a><a class="depth-2" href="#actual-learning-update">Actual learning update</a><a class="depth-2" href="#checkpoints-and-limits">Checkpoints and limits</a></nav></details></aside>
+<main><header><span class="badge">Reference</span><h1 id="phase-specific-cfr-betting-models">Phase-specific CFR betting models</h1><p class="note">Reference source. Historical unchecked tasks are not current merge blockers.</p></header><details class="document-map"><summary>Document map</summary><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 250" role="img" aria-label="Document section hierarchy"><rect x="180" y="10" width="420" height="55" rx="7" fill="#193f59"/><text x="390" y="43" text-anchor="middle" fill="white" font-size="16">Phase-specific CFR betting models</text><path d="M390 65 V85 H195 V95" fill="none" stroke="#b2c7d5"/><a href="#predictors-and-public-events"><rect x="20" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="117" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Predictors and public events</tspan></text></a><path d="M390 65 V85 H585 V95" fill="none" stroke="#b2c7d5"/><a href="#actual-learning-update"><rect x="410" y="95" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="585" y="117" text-anchor="middle" font-size="13"><tspan x="585" dy="0">Actual learning update</tspan></text></a><path d="M390 65 V160 H195 V170" fill="none" stroke="#b2c7d5"/><a href="#checkpoints-and-limits"><rect x="20" y="170" width="350" height="52" rx="6" fill="#edf5f9" stroke="#9bb8cc"/><text x="195" y="192" text-anchor="middle" font-size="13"><tspan x="195" dy="0">Checkpoints and limits</tspan></text></a></svg></details><article><p>Run from the project environment:</p>
+<pre><code class="language-powershell">python -m mus_computer.training.cfr --policy glm --iterations 100 --seed 7 --glm-learning-rate 0.1 --run-dir docs/training/cfr_runs/glm_seed7
+</code></pre>
+<p><code>--policy tabular</code> remains the default comparison baseline. GLM mode trains
+only wagering; mus and discards use the unchanged strategy portfolio, including
+the existing sampling exploration. The separate <code>coefficient_cfr</code> and genetic
+trainers are unchanged. Game rules, physical shuffled decks, four-player shared
+self-play, scoring, legal actions and paired evaluation are reused.</p>
+<h2 id="predictors-and-public-events">Predictors and public events</h2>
+<h3 id="reusable-scoring-and-fitting">Reusable scoring and fitting</h3>
+<p><code>linear_softmax.py</code> is independent of Mus phases and action enums. Its caller
+supplies block names, action names and input names. It initializes fresh weights,
+computes linear scores and legal-action probabilities, and fits explicit weighted
+target distributions. For example:</p>
+<pre><code class="language-python">from mus_computer.training.cfr.linear_softmax import (
+    BlockSpec, initialize_coefficients, predict_distribution,
+)
+
+spec = BlockSpec((&quot;left&quot;, &quot;right&quot;), (&quot;bias&quot;,))
+weights = initialize_coefficients({&quot;route&quot;: spec})
+# {&quot;route&quot;: {&quot;left&quot;: {&quot;bias&quot;: 0.0}, &quot;right&quot;: {&quot;bias&quot;: 0.0}}}
+probabilities = predict_distribution(weights[&quot;route&quot;], {&quot;bias&quot;: 1.0}, spec.actions)
+# {&quot;left&quot;: 0.5, &quot;right&quot;: 0.5}
+</code></pre>
+<p>Each initialization creates independent dictionaries; parameters are not shared
+mutable globals. The old helper read global game catalogues but also created
+fresh dictionaries. Its replacement receives the schema explicitly instead of
+knowing about betting. <code>_betting_schema(phases, stages, actions)</code> is the adapter
+that declares the Mus-specific inputs and coefficient blocks.</p>
+<p><code>ProjectionExample</code> carries a block, named input values, legal action names,
+target probabilities and a positive fitting mass. The generic fitter does not
+choose CFR targets or add sampling corrections. <code>GLMCFRPolicy</code> owns those choices
+and supplies separate examples for current and accumulated-average targets.
+Outputs are ordinary probability maps; callers can feed them into another model
+as named inputs without changing the scoring engine. No pipeline scheduler or
+new training objective is introduced. Checkpoint layout <code>phase_glm_v1</code> is unchanged.</p>
+<p>For each legal action <code>a</code>, in phase <code>p</code> and betting stage <code>s</code>:</p>
+<pre><code class="language-text">z[p,s,a] = baseline[p,s,a]
+         + hand_strength[p,s,a] * (1 - own_phase_p_loss)
+         + sum(history[p,s,a,l] * opponent_wager[l])
+P(a) = exp(z[a] - max(z)) / sum_legal exp(z[b] - max(z))
+</code></pre>
+<p>These are categorical softmax logits, not separately normalized binary
+probabilities. Every raise size, ordago, fold, and match/pass has its own
+coefficients. Match/pass means pass in the opening block and call in response
+blocks. Stages are <code>opening</code>, <code>response</code> (first offer), <code>counter_raise</code>
+(two or more numeric/ordago offers in the current phase), and
+<code>ordago_response</code> (takes precedence when ordago is outstanding).
+Existing legality masks still govern every stage; no new action restrictions
+are imposed. All coefficients initially equal zero, giving a uniform legal
+wager policy; hand strength and history effects are learned independently.</p>
+<table>
+<thead>
+<tr>
+<th>Model phase</th>
+<th>Earlier-lance indicators</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Grande</td>
+<td>None</td>
+</tr>
+<tr>
+<td>Chica</td>
+<td>Grande</td>
+</tr>
+<tr>
+<td>Pares</td>
+<td>Grande, Chica</td>
+</tr>
+<tr>
+<td>Juego</td>
+<td>Grande, Chica, Pares</td>
+</tr>
+<tr>
+<td>Punto</td>
+<td>Grande, Chica, Pares</td>
+</tr>
+</tbody>
+</table>
+<p>An indicator is one when either opposing player emitted an opening bet,
+numeric raise or ordago in that earlier lance in the current hand. The parser
+recognizes the game's <code>Lance | Player: envida</code>, <code>envida N</code>,
+<code>envida N (total T)</code>, and <code>ordago</code> events (N from 2 through 5). It maps the
+game's display label <code>Pequeña</code> to <code>Chica</code>. Opposing identity comes from
+<code>GlobalGameContext.seat_order</code> and the actor's team. Own-team offers, calls
+(<code>quiero</code>), passes (<code>paso</code>), folds (<code>no quiero</code>), declarations, unknown
+players, and current/future-lance events do not activate history indicators.
+Repeated offers still produce one. No opponent cards are read. History resets
+with the game's existing per-hand public history.</p>
+<p><code>features.PREVIOUS_LANCES</code> and <code>feature_names</code> declare the permitted inputs.
+Checkpoint names such as
+<code>Chica/response -&gt; WagerAction:fold -&gt; opponent_wager_Grande</code> identify each
+coefficient. No parameters are indexed by complete histories. Additional
+features can extend this declaration/extractor in a future checkpoint version;
+wager counts/sizes, player identity, score and hand-strength interactions are
+not implemented.</p>
+<h2 id="actual-learning-update">Actual learning update</h2>
+<p>Each iteration freezes one shared model before sampling and counterfactual
+rollouts. In GLM mode, one visited <strong>betting</strong> decision per player is selected
+uniformly, and every legal alternative is evaluated using the existing replay
+and continuation machinery. For selected history <code>h</code>:</p>
+<pre><code class="language-text">delta_R[a] = N_betting_i * pi_other(h) / q_actions(h)
+             * (Q[a] - sum_b P[b] Q[b])
+strategy_sum[a] += pi_i(h) / q_actions(h) * P[a]
+</code></pre>
+<p>Prefix reaches still include mus/discard actions. Chance sampling cancels as
+in existing CFR. No final-game policy-gradient or reward-regression objective
+replaces these counterfactual differences.</p>
+<p>The implementation retains per-information-state cumulative regrets and
+strategy sums. Current targets are regret matching of those cumulative
+regrets, with the existing portfolio prior as fallback. Each target's fitting
+weight is its total positive regret mass, or one for fallback states. Average
+targets are the table's normalized strategy sums, weighted by their total
+accumulated reach mass. These sums already contain the sampling corrections;
+the fit does not multiply them by counterfactual/reach weights again.</p>
+<p>Each iteration takes <strong>one full-batch weighted cross-entropy gradient step</strong>
+over all retained states, independently for each phase/stage block and for
+current and average coefficient sets:</p>
+<pre><code class="language-text">theta[a,f] += learning_rate * sum_h normalized_weight[h]
+              * (target[h,a] - predicted[h,a]) * feature[h,f]
+</code></pre>
+<p>Weights normalize within a block; they are rescaled before summing for numerical
+stability. Frozen predictions precede each block's parameter update. The
+average model approximates the exact accumulated average targets; it is not
+an arithmetic average of coefficients or an alias of the current model.</p>
+<h2 id="checkpoints-and-limits">Checkpoints and limits</h2>
+<p>Snapshots serialize current/average coefficients, retained features, regret
+and strategy sums, config, trainer RNG state, evaluation checkpoint and metrics.
+Resume in Python with the same custom strategy portfolio if one was used:</p>
+<pre><code class="language-python">from pathlib import Path
+from mus_computer.training.cfr import CFRTrainer
+
+trainer = CFRTrainer.from_snapshot(Path(&quot;run/snapshots/iteration_000010.json&quot;),
+                                   run_dir=Path(&quot;run&quot;))
+trainer.train()  # completes remaining iterations in the saved config
+</code></pre>
+<p>Legacy tabular policy snapshots still load through <code>CFRPolicy.from_snapshot</code>;
+exact trainer continuation requires the new RNG/config metadata. Evaluation
+continues to use the existing current/average interfaces and deterministic
+seeds. Generated training output remains ignored and uncommitted.</p>
+<p>Linear fitting is approximate: different histories share logits, one gradient
+step need not reach the projection optimum, and softmax cannot exactly express
+zero probabilities with finite parameters. The training tables and full-batch
+replay still grow with visited information states; only the predictive model is
+compact. Sampling weights retain the existing estimator's high variance. The
+existing four-player/team and per-hand recall limitations remain, with no CFR
+convergence or playing-strength guarantee. This implementation has correctness
+and reproducibility tests; longer learning-quality comparisons remain future work.</p>
+</article><footer>Source: docs/training/CFR_GLM.md. Markdown remains the authoring source; this HTML is the human review copy.<br>Source SHA-256: 2a88c259920b62264d63168037dcf78310c75ef10f5d36870897dfb0608a983d</footer></main></div><script>
+(()=>{const toc=document.querySelector('.toc');if(toc&&matchMedia('(max-width:900px)').matches)toc.open=false;
+const checks=[...document.querySelectorAll('.review-check')];
+const key='mus-review:'+document.documentElement.dataset.source;let saved={};try{const value=JSON.parse(localStorage.getItem(key)||'{}');if(value&&typeof value==='object')saved=value}catch{}
+const update=()=>{if(!checks.length)return;const done=checks.filter(x=>x.checked).length;document.querySelector('#review-progress').value=done;document.querySelector('#review-count').textContent=`Read ${done} of ${checks.length} review items`;};
+for(const box of checks){box.checked=saved[box.id]===true;box.addEventListener('change',()=>{saved[box.id]=box.checked;try{localStorage.setItem(key,JSON.stringify(saved))}catch{}update()})}update();
+const codeChecks=[...document.querySelectorAll('.code-review-check')];
+const updateCode=()=>{if(!codeChecks.length)return;const done=codeChecks.filter(x=>x.checked).length;document.querySelector('#code-review-progress').value=done;document.querySelector('#code-review-count').textContent=`Reviewed ${done} of ${codeChecks.length} code items`;};
+for(const box of codeChecks){const storageKey='mus-code-review:'+box.dataset.codeVersion;try{box.checked=localStorage.getItem(storageKey)==='true'}catch{}box.addEventListener('change',()=>{for(const other of codeChecks){if(other.dataset.codeVersion===box.dataset.codeVersion)other.checked=box.checked}try{localStorage.setItem(storageKey,String(box.checked))}catch{}updateCode()})}updateCode();})();
+</script></body></html>

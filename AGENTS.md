@@ -6,6 +6,8 @@ Create a dedicated branch for each task before changing tracked files. Keep unre
 
 ## Code Review Rules
 
+Give new or modified functions and methods clear docstrings describing their contract and non-obvious calculations; include a small example when a nested data structure is hard to infer. Avoid unrelated repository-wide docstring cleanup.
+
 Read relevant entries in root `log.md` before implementing or reviewing a change. Look for previous fixes and user decisions that touch the same code or behavior. Cite a matching entry when a finding or design decision relies on it.
 
 For substantive code changes made by Codex, use `optimise-review-process` before handoff when available. Otherwise follow this sequence directly. Require the configured lint, format, static type and secret checks to pass before reviewing or committing. Review the scoped diff, apply one batch of verified and in-scope Important fixes, then rerun the checks and review the repair delta read-only once they pass. Run the required checks again on the staged changes before committing. Report failed or unavailable gates as blockers. Stop after that. If the first review needs no changes, report its result and stop. For review-only requests and GitHub PR review jobs, inspect and report only.

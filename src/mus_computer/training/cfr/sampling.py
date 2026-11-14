@@ -12,6 +12,7 @@ from mus_computer.bots.strategies.actions import (
 from mus_computer.bots.strategies.contexts import PlayerDecisionContext
 from mus_computer.game.context import GlobalGameContext
 
+from .features import betting_features
 from .policy import CFRPolicy
 from .state import Action, DecisionRecord, action_name, information_key
 
@@ -59,8 +60,11 @@ class DecisionController:
             for action in legal
         }
         key = information_key(kind, public, private, legal)
+        features = (
+            betting_features(public, private) if kind is DecisionKind.WAGER else None
+        )
         strategy = self.policy_by_player.get(seat, self.policy).probabilities(
-            key, names, prior, average=self.average
+            key, names, prior, average=self.average, features=features
         )
         behavior = {
             name: (1 - self.exploration) * strategy[name]
@@ -94,6 +98,7 @@ class DecisionController:
                     self.target_reach[seat],
                     opponents,
                     self.behavior_reach,
+                    features,
                 )
             )
         self.target_reach[seat] *= strategy[selected]
